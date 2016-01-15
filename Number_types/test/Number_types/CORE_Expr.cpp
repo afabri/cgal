@@ -55,7 +55,8 @@ int main() {
   
     CGAL::test_real_embeddable<NT>();
     
-  return 0;
+    std::cerr << "done\n";
+    return 0;
 }
 
 #if 0
