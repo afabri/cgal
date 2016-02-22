@@ -121,7 +121,8 @@ void test_coplanar_arbitrary()
    CGAL::convex_hull_3(points.begin(), points.end(), ch_object, Traits());
    Polyhedron_3 P;
    Segment_3 seg;
-   assert( CGAL::assign(P, ch_object) || CGAL::assign(seg, ch_object));
+   Triangle_3 tri;
+   assert( CGAL::assign(P, ch_object) || CGAL::assign(seg, ch_object) || CGAL::assign(tri, ch_object));
 }
 
 void test_collinear()
@@ -153,6 +154,7 @@ void test_collinear()
 
 int main()
 {
+  std::cerr << "default_random.get_seed() = " <<  CGAL::default_random.get_seed() << std::endl;
   std::vector<Point_3> points;
   CGAL::Object ch_object;
   Traits ch_traits;
