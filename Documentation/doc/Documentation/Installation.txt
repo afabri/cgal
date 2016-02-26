@@ -15,7 +15,7 @@ cmake . # configure \cgal
 make # build the \cgal libraries
 </PRE>
 
-Compiling an example shipped with \cgal is similar simple:
+Compiling an example shipped with \cgal is similar:
 
 <PRE>
 cd examples/Straight_skeleton_2 # go to an example directory
@@ -23,7 +23,19 @@ cmake -DCGAL_DIR=$HOME/CGAL-\cgalReleaseNumber . # configure the examples
 make # build the examples 
 </PRE>
 
-Compiling an own non-shipped program is also close:
+Compiling a demo shipped with \cgal is the same:
+
+<PRE>
+cd demo/Triangulation_2 # go to a demo directory
+cmake -DCGAL_DIR=$HOME/CGAL-\cgalReleaseNumber . # configure the demo
+make # build the dem
+</PRE>
+
+
+Compiling an own non-shipped program is also similar.
+The main difference is that you first have to generate
+a CMakeList.txt file. This can be achieved with a script
+that can be found in CGAL-\cgalReleaseNumber/scripts.
 
 <PRE>
 cd /path/to/program 
