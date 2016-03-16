@@ -64,8 +64,8 @@ namespace Polygon_mesh_processing {
 *  \cgalParamBegin{geom_traits} a geometric traits class instance, model of `Kernel`
 *  \cgalParamEnd
 *  \cgalParamBegin{edge_is_constrained_map} a property map containing the
-*    constrained-or-not status of each edge of pmesh. A constrained edge can be splitted
-*    or collapsed, but not flipped, nor its endpoints moved by smoothing.
+*    constrained-or-not status of each edge of pmesh. A constrained edge can be split
+*    or collapsed, but neither flipped, nor its endpoints moved by smoothing.
 *    Note that patch boundary edges (i.e. incident to only one face in the range)
 *    are always considered as constrained edges.
 *  \cgalParamEnd
@@ -75,7 +75,7 @@ namespace Polygon_mesh_processing {
 *  \cgalParamEnd
 *  \cgalParamBegin{protect_constraints} If `true`, the edges set as constrained
 *     in `edge_is_constrained_map` (or by default the boundary edges)
-*     are not splitted nor collapsed during remeshing.
+*     are neither split nor collapsed during remeshing.
 *     Note that around constrained edges that have their length higher than
 *     twice `target_edge_length`, remeshing will fail to provide
 *     good quality results. It can even fail to terminate because of cascading vertex
