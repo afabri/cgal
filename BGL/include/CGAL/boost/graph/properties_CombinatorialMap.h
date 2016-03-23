@@ -22,6 +22,7 @@
 #include <CGAL/boost/graph/properties.h>
 #include <CGAL/Unique_hash_map.h>
 #include <CGAL/Linear_cell_complex.h>
+#include <CGAL/number_utils.h>
 
 #define CGAL_LCC_ARGS unsigned int d_, unsigned int ambient_dim, \
              class Traits_, \
@@ -48,7 +49,7 @@ public:
 
   reference operator[](key_type const& e) const
   {
-    return CGAL::squared_distance(LCC::point(e), LCC::point(e->opposite()));
+    return approximate_sqrt(squared_distance(LCC::point(e), LCC::point(e->opposite())));
   }
 };
 

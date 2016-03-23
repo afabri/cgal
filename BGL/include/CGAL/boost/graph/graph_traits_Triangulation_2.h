@@ -33,6 +33,7 @@
 #include <CGAL/boost/graph/properties.h>
 #include <CGAL/Triangulation_2.h>
 #include <CGAL/Iterator_range.h>
+#include <CGAL/number_utils.h>
 
 // The functions and classes in this file allows the user to
 // treat a CGAL Triangulation_2 object as a boost graph "as is". No
@@ -695,7 +696,7 @@ namespace CGAL {
     { }
 
     value_type operator[](key_type e) const {
-      return tr.segment(e).squared_length();
+      return approximate_sqrt(tr.segment(e).squared_length());
     }
   };
 

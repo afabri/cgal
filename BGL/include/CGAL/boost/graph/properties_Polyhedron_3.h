@@ -24,6 +24,7 @@
 #include <CGAL/boost/graph/graph_traits_Polyhedron_3.h>
 #include <CGAL/Unique_hash_map.h>
 #include <CGAL/squared_distance_2_1.h>
+#include <CGAL/number_utils.h>
 #include <boost/shared_ptr.hpp>
 
 #define CGAL_HDS_PARAM_ template < class Traits, class Items, class Alloc> class HDS
@@ -100,7 +101,8 @@ struct Wrap_squared
   // Technically, there is also a general implementation for
   // HalfedgeGraph to prevent duplication in Surface_mesh.
   operator[](const E& e) const {
-    return CGAL::squared_distance(e.halfedge()->vertex()->point(), e.halfedge()->opposite()->vertex()->point());
+    return approximate_sqrt(squared_distance(e.halfedge()->vertex()->point(),
+                                             e.halfedge()->opposite()->vertex()->point()));
   }
 };
 
