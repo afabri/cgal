@@ -49,6 +49,7 @@
 #include <CGAL/Interval_traits.h>
 #include <CGAL/double.h>
 #include <CGAL/FPU.h>
+#include <CGAL/tss.h>
 #include <CGAL/IO/io.h>
 #include <iostream>
 
@@ -128,6 +129,21 @@ public:
 #  define CGAL_DISABLE_ROUNDING_MATH_CHECK
 #endif
 
+
+ struct Test_runtime_rounding_modes {
+    Test_runtime_rounding_modes()
+    {
+      // We test whether GCC's -frounding-math option has been forgotten.
+      // The macros CGAL_IA_MUL and CGAL_IA_DIV stop constant propagation only
+      // on the second argument, so if -fno-rounding-math, the compiler optimizes
+      // the 2 negations and we get wrong rounding.
+      typename Interval_nt<>::Internal_protector P;
+      CGAL_assertion_msg(-CGAL_IA_MUL(-1.1, 10.1) != CGAL_IA_MUL(1.1, 10.1),
+                         "Wrong rounding: did you forget the  -frounding-math  option if you use GCC (or  -fp-model strict  for Intel)?");
+      CGAL_assertion_msg(-CGAL_IA_DIV(-1., 10) != CGAL_IA_DIV(1., 10),
+                         "Wrong rounding: did you forget the  -frounding-math  option if you use GCC (or  -fp-model strict  for Intel)?");
+    }
+  };
   Interval_nt(double i, double s)
     : _inf(i), _sup(s)
   {
@@ -138,6 +154,7 @@ public:
     CGAL_assertion_msg( (!is_valid(i)) || (!is_valid(s)) || (!(i>s)),
 	      " Variable used before being initialized (or CGAL bug)");
 #ifndef CGAL_DISABLE_ROUNDING_MATH_CHECK
+    CGAL_STATIC_THREAD_LOCAL_VARIABLE(Test_runtime_rounding_modes, tester, Test_runtime_rounding_modes());
     CGAL_assertion_code((void) tester;) // Necessary to trigger a runtime test of rounding modes.
 #endif
   }
@@ -197,31 +214,8 @@ private:
   // Pair inf_sup;
   double _inf, _sup;
 
-  struct Test_runtime_rounding_modes {
-    Test_runtime_rounding_modes()
-    {
-      // We test whether GCC's -frounding-math option has been forgotten.
-      // The macros CGAL_IA_MUL and CGAL_IA_DIV stop constant propagation only
-      // on the second argument, so if -fno-rounding-math, the compiler optimizes
-      // the 2 negations and we get wrong rounding.
-      typename Interval_nt<>::Internal_protector P;
-      CGAL_assertion_msg(-CGAL_IA_MUL(-1.1, 10.1) != CGAL_IA_MUL(1.1, 10.1),
-                         "Wrong rounding: did you forget the  -frounding-math  option if you use GCC (or  -fp-model strict  for Intel)?");
-      CGAL_assertion_msg(-CGAL_IA_DIV(-1., 10) != CGAL_IA_DIV(1., 10),
-                         "Wrong rounding: did you forget the  -frounding-math  option if you use GCC (or  -fp-model strict  for Intel)?");
-    }
-  };
-
-#ifndef CGAL_DISABLE_ROUNDING_MATH_CHECK
-  static Test_runtime_rounding_modes tester;
-#endif
 };
 
-#ifndef CGAL_DISABLE_ROUNDING_MATH_CHECK
-template <bool Protected>
-typename Interval_nt<Protected>::Test_runtime_rounding_modes
-Interval_nt<Protected>::tester;
-#endif
 
 template <bool Protected>
 inline
