@@ -23,6 +23,7 @@
 #include <CGAL/Linear_cell_complex.h>
 #include <CGAL/Combinatorial_map_operations.h>
 #include <CGAL/Linear_cell_complex_constructors.h>
+#include <CGAL/import_from_plane_graph.h>
 #include <fstream>
 
 // #define LCC_TRACE_TEST_BEGIN 1
