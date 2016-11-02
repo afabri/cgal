@@ -68,7 +68,7 @@ double Timer::user_process_time() const {
     // Returns a (weakly ;-) monotone increasing time in seconds (with
     // possible wrap-around in case of overflow, see max()), or 0.0
     // if the system call for the time failed. If the system call
-    // failed the static flag 'm_failed' is set and can be used
+    // failed the variable 'failed' is set and can be used
     // by the caller.
 #ifdef CGAL__GETRUSAGE
     struct rusage usage;
@@ -87,7 +87,7 @@ double Timer::user_process_time() const {
         return double(clk) / CLOCKS_PER_SEC;
     }
 #endif // CGAL__GETRUSAGE //
-    get_static_timer_m_failed() = true;
+    failed = true;
     return 0.0;
 }
 
@@ -101,12 +101,12 @@ double Timer::compute_precision() const {
     double min_res = DBL_MAX;
     for ( int i = 0; i < 5; ++i) {
         double current = user_process_time();
-        if ( get_static_timer_m_failed() )
+        if ( failed )
             return -1.0;
         double next    = user_process_time();
         while ( current >= next) { // wait until timer increases
             next = user_process_time();
-            if ( get_static_timer_m_failed() )
+            if ( failed )
                 return -1.0;
         }
         // Get the minimum timing difference of all runs.

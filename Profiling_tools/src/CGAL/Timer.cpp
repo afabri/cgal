@@ -28,10 +28,4 @@
 #include <CGAL/Timer.h>
 #include <CGAL/Timer_impl.h>
 
-namespace CGAL {
-
-bool Timer::m_failed = false;
-
-} //namespace CGAL
-
 #endif // CGAL_HEADER_ONLY

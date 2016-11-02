@@ -28,10 +28,4 @@
 #include <CGAL/Real_timer.h>
 #include <CGAL/Real_timer_impl.h>
 
-namespace CGAL {
-
-bool Real_timer::m_failed = false;
-
-} //namespace CGAL
-
 #endif // CGAL_HEADER_ONLY

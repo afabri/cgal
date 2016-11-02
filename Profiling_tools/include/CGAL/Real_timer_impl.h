@@ -53,7 +53,7 @@ double Real_timer::get_real_time() const {
     // Returns a (weakly ;-) monotone increasing time in seconds (with
     // possible wrap-around in case of overflow, see max()), or 0.0
     // if the system call for the time failed. If the system call
-    // failed the static flag 'm_failed' is set and can be used
+    // failed the member variable 'failed' is set and can be used
     // by the caller.
 #if   defined(_MSC_VER)
     struct _timeb  t;
@@ -71,7 +71,7 @@ double Real_timer::get_real_time() const {
     if ( ret == 0) {
         return double(t.tv_sec) + double(t.tv_usec) / 1000000;
     }
-    get_static_realtimer_m_failed() = true;
+    failed = true;
     return 0.0;
 #endif // ! _MSC_VER && ! __MINGW32__//
 }
@@ -86,12 +86,12 @@ double Real_timer::compute_precision() const {
     double min_res = DBL_MAX;
     for ( int i = 0; i < 5; ++i) {
         double current = get_real_time();
-        if ( get_static_realtimer_m_failed() )
+        if ( failed )
             return -1.0;
         double next    = get_real_time();
         while ( current >= next) { // wait until timer increases
             next = get_real_time();
-            if ( get_static_realtimer_m_failed() )
+            if ( failed )
                 return -1.0;
         }
         // Get the minimum timing difference of all runs.

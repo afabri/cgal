@@ -46,27 +46,17 @@ namespace CGAL {
 
 class CGAL_EXPORT Real_timer {
 private:
-    double      elapsed;
-    double      started;
-    int         interv;
-    bool        running;
+    double       elapsed;
+    double       started;
+    int          interv;
+    bool         running;
+    mutable bool failed;
 
-#ifdef CGAL_HEADER_ONLY
-    static bool& get_static_realtimer_m_failed()
-    {
-      static bool m_failed = false;
-      return m_failed;
-    }
-#else // CGAL_HEADER_ONLY
-    static bool m_failed;
-    static bool& get_static_realtimer_m_failed()
-    { return Real_timer::m_failed; }
-#endif // CGAL_HEADER_ONLY
 
     double   get_real_time()     const; // in seconds
     double   compute_precision() const; // in seconds
 public:
-    Real_timer() : elapsed(0.0), started(0.0), interv(0), running(false) {}
+    Real_timer() : elapsed(0.0), started(0.0), interv(0), running(false), failed(false) {}
 
     void     start();
     void     stop ();
