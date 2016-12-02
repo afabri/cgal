@@ -39,6 +39,7 @@
 #include <iomanip>
 #include <string>
 #include <CGAL/Timer.h>
+#include <CGAL/atomic.h>
 
 namespace CGAL {
 
@@ -49,11 +50,11 @@ struct Profile_timer
         Profile_timer *p;
     public:
         Local(Profile_timer* p_) : p(p_) { rt.start(); }
-        ~Local() { rt.stop(); p->t += rt.time(); }
+        ~Local() { rt.stop(); p->t = p->t + rt.time(); }
     };
 
     Profile_timer(const std::string & ss)
-      : t(0), s(ss) {}
+      : s(ss) {}
 
     ~Profile_timer()
     {
@@ -62,14 +63,14 @@ struct Profile_timer
     }
 
 private:
-    double t;
+  CGAL_ATOMIC(double) t; // will be initialized to 0
     const std::string s;
 };
 
 
 #ifdef CGAL_PROFILE
 #  define CGAL_TIME_PROFILER(NAME) \
-          static CGAL::Profile_timer CGAL_profile_timer_tmp(NAME); \
+  static CGAL::Profile_timer CGAL_profile_timer_tmp(NAME); \
           CGAL::Profile_timer::Local CGAL_local_profile_timer_tmp(&CGAL_profile_timer_tmp);
 #else
 #  define CGAL_TIME_PROFILER(NAME)

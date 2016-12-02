@@ -42,6 +42,8 @@
 #  include <sys/time.h>
 #endif
 
+#include <CGAL/tss.h>
+
 namespace CGAL {
 
 // Member functions for Real_timer
@@ -105,7 +107,7 @@ CGAL_INLINE_FUNCTION
 double Real_timer::precision() const {
     // computes precision upon first call
     // returns -1.0 if timer system call fails.
-    static double prec = compute_precision();
+  CGAL_STATIC_THREAD_LOCAL_VARIABLE(double, prec,compute_precision());
     return prec;
 }
 

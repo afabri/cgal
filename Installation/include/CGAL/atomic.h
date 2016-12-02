@@ -35,6 +35,10 @@
 #  endif // not CGAL_CAN_USE_CXX11_ATOMIC
 
 #  ifndef CGAL_NO_ATOMIC
+
+#define CGAL_ATOMIC(Type) CGAL::cpp11::atomic<Type>
+
+
    namespace CGAL {
      namespace cpp11 {
        using CGAL_ATOMIC_NS ::atomic;
@@ -51,6 +55,9 @@
    }
 #  endif // CGAL_ATOMIC_NS
 #else
+
+#define CGAL_ATOMIC(Type) Type
+
 #  define CGAL_NO_ATOMIC "No atomic because CGAL_NO_THREADS is defined."
 #endif // CGAL_HAS_THREADS
 
