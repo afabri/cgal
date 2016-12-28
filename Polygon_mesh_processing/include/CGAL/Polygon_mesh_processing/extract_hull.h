@@ -32,6 +32,8 @@
 #include <CGAL/intersection_of_Polyhedra_3_refinement_visitor.h>
 #include <CGAL/Random.h>
 #include <CGAL/boost/graph/helpers.h>
+
+#include <boost/foreach.hpp>
 #include <map>
 #include <queue>
 
@@ -41,16 +43,6 @@ namespace CGAL {
 namespace Polygon_mesh_processing {
 
 namespace internal {
-
-  template <typename Point>
-std::pair<Point,Point> canonical(const Point& p, const Point& q)
-{
-  if(p < q){
-    return std::make_pair(p,q);
-  }
-  return std::make_pair(q,p);
-}
-
 
 // Find any face on the hull
 // Algorithm: Shoot a ray from the centroid of any face in direction of its normal.
@@ -68,10 +60,10 @@ face_on_hull(const TriangleMesh& mesh)
   Vpm vpm = get(vertex_point,mesh);
   typedef typename boost::property_traits<Vpm>::value_type Point_3;
   typedef typename Kernel_traits<Point_3>::Kernel K;
-  typedef K::Vector_3 Vector_3;
-  typedef K::Ray_3 Ray_3;
-  typedef K::Segment_3 Segment_3;
-  typedef K::Triangle_3 Triangle_3;
+  typedef typename K::Vector_3 Vector_3;
+  typedef typename K::Ray_3 Ray_3;
+  typedef typename K::Segment_3 Segment_3;
+  typedef typename K::Triangle_3 Triangle_3;
 
   face_descriptor fd = *faces(mesh).first;
   halfedge_descriptor hd = halfedge(fd,mesh);
@@ -87,19 +79,19 @@ face_on_hull(const TriangleMesh& mesh)
   while(true){
     double sd = 0;
     farthest_fd = fd;
-    typename Ray_3 ray(centroid_3,n);
+    Ray_3 ray(centroid_3,n);
     bool perturb = false;
 
-    for(face_descriptor fd2 : faces(mesh)){
+    BOOST_FOREACH(face_descriptor fd2 , faces(mesh)){
       if(fd == fd2){
         continue;
       }
       halfedge_descriptor hd2 = halfedge(fd2,mesh);
-      typename Triangle_3 triangle(get(vpm, source(hd2,mesh)),
-                                   get(vpm, target(hd2,mesh)),
-                                   get(vpm, target(next(hd2,mesh),mesh)));
+      Triangle_3 triangle(get(vpm, source(hd2,mesh)),
+                          get(vpm, target(hd2,mesh)),
+                          get(vpm, target(next(hd2,mesh),mesh)));
 
-      cpp11::result_of<typename K::Intersect_3(Triangle_3,Ray_3)>::type res = intersection(ray,triangle);
+      typename cpp11::result_of<typename K::Intersect_3(Triangle_3,Ray_3)>::type res  = intersection(ray,triangle);
       if(! res){
         continue;
       }
@@ -136,27 +128,29 @@ face_on_hull(const TriangleMesh& mesh)
 
 } // namespace internal
  
-  template <typename TriangleMesh, typename VertexIndexMap, typename FaceIndexMap>
+template <typename TriangleMesh, typename VertexIndexMap, typename FaceIndexMap>
 void extract_hull(TriangleMesh& mesh,
                   VertexIndexMap vim,
                   FaceIndexMap fim)
 {
-  typedef boost::graph_traits<TriangleMesh>::vertex_descriptor vertex_descriptor;
-  typedef boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
-  typedef boost::graph_traits<TriangleMesh>::face_descriptor face_descriptor;
+  typedef boost::graph_traits<TriangleMesh> GT;
+  typedef typename GT::halfedge_descriptor halfedge_descriptor;
+  typedef typename GT::face_descriptor face_descriptor;
 
   typedef typename boost::property_map<TriangleMesh,vertex_point_t>::type Vpm;
   typedef typename boost::property_traits<Vpm>::value_type Point_3;
 
+  typedef typename Kernel_traits<Point_3>::Kernel K;
+  
   // for all edges given as a pair of points we store the adjacent border halfedges
   typedef std::multimap<std::pair<Point_3,Point_3>,halfedge_descriptor > Point_pair_2_halfedges;
   Point_pair_2_halfedges point_pair_2_halfedges;
 
-  boost::property_map<TriangleMesh,vertex_point_t>::type vpm = get(vertex_point,mesh);
-  for(halfedge_descriptor hd : halfedges(mesh)){
+  typename boost::property_map<TriangleMesh,vertex_point_t>::type vpm = get(vertex_point,mesh);
+  BOOST_FOREACH(halfedge_descriptor hd, halfedges(mesh)){
     if(is_border(hd,mesh)){
-      point_pair_2_halfedges.insert(std::make_pair(internal::canonical(get(vpm,source(hd,mesh)),
-                                                                       get(vpm,target(hd,mesh))),
+      point_pair_2_halfedges.insert(std::make_pair(make_sorted_pair(get(vpm,source(hd,mesh)),
+                                                                    get(vpm,target(hd,mesh))),
                                                    hd));
     }
   }
@@ -169,10 +163,10 @@ void extract_hull(TriangleMesh& mesh,
 
 
   // compute for each face in which connected component it is
-  std::map<face_descriptor,int> face_cc_index_map;
-  int nc = connected_components(mesh,
-                                boost::make_assoc_property_map(face_cc_index_map),
-                                parameters::face_index_map(fim));
+  std::map<face_descriptor,std::size_t> face_cc_index_map;
+  std::size_t nc = connected_components(mesh,
+                                        boost::make_assoc_property_map(face_cc_index_map),
+                                        parameters::face_index_map(fim));
 
   std::cerr << nc << " connected components"<< std::endl;
 
@@ -192,7 +186,7 @@ void extract_hull(TriangleMesh& mesh,
   while(! Q.empty()){
     boost::tie(fd, normal_points_outwards) = Q.front();
     Q.pop();
-    int fd_cc_index = face_cc_index_map[fd];
+    std::size_t fd_cc_index = face_cc_index_map[fd];
 
     std::vector<face_descriptor> cc;
     connected_component(fd, mesh, std::back_inserter(cc));
@@ -203,11 +197,11 @@ void extract_hull(TriangleMesh& mesh,
     border_halfedges(cc, mesh,std::back_inserter(border));
   
 
-    for(halfedge_descriptor bhd : border){
+    BOOST_FOREACH(halfedge_descriptor bhd, border){
       Point_3 p = get(vpm, source(bhd,mesh));
       Point_3 q = get(vpm, target(bhd,mesh));
-      Point_pair_2_halfedges::iterator b,e, b2;
-      boost::tie(b,e) = point_pair_2_halfedges.equal_range(internal::canonical(p,q));
+      typename Point_pair_2_halfedges::iterator b,e, b2;
+      boost::tie(b,e) = point_pair_2_halfedges.equal_range(make_sorted_pair(p,q));
 
       b2 = b;
       if(b != e){
@@ -220,7 +214,7 @@ void extract_hull(TriangleMesh& mesh,
         Point_3 p1 = get(vpm,target(next(opposite(bhd,mesh),mesh),mesh));
 
         halfedge_descriptor nhd = he[0]; // not yet the closest
-        for(int i = 1; i < he.size(); ++i){
+        for(std::size_t i = 1; i < he.size(); ++i){
           Point_3 p2 = get(vpm,target(next(opposite(nhd,mesh),mesh),mesh));
           Point_3 q2 = get(vpm,target(next(opposite(he[i],mesh),mesh),mesh));
           if(is_in_interior_of_object<K>(q, p, p1, p2,q2)){
@@ -245,8 +239,8 @@ void extract_hull(TriangleMesh& mesh,
 
   stitch_borders(mesh, halfedges_to_stitch);
   
-  std::vector<int> cc_to_remove;
-  for(int i = 0; i < cc_is_treated.size(); ++i){
+  std::vector<std::size_t> cc_to_remove;
+  for(std::size_t i = 0; i < cc_is_treated.size(); ++i){
     if(! cc_is_treated[i]){
       cc_to_remove.push_back(i);
     }
@@ -263,4 +257,4 @@ void extract_hull(TriangleMesh& mesh,
 } // namespace CGAL 
 
 
-#endif CGAL_POLYGON_MESH_PROCESSING_EXTRACT_HULL_H
+#endif  // CGAL_POLYGON_MESH_PROCESSING_EXTRACT_HULL_H

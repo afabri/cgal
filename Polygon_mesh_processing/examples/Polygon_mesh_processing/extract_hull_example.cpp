@@ -48,13 +48,13 @@ int main(int argc, char* argv[])
  
  int index = 0;
   std::map<vertex_descriptor,int> vimap;
-  for(vertex_descriptor vd : vertices(mesh)){
+  BOOST_FOREACH(vertex_descriptor vd, vertices(mesh)){
     vimap[vd]= index++;
   }
   index = 0;
 
   std::map<face_descriptor,int> fimap;
-  for(face_descriptor fd : faces(mesh)){
+  BOOST_FOREACH(face_descriptor fd, faces(mesh)){
     fimap[fd]= index++;
   }
   PMP::extract_hull(mesh,
