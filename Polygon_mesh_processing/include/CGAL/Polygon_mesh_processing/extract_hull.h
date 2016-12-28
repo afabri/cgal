@@ -49,8 +49,8 @@ namespace internal {
 //            Return the farthest face. Note that the ray might pass through a
 //            vertical face so we need potentially shoot again with a perturbed normal
 // Don't use an aabb tree as we just want to do 1 shooting, but look at all faces
-  template <typename Geom_traits, typename TriangleMesh, typename Vpm>
-  std::pair<typename boost::graph_traits<TriangleMesh>::face_descriptor,bool>
+template <typename Geom_traits, typename TriangleMesh, typename Vpm>
+std::pair<typename boost::graph_traits<TriangleMesh>::face_descriptor,bool>
 face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
 {
   typedef typename boost::graph_traits<TriangleMesh>::face_descriptor face_descriptor;
@@ -133,6 +133,7 @@ template <typename TriangleMesh, typename NamedParameters>
 void extract_hull(TriangleMesh& mesh,
                   const NamedParameters& np)
 {
+  // extract named parameters
   typedef typename GetGeomTraits<TriangleMesh,
                                  NamedParameters>::type Geom_traits;
 
@@ -152,6 +153,7 @@ void extract_hull(TriangleMesh& mesh,
   VertexIndexMap vim = boost::choose_param(get_param(np, boost::vertex_index),
                                            get_property_map(boost::vertex_index, mesh));
 
+  // typedefs
   typedef boost::graph_traits<TriangleMesh> GT;
   typedef typename GT::halfedge_descriptor halfedge_descriptor;
   typedef typename GT::face_descriptor face_descriptor;
@@ -177,6 +179,7 @@ void extract_hull(TriangleMesh& mesh,
 
 
   // compute for each face in which connected component it is
+  /// \todo use bind_maps from corefinement
   std::map<face_descriptor,std::size_t> face_cc_index_map;
   std::size_t nc = connected_components(mesh,
                                         boost::make_assoc_property_map(face_cc_index_map),
@@ -233,6 +236,7 @@ void extract_hull(TriangleMesh& mesh,
         for(std::size_t i = 1; i < he.size(); ++i){
           Point_3 p2 = get(vpm,target(next(opposite(nhd,mesh),mesh),mesh));
           Point_3 q2 = get(vpm,target(next(opposite(he[i],mesh),mesh),mesh));
+          /// \todo this is not yet a filtered predicate
           if(is_in_interior_of_object<Geom_traits>(q, p, p1, p2,q2)){
             nhd = he[i];
           }
