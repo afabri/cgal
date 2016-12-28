@@ -71,7 +71,7 @@ face_on_hull(const TriangleMesh& mesh)
   Point_3 centroid_3 = centroid(get(vpm, source(hd,mesh)),
                                 get(vpm, target(hd,mesh)),
                                 get(vpm, target(next(hd,mesh),mesh)));
-  
+
 
   face_descriptor farthest_fd;
   bool normal_points_outwards = true;
@@ -95,7 +95,7 @@ face_on_hull(const TriangleMesh& mesh)
       if(! res){
         continue;
       }
-      if (const Point_3 *p = boost::get<Point_3>(&*res)){ 
+      if (const Point_3 *p = boost::get<Point_3>(&*res)){
         double sd2 = squared_distance(*p,centroid_3);
         if(sd2 > sd){
           sd = sd2;
@@ -127,7 +127,7 @@ face_on_hull(const TriangleMesh& mesh)
 }
 
 } // namespace internal
- 
+
 template <typename TriangleMesh, typename VertexIndexMap, typename FaceIndexMap>
 void extract_hull(TriangleMesh& mesh,
                   VertexIndexMap vim,
@@ -141,7 +141,7 @@ void extract_hull(TriangleMesh& mesh,
   typedef typename boost::property_traits<Vpm>::value_type Point_3;
 
   typedef typename Kernel_traits<Point_3>::Kernel K;
-  
+
   // for all edges given as a pair of points we store the adjacent border halfedges
   typedef std::multimap<std::pair<Point_3,Point_3>,halfedge_descriptor > Point_pair_2_halfedges;
   Point_pair_2_halfedges point_pair_2_halfedges;
@@ -154,7 +154,7 @@ void extract_hull(TriangleMesh& mesh,
                                                    hd));
     }
   }
-  
+
   // assert that there is one or more than two halfedges for each key
   // that is either a border, or a non-manifold situation
 
@@ -168,11 +168,13 @@ void extract_hull(TriangleMesh& mesh,
                                         boost::make_assoc_property_map(face_cc_index_map),
                                         parameters::face_index_map(fim));
 
-  std::cerr << nc << " connected components"<< std::endl;
+  #ifdef CGAL_PMP_EXTRACT_HULL_DEBUG
+  std::cerr << nc << " connected components\n";
+  #endif
 
   // container to mark which connected components we have already treated in the BFS
   std::vector<bool> cc_is_treated(nc,false);
- 
+
   std::queue<std::pair<face_descriptor,bool> > Q;
   // find one face on the hull
   face_descriptor fd;
@@ -181,7 +183,7 @@ void extract_hull(TriangleMesh& mesh,
 
   Q.push(std::make_pair(fd,normal_points_outwards));
   cc_is_treated[face_cc_index_map[fd]] = true;
-  
+
   // Perform a BFS traversal of the connected components on the hull
   while(! Q.empty()){
     boost::tie(fd, normal_points_outwards) = Q.front();
@@ -195,7 +197,7 @@ void extract_hull(TriangleMesh& mesh,
     }
     std::vector<halfedge_descriptor> border;
     border_halfedges(cc, mesh,std::back_inserter(border));
-  
+
 
     BOOST_FOREACH(halfedge_descriptor bhd, border){
       Point_3 p = get(vpm, source(bhd,mesh));
@@ -221,7 +223,7 @@ void extract_hull(TriangleMesh& mesh,
             nhd = he[i];
           }
         }
-                
+
         // What we have so far is outwards oriented
         // Test if the neighbor connected component must get reversed when it comes out of the queue
         normal_points_outwards = (get(vpm,source(bhd,mesh)) == get(vpm,target(nhd,mesh)));
@@ -238,23 +240,23 @@ void extract_hull(TriangleMesh& mesh,
   }
 
   stitch_borders(mesh, halfedges_to_stitch);
-  
+
   std::vector<std::size_t> cc_to_remove;
   for(std::size_t i = 0; i < cc_is_treated.size(); ++i){
     if(! cc_is_treated[i]){
       cc_to_remove.push_back(i);
     }
   }
-  
+
   remove_connected_components(mesh,
                               cc_to_remove,
                               boost::make_assoc_property_map(face_cc_index_map),
                               parameters::vertex_index_map(vim));
-       
+
 }
 } // namespace Polygon_mesh_processing
 
-} // namespace CGAL 
+} // namespace CGAL
 
 
 #endif  // CGAL_POLYGON_MESH_PROCESSING_EXTRACT_HULL_H
