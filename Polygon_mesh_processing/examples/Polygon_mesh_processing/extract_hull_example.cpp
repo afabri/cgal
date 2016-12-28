@@ -20,9 +20,10 @@ typedef boost::graph_traits<Surface_mesh>::face_descriptor face_descriptor;
 
 
 namespace PMP = CGAL::Polygon_mesh_processing;
+namespace params = PMP::parameters;
 
 int main(int argc, char* argv[])
-{ 
+{
   const char* filename = (argc > 1) ? argv[1] : "data/halfcubes-nonmanifold.off";
   std::ifstream input(filename);
 
@@ -45,8 +46,8 @@ int main(int argc, char* argv[])
   PMP::orient_polygon_soup(points, polygons);
 
   PMP::polygon_soup_to_polygon_mesh(points, polygons, mesh);
- 
- int index = 0;
+
+  int index = 0;
   std::map<vertex_descriptor,int> vimap;
   BOOST_FOREACH(vertex_descriptor vd, vertices(mesh)){
     vimap[vd]= index++;
@@ -58,9 +59,9 @@ int main(int argc, char* argv[])
     fimap[fd]= index++;
   }
   PMP::extract_hull(mesh,
-                    boost::make_assoc_property_map(vimap),
-                    boost::make_assoc_property_map(fimap));
-                    
+    params::vertex_index_map(boost::make_assoc_property_map(vimap)).
+    face_index_map(boost::make_assoc_property_map(fimap)));
+
   std::ofstream out("out.off");
   out << mesh;
 

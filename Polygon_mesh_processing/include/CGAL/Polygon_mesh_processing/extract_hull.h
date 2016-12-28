@@ -49,21 +49,18 @@ namespace internal {
 //            Return the farthest face. Note that the ray might pass through a
 //            vertical face so we need potentially shoot again with a perturbed normal
 // Don't use an aabb tree as we just want to do 1 shooting, but look at all faces
-  template <typename TriangleMesh>
+  template <typename Geom_traits, typename TriangleMesh, typename Vpm>
   std::pair<typename boost::graph_traits<TriangleMesh>::face_descriptor,bool>
-face_on_hull(const TriangleMesh& mesh)
+face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
 {
   typedef typename boost::graph_traits<TriangleMesh>::face_descriptor face_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
   Random rng;
-  typedef typename boost::property_map<TriangleMesh,vertex_point_t>::const_type Vpm;
-  Vpm vpm = get(vertex_point,mesh);
   typedef typename boost::property_traits<Vpm>::value_type Point_3;
-  typedef typename Kernel_traits<Point_3>::Kernel K;
-  typedef typename K::Vector_3 Vector_3;
-  typedef typename K::Ray_3 Ray_3;
-  typedef typename K::Segment_3 Segment_3;
-  typedef typename K::Triangle_3 Triangle_3;
+  typedef typename Geom_traits::Vector_3 Vector_3;
+  typedef typename Geom_traits::Ray_3 Ray_3;
+  typedef typename Geom_traits::Segment_3 Segment_3;
+  typedef typename Geom_traits::Triangle_3 Triangle_3;
 
   face_descriptor fd = *faces(mesh).first;
   halfedge_descriptor hd = halfedge(fd,mesh);
@@ -91,7 +88,10 @@ face_on_hull(const TriangleMesh& mesh)
                           get(vpm, target(hd2,mesh)),
                           get(vpm, target(next(hd2,mesh),mesh)));
 
-      typename cpp11::result_of<typename K::Intersect_3(Triangle_3,Ray_3)>::type res  = intersection(ray,triangle);
+      typename cpp11::result_of<
+        typename Geom_traits::Intersect_3(Triangle_3,Ray_3)
+          >::type res  = intersection(ray,triangle);
+
       if(! res){
         continue;
       }
@@ -128,25 +128,39 @@ face_on_hull(const TriangleMesh& mesh)
 
 } // namespace internal
 
-template <typename TriangleMesh, typename VertexIndexMap, typename FaceIndexMap>
+//named parameters vertex_index, vertex_point_map, face_index, geom_traits
+template <typename TriangleMesh, typename NamedParameters>
 void extract_hull(TriangleMesh& mesh,
-                  VertexIndexMap vim,
-                  FaceIndexMap fim)
+                  const NamedParameters& np)
 {
+  typedef typename GetGeomTraits<TriangleMesh,
+                                 NamedParameters>::type Geom_traits;
+
+  typedef typename GetVertexPointMap<TriangleMesh,
+                                     NamedParameters>::type Vpm;
+
+  Vpm vpm = boost::choose_param(get_param(np, vertex_point),
+                                get_property_map(vertex_point, mesh));
+
+  typedef typename GetFaceIndexMap<TriangleMesh,
+                                   NamedParameters>::type FaceIndexMap;
+  typedef typename GetVertexIndexMap<TriangleMesh,
+                                     NamedParameters>::type VertexIndexMap;
+
+  FaceIndexMap fim = boost::choose_param(get_param(np, face_index),
+                                         get_property_map(face_index, mesh));
+  VertexIndexMap vim = boost::choose_param(get_param(np, boost::vertex_index),
+                                           get_property_map(boost::vertex_index, mesh));
+
   typedef boost::graph_traits<TriangleMesh> GT;
   typedef typename GT::halfedge_descriptor halfedge_descriptor;
   typedef typename GT::face_descriptor face_descriptor;
-
-  typedef typename boost::property_map<TriangleMesh,vertex_point_t>::type Vpm;
   typedef typename boost::property_traits<Vpm>::value_type Point_3;
-
-  typedef typename Kernel_traits<Point_3>::Kernel K;
 
   // for all edges given as a pair of points we store the adjacent border halfedges
   typedef std::multimap<std::pair<Point_3,Point_3>,halfedge_descriptor > Point_pair_2_halfedges;
   Point_pair_2_halfedges point_pair_2_halfedges;
 
-  typename boost::property_map<TriangleMesh,vertex_point_t>::type vpm = get(vertex_point,mesh);
   BOOST_FOREACH(halfedge_descriptor hd, halfedges(mesh)){
     if(is_border(hd,mesh)){
       point_pair_2_halfedges.insert(std::make_pair(make_sorted_pair(get(vpm,source(hd,mesh)),
@@ -179,7 +193,7 @@ void extract_hull(TriangleMesh& mesh,
   // find one face on the hull
   face_descriptor fd;
   bool normal_points_outwards;
-  boost::tie(fd, normal_points_outwards) = internal::face_on_hull(mesh);
+  boost::tie(fd, normal_points_outwards) = internal::face_on_hull<Geom_traits>(mesh, vpm);
 
   Q.push(std::make_pair(fd,normal_points_outwards));
   cc_is_treated[face_cc_index_map[fd]] = true;
@@ -219,7 +233,7 @@ void extract_hull(TriangleMesh& mesh,
         for(std::size_t i = 1; i < he.size(); ++i){
           Point_3 p2 = get(vpm,target(next(opposite(nhd,mesh),mesh),mesh));
           Point_3 q2 = get(vpm,target(next(opposite(he[i],mesh),mesh),mesh));
-          if(is_in_interior_of_object<K>(q, p, p1, p2,q2)){
+          if(is_in_interior_of_object<Geom_traits>(q, p, p1, p2,q2)){
             nhd = he[i];
           }
         }
@@ -254,6 +268,13 @@ void extract_hull(TriangleMesh& mesh,
                               parameters::vertex_index_map(vim));
 
 }
+
+template <typename TriangleMesh>
+void extract_hull(TriangleMesh& mesh)
+{
+  extract_hull(mesh, parameters::all_default());
+}
+
 } // namespace Polygon_mesh_processing
 
 } // namespace CGAL
