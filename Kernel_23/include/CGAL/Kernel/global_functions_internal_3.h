@@ -70,6 +70,18 @@ angle(const typename K::Point_3 &p,
   return k.angle_3_object()(p, q, r, s);
 }
 
+template <typename K>
+inline
+typename K::Angle
+angle(const typename K::Point_3 &p,
+      const typename K::Point_3 &q,
+      const typename K::Point_3 &r,
+      const typename K::Vector_3 &v,
+      const K &k)
+{
+  return k.angle_3_object()(p, q, r, v);
+}
+
 template < class K >
 inline
 typename K::FT
@@ -405,6 +417,18 @@ compare_distance_to_point(const typename K::Point_3 &p,
 template < class K >
 inline
 typename K::Comparison_result
+compare_slopes(const typename K::Point_3 &p,
+               const typename K::Point_3 &q,
+               const typename K::Point_3 &r,
+               const typename K::Point_3 &s,
+               const K& k)
+{
+  return k.compare_slope_3_object()(p, q, r, s);
+}
+
+template < class K >
+inline
+typename K::Comparison_result
 compare_squared_distance(const typename K::Point_3 &p,
                          const typename K::Point_3 &q,
                          const typename K::FT &d2,
@@ -720,6 +744,16 @@ lexicographically_xyz_smaller(const typename K::Point_3 &p,
                               const K &k)
 {
   return k.less_xyz_3_object()(p, q);
+}
+
+template < class K >
+inline
+typename K::FT
+l_infinity_distance(const typename K::Point_3 &p,
+                    const typename K::Point_3 &q,
+                    const K& k)
+{
+  return k.compute_L_infinity_distance_3_object()(p, q);
 }
 
 template < class K >

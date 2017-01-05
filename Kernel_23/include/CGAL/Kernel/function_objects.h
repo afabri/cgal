@@ -626,9 +626,26 @@ public:
 };
 
 
+  template <typename K>
+  class Compare_slope_3
+  {
+    typedef typename K::FT                 FT;
+    typedef typename K::Point_3 Point_3;
+  public:
+    typedef typename K::Comparison_result  result_type;
 
+    result_type operator()(const Point_3& p, const Point_3& q, const Point_3& r, const Point_3& s) const
+    { 
+      CGAL_assertion((p.z() >= q.z()) && (r.z() >= s.z()));
 
-  //////////////////////
+      if(p.z() == q.z() || r.z() == s.z()){
+        return CGAL::compare(p.z() - q.z(), r.z() - s.z());
+      }
+     
+      return CGAL::compare(squared_distance(p,q) / (p.z() - q.z()) ,
+                           squared_distance(r,s) / (r.z() - s.z())); 
+    } 
+  };
 
 
 
@@ -1135,6 +1152,43 @@ public:
     operator()(const Iso_cuboid_3& r) const
     {
       return (r.max)().z();
+    }
+  };
+
+  template <typename K>
+  class Compute_L_infinity_distance_2
+  {
+    typedef typename K::FT              FT;
+    typedef typename K::Point_2         Point_2;
+
+  public:
+    typedef FT               result_type;
+
+    result_type
+    operator()(const Point_2& p,
+               const Point_2& q) const
+    {
+      return (std::max)( CGAL::abs( K().compute_x_2_object()(p) -  K().compute_x_2_object()(q)),
+                         CGAL::abs( K().compute_y_2_object()(p) -  K().compute_y_2_object()(q)) );
+    }
+  };
+
+  template <typename K>
+  class Compute_L_infinity_distance_3
+  {
+    typedef typename K::FT              FT;
+    typedef typename K::Point_3         Point_3;
+
+  public:
+    typedef FT               result_type;
+
+    result_type
+    operator()(const Point_3& p,
+               const Point_3& q) const
+    {
+      return (std::max)( CGAL::abs( K().compute_x_3_object()(p) -  K().compute_x_3_object()(q)),
+                         (std::max)(CGAL::abs( K().compute_y_3_object()(p) -  K().compute_y_3_object()(q)),
+                                    CGAL::abs( K().compute_z_3_object()(p) -  K().compute_z_3_object()(q))));
     }
   };
 

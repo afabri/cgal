@@ -37,6 +37,7 @@ const CGAL::Point_2<Kernel>& q,
 const CGAL::Point_2<Kernel>& r,
 const CGAL::Point_2<Kernel>& s);
 
+
 /*!
 
 returns `CGAL::OBTUSE`, `CGAL::RIGHT` or `CGAL::ACUTE` depending
@@ -60,6 +61,17 @@ Kernel::FT approximate_dihedral_angle(const CGAL::Point_3<Kernel>& p,
                                       const CGAL::Point_3<Kernel>& q,
                                       const CGAL::Point_3<Kernel>& r,
                                       const CGAL::Point_3<Kernel>& s);
+
+/*!
+
+returns `CGAL::OBTUSE`, `CGAL::RIGHT` or `CGAL::ACUTE` depending
+on the angle formed by the normal vector of the plane `pqr` and `v`. 
+*/
+template <typename Kernel>
+Angle angle(const CGAL::Point_3<Kernel>& p,
+const CGAL::Point_3<Kernel>& q,
+const CGAL::Point_3<Kernel>& r,
+const CGAL::Vector_3<Kernel>& v);
 
 /// @}
 
@@ -803,6 +815,15 @@ template <typename Kernel>
 Comparison_result compare_slopes(const CGAL::Segment_2<Kernel> &s1,
 const CGAL::Segment_2<Kernel> &s2);
 
+/*!
+compares the slopes of the segments `(p,q)` and `(r,s)`,
+with `p.z() >= q.z()` and  `r.z() >= s.z()`.
+*/
+template <typename Kernel>
+Comparison_result compare_slopes(const CGAL::Point_3<Kernel> &p,
+                                 const CGAL::Point_3<Kernel> &q,
+                                 const CGAL::Point_3<Kernel> &r,
+                                 const CGAL::Point_3<Kernel> &s);
 /// @}
 
 /// \defgroup compare_squared_distance_grp CGAL::compare_squared_distance()
@@ -1975,14 +1996,36 @@ const CGAL::Point_3<Kernel>& t);
 /// \defgroup intersection_spherical_grp CGAL::intersection() (3D Spherical Kernel)
 /// \ingroup intersection_grp
 
+
+/// \defgroup l_infinity_distance_grp CGAL::l_infinity_distance()
+/// \ingroup kernel_global_function
+
+/// @{
+
+/*!
+returns the distance between `p` and `q` in the L-infinity metric.
+*/
+template <typename Kernel>
+Kernel::FT l_infinity_distance(const CGAL::Point_2<Kernel> &p,
+                               const CGAL::Point_2<Kernel> &q);
+
+/*!
+returns the distance between `p` and `q` in the L-infinity metric.
+*/
+template <typename Kernel>
+Kernel::FT l_infinity_distance(const CGAL::Point_3<Kernel> &p,
+                               const CGAL::Point_3<Kernel> &q);
+
+/// @}
+
 /// \defgroup left_turn_grp CGAL::left_turn()
 /// \ingroup kernel_global_function
 /// \sa `collinear_grp`
 /// \sa `orientation_grp`
 /// \sa `right_turn_grp`
 
-/// @{
 
+/// @{
 /*!
 returns `true` iff `p`, `q`, and `r` form a left turn.
 */
@@ -1992,7 +2035,6 @@ const CGAL::Point_2<Kernel> &q,
 const CGAL::Point_2<Kernel> &r);
 
 /// @}
-
 
 
 /// \defgroup lexicographically_xy_larger_grp CGAL::lexicographically_xy_larger()

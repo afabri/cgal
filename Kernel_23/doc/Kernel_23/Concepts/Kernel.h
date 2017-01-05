@@ -478,6 +478,11 @@ public:
   typedef unspecified_type  Compute_hw_2;
 
   /*!
+    a model of `Kernel::ComputeLInfinityDistance_2`
+  */
+  typedef unspecified_type  Compute_L_infinity_distance_2;
+
+  /*!
     a model of `Kernel::ComputeXmax_2`
   */
   typedef unspecified_type  Compute_xmax_2;
@@ -1189,6 +1194,11 @@ public:
   typedef unspecified_type  Compute_hw_3;
 
   /*!
+    a model of `Kernel::ComputeLInfinityDistance_3`
+  */
+  typedef unspecified_type  Compute_L_infinity_distance_3;
+
+  /*!
     a model of `Kernel::ComputeDx_3`
   */
   typedef unspecified_type  Compute_dx_3;
@@ -1397,6 +1407,11 @@ public:
     a model of `Kernel::CompareXYZ_3` 
   */ 
   typedef unspecified_type Compare_xyz_3; 
+
+  /*!
+    a model of `Kernel::CompareSlope_3`
+  */
+  typedef unspecified_type Compare_slope_3;
 
   /*!
     a model of `Kernel::CompareSquaredDistance_3`

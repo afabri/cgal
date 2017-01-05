@@ -85,7 +85,16 @@ public:
   Angle operator()(const Kernel::Point_3&p, 
                    const Kernel::Point_3&q, 
                    const Kernel::Point_3&r, 
-                   const Kernel::Point_3&s); 
+                   const Kernel::Point_3&s);   
+
+  /*!
+    returns \ref CGAL::OBTUSE, \ref CGAL::RIGHT or \ref CGAL::ACUTE depending 
+    on the angle formed by the twonormal vector of the plane `pqr` and `v`. 
+  */ 
+  Angle operator()(const Kernel::Point_3&p, 
+                   const Kernel::Point_3&q, 
+                   const Kernel::Point_3&r, 
+                   const Kernel::Vector_3&s); 
   /// @}
 
 }; /* end Kernel::Angle_3 */
@@ -1012,6 +1021,40 @@ public:
   /// @}
 
 }; /* end Kernel::CompareSlope_2 */
+
+
+/*!
+  \ingroup PkgKernel23ConceptsFunctionObjects
+  \cgalConcept
+
+  \cgalRefines `AdaptableFunctor` (with two arguments) 
+
+  \sa `compare_slopes_grp`
+
+*/
+class CompareSlope_3 {
+public:
+
+  /// \name Operations
+  /// A model of this concept must provide:
+  /// @{
+
+
+  /*!
+    compares the slopes of the segments `(p,q)` and `(r,s)`
+    with `p.z() >= q.z()` and  `r.z() >= s.z()`.
+  */ 
+  Comparison_result operator()(const Kernel::Point_3& p, 
+                               const Kernel::Point_3& q,
+                               const Kernel::Point_3& r, 
+                               const Kernel::Point_3& s); 
+
+
+  /// @}
+
+}; /* end Kernel::CompareSlope_2 */
+
+
 
 /*!
   \ingroup PkgKernel23ConceptsFunctionObjects
@@ -2323,6 +2366,7 @@ public:
 
 }; /* end Kernel::ComputeHw_2 */
 
+
 /*!
   \ingroup PkgKernel23ConceptsFunctionObjects
   \cgalConcept
@@ -2488,6 +2532,54 @@ public:
 
   /// @}
 };
+
+/*!
+  \ingroup PkgKernel23ConceptsFunctionObjects
+  \cgalConcept
+
+  \cgalRefines `AdaptableFunctor` (with 2 arguments)
+
+*/
+class ComputeLInfinityDistance_2 {
+public:
+  /// \name Operations
+  /// A model of this concept must provide:
+  /// @{
+
+  /*!
+    returns the distance between the two points in the L-infinity metric.
+  */
+  Kernel::FT operator()(const Kernel::Point_2& p,
+                        const Kernel::Point_2& q) const;
+
+
+  /// @}
+
+}; /* end Kernel::ComputeLInfinityDistance_2 */
+/*!
+  \ingroup PkgKernel23ConceptsFunctionObjects
+  \cgalConcept
+
+  \cgalRefines `AdaptableFunctor`
+
+*/
+class ComputeLInfinityDistance_3 {
+public:
+
+  /// \name Operations
+  /// A model of this concept must provide:
+  /// @{
+
+  /*!
+    returns the distance between the two points in the L-infinity metric.
+  */
+  Kernel::FT operator()(const Kernel::Point_3& p,
+                        const Kernel::Point_3& q) const;
+
+
+  /// @}
+
+}; /* end Kernel::ComputeLInfinityDistance_3 */
 
 /*!
   \ingroup PkgKernel23ConceptsFunctionObjects
@@ -2908,7 +3000,7 @@ public:
   */
   Kernel::FT operator()(const Kernel::WeightedPoint_2& p) const; 
 
-}; /* end Kernel::ComputeWeight_2
+}; /* end Kernel::ComputeWeight_2 */
 
 /*!
   \ingroup PkgKernel23ConceptsFunctionObjects
@@ -2929,7 +3021,7 @@ public:
   */
   Kernel::FT operator()(const Kernel::WeightedPoint_3& p) const; 
 
-}; /* end Kernel::ComputeWeight_3
+}; /* end Kernel::ComputeWeight_3 */
 
 
 
@@ -6920,7 +7012,7 @@ public:
   */ 
   Kernel::Point_2 operator()(const Kernel::Weighted_point_2& p, const Kernel::Weighted_point_2& q, const Kernel::Weighted_point_2& s);
 
-}; /* end Kernel::ConstructWeightedCircumcenter_2
+}; /* end Kernel::ConstructWeightedCircumcenter_2 */
 
 
 /*!
@@ -6944,7 +7036,7 @@ public:
   */ 
   Kernel::Point_3 operator()(const Kernel::Weighted_point_3& p, const Kernel::Weighted_point_3& q, const Kernel::Weighted_point_3& r, const Kernel::Weighted_point_3& s);
 
-}; /* end Kernel::ConstructWeightedCircumcenter_3
+}; /* end Kernel::ConstructWeightedCircumcenter_3 */
 
 
 
@@ -8107,7 +8199,7 @@ public:
 
   \cgalRefines `AdaptableFunctor` (with two or three arguments) 
 
-  \sa `CGAL::intersection` 
+  \sa intersection_linear_grp
   \sa `CGAL::cpp11::result_of`
 
 */
@@ -8121,7 +8213,7 @@ public:
   /*!
     computes the intersection region of two geometrical 
     objects of type `Type1` and `Type2`. 
-    For details see the reference manual page for `intersection()`.
+    For details see the reference manual page for \ref intersection_linear_grp.
   */ 
   CGAL::cpp11::result_of<Kernel::Intersect_3(Type1, Type2)>::type 
  operator()(Type1 obj1, Type2 obj2); 
@@ -9358,4 +9450,4 @@ public:
 
 }; /* end Kernel::SideOfOrientedSphere_3 */
 
-}
+} // end of Kernel namespace

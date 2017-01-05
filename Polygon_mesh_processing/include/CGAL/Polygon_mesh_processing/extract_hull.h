@@ -56,14 +56,12 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
   typedef typename boost::graph_traits<TriangleMesh>::vertex_descriptor vertex_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::face_descriptor face_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
-  Random rng;
   typedef typename boost::property_traits<Vpm>::value_type Point_3;
   typedef typename Geom_traits::Vector_3 Vector_3;
   typedef typename Geom_traits::Ray_3 Ray_3;
   typedef typename Geom_traits::Segment_3 Segment_3;
   typedef typename Geom_traits::Triangle_3 Triangle_3;
 
-  face_descriptor fd;
   typedef typename Geom_traits::FT FT;
   Point_3 pmax = get(vpm, *vertices(mesh).first);
 
@@ -156,8 +154,18 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
       }
     }
   }
+
+  if(emax_take_opposite){
+    emax = opposite(emax,mesh);
+  }
+  // As we have a volume the face we have found cannot be vertical
   
-  return std::make_pair(fd,true);
+  Angle a = angle(get(vpm, target(emax,mesh)),
+                  get(vpm, target(next(emax,mesh),mesh)),
+                  get(vpm, target(next(emax,mesh),mesh)),
+                  Vector_3(0,0,1));
+
+  return std::make_pair(face(emax,mesh),a == ACUTE);
 
 }
 

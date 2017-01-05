@@ -59,6 +59,15 @@ angle(const Point_3<K> &p, const Point_3<K> &q,
   return internal::angle(p, q, r, s, K());
 }
 
+template <typename K>
+inline
+Angle
+angle(const Point_3<K> &p, const Point_3<K> &q,
+      const Point_3<K> &r, const Vector_3<K> &v)
+{
+  return internal::angle(p, q, r, v, K());
+}
+
 template < class K >
 inline
 typename K::FT
@@ -342,6 +351,17 @@ compare_distance_to_point(const Point_3<K> &p,
                           const Point_3<K> &r)
 {
   return internal::compare_distance_to_point(p, q, r, K());
+}
+
+template < class K >
+inline
+typename K::Comparison_result
+compare_slopes(const Point_3<K> &p,
+               const Point_3<K> &q,
+               const Point_3<K> &r,
+               const Point_3<K> &s)
+{
+  return internal::compare_slopes(p, q, r, s, K());
 }
 
 template < class K >
@@ -638,6 +658,13 @@ lexicographically_xyz_smaller_or_equal(const Point_3<K> &p,
                                        const Point_3<K> &q)
 {
   return internal::lexicographically_xyz_smaller_or_equal(p, q, K());
+}
+
+template < class K >
+typename K::FT
+l_infinity_distance(const Point_3<K> &p, const Point_3<K> &q)
+{
+  return internal::l_infinity_distance(p,q, K());
 }
 
 template < class K >

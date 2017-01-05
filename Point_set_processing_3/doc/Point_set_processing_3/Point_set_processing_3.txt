@@ -124,7 +124,7 @@ these attributes in user-defined containers.
 
 \cgalExample{Point_set_processing_3/read_ply_points_with_colors_example.cpp}
 
-\section Point_set_processing_3Analysis Analysis
+\section Point_set_processing_3Spacing Average Spacing
 
 Function `compute_average_spacing()` computes the average
 spacing of all input points to their `k` nearest neighbor points,
@@ -146,6 +146,58 @@ found in other \cgal components:
 - `centroid()`
 - `bounding_box()`
 - `Min_sphere_of_spheres_d<Traits>`
+
+\section Point_set_processing_3Scale Automatic Scale Estimation
+
+Point sets are often used to sample objects with a higher dimension,
+typically a curve in 2D or a surface in 3D. In such cases, finding the
+scale of the objet is crucial, that is to say finding the minimal
+number of points (or the minimal local range) such that the subset of
+points has the appearance of a curve in 2D or a surface in 3D
+\cgalCite{cgal:gcsa-nasr-13}.
+
+\cgal provides 2 functions that automatically estimate the scale of a
+2D point set sampling a curve or a 3D point set sampling a surface:
+
+- `estimate_global_k_neighbor_scale()`
+- `estimate_global_range_scale()`
+
+Functions such as `jet_estimate_normals()` or
+`remove_outliers()` require a K neighbor scale while others such as
+`grid_simplify_point_set()` require a range
+scale. `vcm_estimate_normals()` is an example of a function that
+accepts both.
+
+In some specific cases, the scale of a point set might not be
+homogeneous (for example if the point set contains variable
+noise). \cgal also provides 2 functions that automatically estimate
+the scales of a point set at a set of user-defined query points:
+
+- `estimate_local_k_neighbor_scales()`
+- `estimate_local_range_scales()`
+
+The 4 functions presented here work both with 2D points and 3D points
+and they shouldn't be used if the point sets do not sample a curve in
+2D or a surface in 3D.
+
+\subsection Point_set_processing_3Example_scale_estimation_global Global Scale Example 
+
+The following example reads a 3D point set in the `xyz` format and:
+
+- Estimates the K neighbor global scale
+- Uses it to smooth the point set
+- Estimates the range global scale
+- Uses it to simplify the point set
+
+\cgalExample{Point_set_processing_3/scale_estimation_example.cpp}
+
+\subsection Point_set_processing_3Example_scale_estimation_local Local Scales Example
+
+This second example generates a 2D point set sampling a circle with
+variable noise. It then estimates the scale at 3 different query
+points in the domain.
+
+\cgalExample{Point_set_processing_3/scale_estimation_2d_example.cpp}
 
 
 
@@ -406,6 +458,60 @@ is greater than a given threshold.
 The following example reads a point set from a file, estimates the
 points that are on sharp edges:
 \cgalExample{Point_set_processing_3/edges_example.cpp}
+
+
+\section Point_set_processing_3Structuring Structuring
+
+The function `structure_point_set()` generates a structured version of the
+input point set. It requires that a shape detection algorithm is first applied
+to the point set (see \ref Chapter_Point_Set_Shape_Detection). It is based on
+the article \cgalCite{cgal:la-srpss-13}.
+
+- __Planes__: inliers of each detected plane are replaced by sets of
+noise-free points sampled at the vertices of a regular grid: this is
+achieved by filling an occupancy grid aligned on the principal
+components of the inlier sets with a spacing lower than \f$\sqrt{2}\f$
+times the user-defined tolerance.
+
+- __Creases__: adjacencies between 2 planes are detected and regularly
+resampled on an occupancy array along the edge with a spacing equal to
+twice the user-defined tolerance.
+
+- __Corners__: 3-cycles are detected from the primitive adjacency
+graph and sampled using the exact intersection point of the 3 planes
+(provided it exists and remains in the given tolerance). These corners
+are also locally clustered to former corners of degree higher than 3.
+
+
+This algorithm is well suited to point sets sampled on surfaces with
+planar sections and sharp edges.
+
+\cgalFigureBegin{Point_set_processing_3figstructuring,structuring.png}
+Point set structuring. Left: input raw point set. Right: structured point set.
+\cgalFigureEnd
+
+Structure information of points can be used to perform feature
+preserving reconstruction (see
+\ref AFSR_Example_sharp_features "Advancing Front Surface Reconstruction"
+for example). More specifically, the class storing a point set with
+structure provides the user with a method
+`Point_set_with_structure::facet_coherence()` that estimates if a
+triplet of points form a coherent facet.
+
+\cgalFigureBegin{Point_set_processing_3figstructuring, structuring_coherence.png}
+(a) Input point set (and structured output); (b) output with many
+incoherent facets; (c) output with all facets coherent. i, j and k
+each corresponds to a primitive index.
+\cgalFigureEnd
+
+
+
+\subsection Point_set_processing_3Example_9 Example
+
+The following example applies shape detection followed by structuring to a
+point set:
+\cgalExample{Point_set_processing_3/structuring_example.cpp}
+
 
 
 \section Point_set_processing_3ImplementationHistory Implementation History

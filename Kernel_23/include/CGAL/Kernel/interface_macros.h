@@ -122,6 +122,8 @@ CGAL_Kernel_pred_RT(Compare_distance_3,
 		    compare_distance_3_object)
 CGAL_Kernel_pred(Compare_slope_2,
 		 compare_slope_2_object)
+CGAL_Kernel_pred(Compare_slope_3,
+		 compare_slope_3_object)
 CGAL_Kernel_pred(Compare_squared_distance_2,
 		 compare_squared_distance_2_object)
 CGAL_Kernel_pred(Compare_squared_distance_3,
@@ -180,6 +182,10 @@ CGAL_Kernel_cons(Compute_determinant_2,
 		 compute_determinant_2_object)
 CGAL_Kernel_cons(Compute_determinant_3,
 		 compute_determinant_3_object)
+CGAL_Kernel_cons(Compute_L_infinity_distance_2,
+		 compute_L_infinity_distance_2_object)
+CGAL_Kernel_cons(Compute_L_infinity_distance_3,
+                 compute_L_infinity_distance_3_object)
 CGAL_Kernel_cons(Compute_scalar_product_2,
 		 compute_scalar_product_2_object)
 CGAL_Kernel_cons(Compute_scalar_product_3,
