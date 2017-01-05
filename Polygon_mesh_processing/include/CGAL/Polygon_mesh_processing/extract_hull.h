@@ -63,15 +63,17 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
   typedef typename Geom_traits::Triangle_3 Triangle_3;
 
   typedef typename Geom_traits::FT FT;
-  Point_3 pmax = get(vpm, *vertices(mesh).first);
+  Point_3 pmax = get(vpm, target(*(halfedges(mesh).first),mesh));
 
   // find a point with maximal z-coordinate
-  BOOST_FOREACH(vertex_descriptor vd, vertices(mesh)){
-    if(pmax.z() < get(vpm,vd).z()){
-      pmax = get(vpm,vd);
+  BOOST_FOREACH(halfedge_descriptor hd, halfedges(mesh)){
+    Point_3 p = get(vpm,target(hd,mesh));
+    if(pmax.z() < p.z()){
+      pmax = p;
     }
   }
   
+  std::cerr << "pmax = "<< pmax << std::endl;
   // find all halfedges where the target point == pmax
   // attention: they may be border halfedges
   std::vector<halfedge_descriptor> he_pmax;
@@ -80,7 +82,8 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
       he_pmax.push_back(hd);
       }
   }
-
+  
+  std::cerr << "|he_pmax| = " << he_pmax.size() << std::endl;
   
   // among these halfedges find the set of highest halfedges
   halfedge_descriptor emax = he_pmax.front();
@@ -112,7 +115,8 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
       he_emax.push_back(emax);
     }
   }
-
+  std::cerr << "|he_emax| = " << he_emax.size() << std::endl;
+  
   // he_emax now contains halfedges incident to the highest segment
   // For each of them we look at the incident face
   // and keep the face with the highest 3rd vertex
@@ -133,6 +137,7 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
     }
   }
 
+  std::cerr << "got here"<< std::endl;
   bool emax_take_opposite = false;
   // We now look at the opposite halfedges of he_max
   // We do not skip the first one this time
@@ -160,9 +165,13 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
   }
   // As we have a volume the face we have found cannot be vertical
   
+  std::cerr << "face\n" 
+            << get(vpm, target(next(emax,mesh),mesh)) << std::endl
+            << get(vpm, target(next(emax,mesh),mesh)) << std::endl;
+
   Angle a = angle(get(vpm, target(emax,mesh)),
                   get(vpm, target(next(emax,mesh),mesh)),
-                  get(vpm, target(next(emax,mesh),mesh)),
+                  get(vpm, target(prev(emax,mesh),mesh)),
                   Vector_3(0,0,1));
 
   return std::make_pair(face(emax,mesh),a == ACUTE);
