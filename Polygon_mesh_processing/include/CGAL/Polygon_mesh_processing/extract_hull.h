@@ -53,6 +53,7 @@ template <typename Geom_traits, typename TriangleMesh, typename Vpm>
 std::pair<typename boost::graph_traits<TriangleMesh>::face_descriptor,bool>
 face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
 {
+  typedef typename boost::graph_traits<TriangleMesh>::vertex_descriptor vertex_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::face_descriptor face_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
   Random rng;
@@ -62,68 +63,102 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
   typedef typename Geom_traits::Segment_3 Segment_3;
   typedef typename Geom_traits::Triangle_3 Triangle_3;
 
-  face_descriptor fd = *faces(mesh).first;
-  halfedge_descriptor hd = halfedge(fd,mesh);
-  Vector_3 n = compute_face_normal(fd,mesh);
-  Point_3 centroid_3 = centroid(get(vpm, source(hd,mesh)),
-                                get(vpm, target(hd,mesh)),
-                                get(vpm, target(next(hd,mesh),mesh)));
+  face_descriptor fd;
+  typedef typename Geom_traits::FT FT;
+  Point_3 pmax = get(vpm, *vertices(mesh).first);
 
-
-  face_descriptor farthest_fd;
-  bool normal_points_outwards = true;
-
-  while(true){
-    double sd = 0;
-    farthest_fd = fd;
-    Ray_3 ray(centroid_3,n);
-    bool perturb = false;
-
-    BOOST_FOREACH(face_descriptor fd2 , faces(mesh)){
-      if(fd == fd2){
-        continue;
-      }
-      halfedge_descriptor hd2 = halfedge(fd2,mesh);
-      Triangle_3 triangle(get(vpm, source(hd2,mesh)),
-                          get(vpm, target(hd2,mesh)),
-                          get(vpm, target(next(hd2,mesh),mesh)));
-
-      typename cpp11::result_of<
-        typename Geom_traits::Intersect_3(Triangle_3,Ray_3)
-          >::type res  = intersection(ray,triangle);
-
-      if(! res){
-        continue;
-      }
-      if (const Point_3 *p = boost::get<Point_3>(&*res)){
-        double sd2 = squared_distance(*p,centroid_3);
-        if(sd2 > sd){
-          sd = sd2;
-          farthest_fd = fd2;
-          continue;
-        }
-      } else if (const Segment_3 *s = boost::get<Segment_3>(&*res)){
-        perturb = true;
-        break;
-      }
-    }
-    if(perturb){
-      n = Vector_3(n.x()+rng.get_double(0.99,1.01),
-                   n.y()+rng.get_double(0.99,1.01),
-                   n.z()+rng.get_double(0.99,1.01));
-    }else{
-      break;
+  // find a point with maximal z-coordinate
+  BOOST_FOREACH(vertex_descriptor vd, vertices(mesh)){
+    if(pmax.z() < get(vpm,vd).z()){
+      pmax = get(vpm,vd);
     }
   }
-  if(farthest_fd != fd){
-    halfedge_descriptor hd = halfedge(farthest_fd,mesh);
-    normal_points_outwards = orientation(get(vpm, source(hd,mesh)),
-                                               get(vpm, target(hd,mesh)),
-                                               get(vpm, target(next(hd,mesh),mesh)),
-                                               centroid_3) == NEGATIVE;
+  
+  // find all halfedges where the target point == pmax
+  // attention: they may be border halfedges
+  std::vector<halfedge_descriptor> he_pmax;
+  BOOST_FOREACH(halfedge_descriptor hd, halfedges(mesh)){
+    if( get(vpm,target(hd,mesh)) == pmax ){
+      he_pmax.push_back(hd);
+      }
   }
 
-  return std::make_pair(farthest_fd, normal_points_outwards);
+  
+  // among these halfedges find the set of highest halfedges
+  halfedge_descriptor emax = he_pmax.front();
+  
+  std::vector<halfedge_descriptor> he_emax;
+  he_emax.push_back(emax);
+  
+  for(typename std::vector<halfedge_descriptor>::iterator it = ++(he_pmax.begin());
+      it != he_pmax.end();
+      ++it){
+    assert( get(vpm,target(emax, mesh)) == get(vpm,target(*it, mesh)) );
+    assert( get(vpm,target(emax, mesh)) == pmax );
+
+    if(get(vpm,source(emax,mesh)) == get(vpm,source(*it,mesh))){
+      he_emax.push_back(*it);
+      continue;
+    }
+    Comparison_result cr = compare_slopes(pmax,
+                                          get(vpm,source(emax, mesh)),
+                                          pmax,
+                                          get(vpm,source(*it, mesh)));
+    if(cr == EQUAL){
+      // keep only those that at the same time share the segment of emax
+      
+    } else if(cr == SMALLER){
+      // we found a higher halfedge so reset emax and the collection
+      emax = *it;
+      he_emax.clear();
+      he_emax.push_back(emax);
+    }
+  }
+
+  // he_emax now contains halfedges incident to the highest segment
+  // For each of them we look at the incident face
+  // and keep the face with the highest 3rd vertex
+  emax = he_emax.front();
+  for(typename std::vector<halfedge_descriptor>::iterator it = ++(he_emax.begin());
+      it != he_emax.end();
+      ++it){
+    assert( get(vpm,target(*it, mesh)) == pmax );
+    if(! is_border(*it,mesh)){
+      vertex_descriptor n_emax = target(next(emax,mesh),mesh);
+      vertex_descriptor n_it = target(next(*it,mesh),mesh);
+      if(compare_slopes(pmax,
+                        get(vpm, n_it),
+                        pmax,
+                        get(vpm, n_emax)) == SMALLER){
+        emax = *it;
+      }
+    }
+  }
+
+  bool emax_take_opposite = false;
+  // We now look at the opposite halfedges of he_max
+  // We do not skip the first one this time
+  for(typename std::vector<halfedge_descriptor>::iterator it = he_emax.begin();
+      it != he_emax.end();
+      ++it){
+    halfedge_descriptor oit = opposite(*it,mesh);
+    halfedge_descriptor oemax = opposite(emax,mesh);
+    assert( get(vpm,source(oit, mesh)) == pmax );
+    if(! is_border(oit, mesh)){
+      vertex_descriptor n_oemax = target(next(oemax,mesh),mesh);
+      vertex_descriptor n_oit = target(next(oit,mesh),mesh);
+      if(compare_slopes(pmax,
+                        get(vpm, n_oit),
+                        pmax,
+                        get(vpm, n_oemax)) == SMALLER){
+        emax = *it;
+        emax_take_opposite = true;
+      }
+    }
+  }
+  
+  return std::make_pair(fd,true);
+
 }
 
 } // namespace internal
