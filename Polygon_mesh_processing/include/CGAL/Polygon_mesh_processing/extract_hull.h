@@ -73,7 +73,7 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
     }
   }
   
-  std::cerr << "pmax = "<< pmax << std::endl;
+  //  std::cerr << "pmax = "<< pmax << std::endl;
   // find all halfedges where the target point == pmax
   // attention: they may be border halfedges
   std::vector<halfedge_descriptor> he_pmax;
@@ -83,39 +83,42 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
       }
   }
   
-  std::cerr << "|he_pmax| = " << he_pmax.size() << std::endl;
+  //std::cerr << "|he_pmax| = " << he_pmax.size() << std::endl;
   
   // among these halfedges find the set of highest halfedges
   halfedge_descriptor emax = he_pmax.front();
   
   std::vector<halfedge_descriptor> he_emax;
   he_emax.push_back(emax);
-  
+  std::cerr << get(vpm,source(emax, mesh)) << "  " << pmax << std::endl;
   for(typename std::vector<halfedge_descriptor>::iterator it = ++(he_pmax.begin());
       it != he_pmax.end();
       ++it){
+    //std::cerr << "candidate: "<< get(vpm,source(*it, mesh)) << "  " << pmax << std::endl;
     assert( get(vpm,target(emax, mesh)) == get(vpm,target(*it, mesh)) );
     assert( get(vpm,target(emax, mesh)) == pmax );
-
+  
     if(get(vpm,source(emax,mesh)) == get(vpm,source(*it,mesh))){
       he_emax.push_back(*it);
+      //std::cerr << "continue"<< std::endl;
       continue;
     }
     Comparison_result cr = compare_slopes(pmax,
-                                          get(vpm,source(emax, mesh)),
+                                          get(vpm,source(*it, mesh)),
                                           pmax,
-                                          get(vpm,source(*it, mesh)));
+                                          get(vpm,source(emax, mesh)));
     if(cr == EQUAL){
+      //std::cerr << "cr == EQUAL" << std::endl;
       // keep only those that at the same time share the segment of emax
-      
     } else if(cr == SMALLER){
       // we found a higher halfedge so reset emax and the collection
+      //std::cerr << "cr == SMALLER" << std::endl;
       emax = *it;
       he_emax.clear();
       he_emax.push_back(emax);
     }
   }
-  std::cerr << "|he_emax| = " << he_emax.size() << std::endl;
+  //std::cerr << "|he_emax| = " << he_emax.size() << std::endl;
   
   // he_emax now contains halfedges incident to the highest segment
   // For each of them we look at the incident face
@@ -137,7 +140,6 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
     }
   }
 
-  std::cerr << "got here"<< std::endl;
   bool emax_take_opposite = false;
   // We now look at the opposite halfedges of he_max
   // We do not skip the first one this time
@@ -164,11 +166,12 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
     emax = opposite(emax,mesh);
   }
   // As we have a volume the face we have found cannot be vertical
-  
+  /*
   std::cerr << "face\n" 
-            << get(vpm, target(next(emax,mesh),mesh)) << std::endl
-            << get(vpm, target(next(emax,mesh),mesh)) << std::endl;
-
+            << get(vpm, target(emax,mesh)) << std::endl
+            << get(vpm, target(next(emax,mesh),mesh))  << std::endl
+            << get(vpm, target(prev(emax,mesh),mesh))  << std::endl << std::endl;
+  */
   Angle a = angle(get(vpm, target(emax,mesh)),
                   get(vpm, target(next(emax,mesh),mesh)),
                   get(vpm, target(prev(emax,mesh),mesh)),
