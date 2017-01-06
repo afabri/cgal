@@ -30,7 +30,6 @@
 #include <CGAL/Polygon_mesh_processing/stitch_borders.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
 #include <CGAL/intersection_of_Polyhedra_3_refinement_visitor.h>
-#include <CGAL/Random.h>
 #include <CGAL/boost/graph/helpers.h>
 
 #include <boost/foreach.hpp>
@@ -66,6 +65,7 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
   Point_3 pmax = get(vpm, target(*(halfedges(mesh).first),mesh));
 
   // find a point with maximal z-coordinate
+  // loop over the halfedges and not the vertices as they may be isolated
   BOOST_FOREACH(halfedge_descriptor hd, halfedges(mesh)){
     Point_3 p = get(vpm,target(hd,mesh));
     if(pmax.z() < p.z()){
@@ -90,7 +90,7 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
   
   std::vector<halfedge_descriptor> he_emax;
   he_emax.push_back(emax);
-  std::cerr << get(vpm,source(emax, mesh)) << "  " << pmax << std::endl;
+  // std::cerr << get(vpm,source(emax, mesh)) << "  " << pmax << std::endl;
   for(typename std::vector<halfedge_descriptor>::iterator it = ++(he_pmax.begin());
       it != he_pmax.end();
       ++it){
@@ -103,10 +103,10 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
       //std::cerr << "continue"<< std::endl;
       continue;
     }
-    Comparison_result cr = compare_slopes(pmax,
-                                          get(vpm,source(*it, mesh)),
-                                          pmax,
-                                          get(vpm,source(emax, mesh)));
+    Comparison_result cr = compare_slope(pmax,
+                                         get(vpm,source(*it, mesh)),
+                                         pmax,
+                                         get(vpm,source(emax, mesh)));
     if(cr == EQUAL){
       //std::cerr << "cr == EQUAL" << std::endl;
       // keep only those that at the same time share the segment of emax
@@ -131,10 +131,10 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
     if(! is_border(*it,mesh)){
       vertex_descriptor n_emax = target(next(emax,mesh),mesh);
       vertex_descriptor n_it = target(next(*it,mesh),mesh);
-      if(compare_slopes(pmax,
-                        get(vpm, n_it),
-                        pmax,
-                        get(vpm, n_emax)) == SMALLER){
+      if(compare_slope(pmax,
+                       get(vpm, n_it),
+                       pmax,
+                       get(vpm, n_emax)) == SMALLER){
         emax = *it;
       }
     }
@@ -152,10 +152,10 @@ face_on_hull(const TriangleMesh& mesh, const Vpm& vpm)
     if(! is_border(oit, mesh)){
       vertex_descriptor n_oemax = target(next(oemax,mesh),mesh);
       vertex_descriptor n_oit = target(next(oit,mesh),mesh);
-      if(compare_slopes(pmax,
-                        get(vpm, n_oit),
-                        pmax,
-                        get(vpm, n_oemax)) == SMALLER){
+      if(compare_slope(pmax,
+                       get(vpm, n_oit),
+                       pmax,
+                       get(vpm, n_oemax)) == SMALLER){
         emax = *it;
         emax_take_opposite = true;
       }
