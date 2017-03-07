@@ -937,7 +937,7 @@ Scene_surface_mesh_item::select(double orig_x,
         // The computation of the nearest vertex may be costly.  Only
         // do it if some objects are connected to the signal
         // 'selected_vertex'.
-        if(QObject::receivers(SIGNAL(selected_vertex(int))) > 0)
+        if(QObject::receivers(SIGNAL(selected_vertex(std::size_t))) > 0)
         {
 
           SMesh::Halfedge_around_face_circulator he_it(sm->halfedge(selected_face),*sm), around_end(he_it);
@@ -1043,4 +1043,7 @@ QList<Scene_surface_mesh_item::Kernel::Triangle_3> Scene_surface_mesh_item_priv:
   return res;
 }
 
-
+void Scene_surface_mesh_item::invalidate_aabb_tree()
+{
+ delete_aabb_tree(this);
+}
