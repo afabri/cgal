@@ -32,6 +32,7 @@
 
 #include <boost/foreach.hpp>
 #include "triangulate_primitive.h"
+#include "Color_map.h"
 
 namespace PMP = CGAL::Polygon_mesh_processing;
 typedef Polyhedron::Traits Traits;
@@ -902,7 +903,6 @@ Scene_polyhedron_item::~Scene_polyhedron_item()
     delete d;
 }
 
-#include "Color_map.h"
 
 void
 Scene_polyhedron_item_priv::
