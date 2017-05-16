@@ -396,7 +396,6 @@ public:
 
     Point operator()(const Point& p, const Primitive& pr, const Point& bound) const
     {
-  std:: cerr << "X"<< std::endl;
       GeomTraits geom_traits;
       Point closest_point = pr.secondary_tree->closest_point(p);
       return

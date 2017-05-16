@@ -66,6 +66,19 @@ struct Primary_primitive {
 
 } // namespace CGAL 
 
+
+Point brute_force(const Point& query, const std::vector<CGAL::Primary_primitive<Tree,std::size_t> >& primary_primitives)
+{
+  Point p = primary_primitives[0].secondary_tree->closest_point(query);
+  for(int i = 1; i < primary_primitives.size(); i++){
+    Point p2 = primary_primitives[i].secondary_tree->closest_point(query);
+    if(CGAL::squared_distance(query,p2) < CGAL::squared_distance(query,p)){
+      p = p2;
+    }
+  }
+  return p;
+}
+
 typedef CGAL::Primary_primitive<Tree,std::size_t> Primary_primitive;
 typedef CGAL::Primary_AABB_traits<K, Primary_primitive> Primary_AABB_traits;
 typedef CGAL::AABB_tree<Primary_AABB_traits> Primary_tree;
@@ -91,27 +104,15 @@ int main(int argc, char* argv[])
     // query point
     Point query(0.0, 0.0, 0.0);
 
-    ptree.closest_point(query);
+    Point res = ptree.closest_point(query);
+#if COMPARE_RESULT
+    Point bres = brute_force(query, primary_primitives);
+    if(res != bres){
+      std::cerr << "Error: " << res << " " << bres << std::endl;
+    }
+#endif
+    K::Ray_3 ray_query(K::Point_3(1.0, 0.0, 0.0), K::Point_3(0.0, 1.0, 0.0));
+    std::cout << ptree.number_of_intersected_primitives(ray_query) << std::endl;
 
-#if 0
-    // computes squared distance from query
-    FT sqd = tree.squared_distance(query);
-    std::cout << "squared distance: " << sqd << std::endl;
-
-    // computes closest point
-    Point closest = tree.closest_point(query);
-    std::cout << "closest point: " << closest << std::endl;
-
-    // computes closest point and primitive id
-    Point_and_primitive_id pp = tree.closest_point_and_primitive(query);
-    Point closest_point = pp.first;
-    Polyhedron::Face_handle f = pp.second; // closest primitive id
-    std::cout << "closest point: " << closest_point << std::endl;
-    std::cout << "closest triangle: ( "
-              << f->halfedge()->vertex()->point() << " , " 
-              << f->halfedge()->next()->vertex()->point() << " , "
-              << f->halfedge()->next()->next()->vertex()->point()
-              << " )" << std::endl;
-#endif 
     return EXIT_SUCCESS;
 }
