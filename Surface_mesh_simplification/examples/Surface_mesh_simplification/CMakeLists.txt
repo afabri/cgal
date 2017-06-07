@@ -55,7 +55,7 @@ include_directories( BEFORE ../../include )
 include( CGAL_CreateSingleSourceCGALProgram )
 
 
-create_single_source_cgal_program( "parallel2.cpp" )
+create_single_source_cgal_program( "parallel.cpp" )
 create_single_source_cgal_program( "edge_collapse_constrain_sharp_edges.cpp" )
 create_single_source_cgal_program( "edge_collapse_constrained_border_polyhedron.cpp" )
 create_single_source_cgal_program( "edge_collapse_enriched_polyhedron.cpp" )
