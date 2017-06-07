@@ -40,26 +40,26 @@ public:
   EdgeIterator()
     : edges(NULL)
   {
-    std::cerr << "default construct" << std::endl;
-}
+    //    std::cerr << "default construct" << std::endl;
+  }
 
   EdgeIterator(const EdgeIterator& other)
     : end(other.end), edges(other.edges), it(other.it)
   {
-    std::cerr << "copy construct" << std::endl;
-}
+    // std::cerr << "copy construct" << std::endl;
+  }
 
   // for end()
   EdgeIterator(int)
     : end(true),edges(NULL)
   {
-    std::cerr << "end construct" << std::endl;
+    // std::cerr << "end construct" << std::endl;
 }
 
   EdgeIterator(const G& g)
     : end(false)
   {
-    std::cerr << "G construct" << std::endl;
+    //    std::cerr << "G construct" << std::endl;
     edges = boost::shared_ptr<std::vector<edge_descriptor> >(new std::vector<edge_descriptor>());
     typedef typename boost::graph_traits<G>::face_descriptor face_descriptor;
     // TODO: replace faces by a functor that writes directly into edges
@@ -75,13 +75,13 @@ public:
        halfedge_descriptor hop = opposite(hd,g.g);
        if(is_border(hop,g.g) || g.ecmap[edge(hd,g.g)] || (fd < face(hop ,g.g))){
           edges->push_back(edge(hd,g.g));
-          std::cerr << edges->back() << std::endl;
+          //          std::cerr << edges->back() << std::endl;
         }
       }
     }
-    std::cerr << &(*edges) << std::endl;
+    //    std::cerr << &(*edges) << std::endl;
     it = edges->begin();
-    std::cerr << "*it = "<< *it << std::endl;
+    // std::cerr << "*it = "<< *it << std::endl;
   }
   
 
@@ -204,6 +204,15 @@ halfedge(typename boost::graph_traits<G>::vertex_descriptor v,
 }
 
 template <typename G, typename ECMap>
+std::pair<typename boost::graph_traits<G>::halfedge_descriptor,bool>
+halfedge(typename boost::graph_traits<G>::vertex_descriptor v,
+         typename boost::graph_traits<G>::vertex_descriptor w,
+         const ComponentGraph<G,ECMap>& cg)
+{
+  return halfedge(v, w, cg.g);
+}
+
+template <typename G, typename ECMap>
 typename boost::graph_traits<G>::edge_descriptor
 edge(typename boost::graph_traits<G>::halfedge_descriptor h,
      const ComponentGraph<G,ECMap>& cg)
@@ -225,6 +234,14 @@ source(typename boost::graph_traits<G>::halfedge_descriptor h,
      const ComponentGraph<G,ECMap>& cg)
 {
   return source(h, cg.g);
+}
+
+template <typename G, typename ECMap>
+typename boost::graph_traits<G>::degree_size_type
+degree(typename boost::graph_traits<G>::vertex_descriptor v,
+     const ComponentGraph<G,ECMap>& cg)
+{
+  return degree(v, cg.g);
 }
 
 template <typename G, typename ECMap>
@@ -359,22 +376,26 @@ int main(int argc, char** argv )
   }
   typedef ComponentGraph<Surface_mesh,ECMap>  Component_graph;
   Component_graph cg(sm, ecmap, cc_seed[0]); 
-
+#if 0
   boost::graph_traits<ComponentGraph<Surface_mesh,ECMap> >::edge_iterator b,e;
   for(boost::tie(b,e) = edges(cg); b!= e; ++b){
     boost::graph_traits<ComponentGraph<Surface_mesh,ECMap> >::edge_descriptor ed = *b;
     std::cout << ed << std::endl;
   }
+#endif
 
-
-  SMS::Count_ratio_stop_predicate<Component_graph> stop(0.1);
+  SMS::Count_ratio_stop_predicate<Component_graph> stop(0.5);
   SMS::edge_collapse(cg,
                      stop
                      ,CGAL::parameters::vertex_index_map(get(boost::vertex_index,sm))
                      .halfedge_index_map(get(boost::halfedge_index,sm))
                      .vertex_point_map(get(CGAL::vertex_point,sm)));
 
- 
+  sm.collect_garbage();
+  std::ofstream out("out.off");
+  out << sm << std::endl;
+  out.close();
+
 
   return EXIT_SUCCESS;
 }
