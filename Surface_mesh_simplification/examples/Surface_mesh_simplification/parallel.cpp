@@ -372,6 +372,7 @@ int main(int argc, char** argv )
   BOOST_FOREACH(halfedge_descriptor hd, halfedges(sm)){
     if(is_border(opposite(hd,sm),sm)){
       cc_seed[ccmap[face(hd,sm)]] = hd;
+      ecmap[edge(hd,sm)] = true;
     }
   }
   typedef ComponentGraph<Surface_mesh,ECMap>  Component_graph;
@@ -389,6 +390,7 @@ int main(int argc, char** argv )
                      stop
                      ,CGAL::parameters::vertex_index_map(get(boost::vertex_index,sm))
                      .halfedge_index_map(get(boost::halfedge_index,sm))
+                     .edge_is_constrained_map(ecmap)
                      .vertex_point_map(get(CGAL::vertex_point,sm)));
 
   sm.collect_garbage();
