@@ -55,6 +55,9 @@ namespace Surface_mesh_simplification
   
   mcMaxDihedralAngleCos2 = cMaxDihedralAngleCos * cMaxDihedralAngleCos ;
 
+  // AF: m_has_border is a global variable. It is passed to profile
+  //     We have to check that the simplification is really faster if there is no border
+  //     Or we could add a named parameter to edge_collapse()
   halfedge_iterator eb, ee ;
   for ( boost::tie(eb,ee) = halfedges(mSurface); eb!=ee; ++eb )
     {
@@ -112,12 +115,18 @@ namespace Surface_mesh_simplification
   
   Equal_3 equal_points = Traits().equal_3_object();
     
+  // AF: num_edges is of the complete graph
   size_type lSize = num_edges(mSurface);
-  
+
+  // AF: For these two variables the real num_edges is important  
   mInitialEdgeCount = mCurrentEdgeCount = lSize;
   
+  // AF: For this one we need either the real size + an edge index map
+  //     or the size of the complete graph
   mEdgeDataArray.reset( new Edge_data[lSize] ) ;
   
+  // AF: No idea yet what the impact of the real or complete size is for the PQ
+  //     A comment says it must be the largest index
   mPQ.reset( new PQ (lSize, Compare_cost(this), edge_id(this) ) ) ;
   
   std::size_t id = 0 ;

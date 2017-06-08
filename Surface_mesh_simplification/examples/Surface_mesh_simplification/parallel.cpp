@@ -1,3 +1,4 @@
+//#include "tbb/task_group.h"
 
 #include <iostream>
 #include <fstream>
@@ -56,6 +57,15 @@ public:
     // std::cerr << "end construct" << std::endl;
 }
 
+  EdgeIterator& 
+  operator=(const EdgeIterator other)
+  {
+    end = other.end;
+    edges = other.edges;
+    it = other.it;
+    return *this;
+  }
+  
   EdgeIterator(const G& g)
     : end(false)
   {
@@ -150,11 +160,11 @@ struct graph_traits<ComponentGraph<G,ECMap> > {
 
 
 template <typename G, typename ECMap>
-std::pair<EdgeIterator<ComponentGraph<G,ECMap> >, EdgeIterator<ComponentGraph<G,ECMap> > >
+CGAL::Iterator_range<EdgeIterator<ComponentGraph<G,ECMap> > >
 edges(const ComponentGraph<G,ECMap>& cg)
 {
-  return std::make_pair(EdgeIterator<ComponentGraph<G,ECMap> >(cg),
-                        EdgeIterator<ComponentGraph<G,ECMap> >(0));
+  return CGAL::make_range(EdgeIterator<ComponentGraph<G,ECMap> >(cg),
+                          EdgeIterator<ComponentGraph<G,ECMap> >(0));
 }
 
 template <typename G, typename ECMap>
@@ -343,6 +353,18 @@ get(CGAL::vertex_point_t t, ComponentGraph<G,ECMap>& cg)
   return get(t,cg.g);
 }
 
+
+
+struct Simplify {
+
+  Surface_mesh &sm;
+
+ Simplify(Surface_mesh& sm)
+    : sm(sm)
+  {}
+};
+
+
 int main(int argc, char** argv ) 
 {
 
@@ -366,6 +388,10 @@ int main(int argc, char** argv )
   int ncc = CGAL::Polygon_mesh_processing::connected_components(sm,ccmap);
   std::cout << "#CC = " << ncc << std::endl;
 
+  typedef Surface_mesh::Property_map<halfedge_descriptor,int> HIMap;
+  Surface_mesh::Property_map<halfedge_descriptor,int> himap 
+    = sm.add_property_map<halfedge_descriptor,int>("h:index_in_cc").first;
+
   // For each connected component find one halfedge opposite to a border halfedge
   // as a starting point for each simplification thread
   std::vector<halfedge_descriptor> cc_seed(ncc);
@@ -377,10 +403,12 @@ int main(int argc, char** argv )
   }
   typedef ComponentGraph<Surface_mesh,ECMap>  Component_graph;
   Component_graph cg(sm, ecmap, cc_seed[0]); 
-#if 0
-  boost::graph_traits<ComponentGraph<Surface_mesh,ECMap> >::edge_iterator b,e;
-  for(boost::tie(b,e) = edges(cg); b!= e; ++b){
-    boost::graph_traits<ComponentGraph<Surface_mesh,ECMap> >::edge_descriptor ed = *b;
+#if 1
+  //boost::graph_traits<ComponentGraph<Surface_mesh,ECMap> >::edge_iterator b,e;
+  //for(boost::tie(b,e) = edges(cg); b!= e; ++b){
+  typedef boost::graph_traits<ComponentGraph<Surface_mesh,ECMap> >::edge_descriptor  ED;
+    BOOST_FOREACH(ED ed, edges(cg)){
+      //  boost::graph_traits<ComponentGraph<Surface_mesh,ECMap> >::edge_descriptor ed = *b;
     std::cout << ed << std::endl;
   }
 #endif
