@@ -496,9 +496,9 @@ int main(int argc, char** argv )
 
   CGAL::expand_edge_selection(cc_edges,
                               sm,
-                              1,
+                              2,
                               ecmap,
-                              std::back_inserter(expansion));// CGAL::Emptyset_iterator());
+                              CGAL::Emptyset_iterator());
   
   std::cerr << "before edge_collapse " << expansion.size()<< std::endl;
   SMS::Count_ratio_stop_predicate<Component_graph> stop(0.25);
