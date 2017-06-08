@@ -207,7 +207,7 @@ private:
   halfedge_descriptor primary_edge ( halfedge_descriptor const& aEdge ) 
   { 
     return is_primary_edge(aEdge) ? aEdge : opposite(aEdge,mSurface) ;
-  }  
+  } 
     
   bool is_border ( halfedge_descriptor const& aEdge ) const { return face(aEdge,mSurface) == boost::graph_traits<ECM>::null_face() ; }    
   

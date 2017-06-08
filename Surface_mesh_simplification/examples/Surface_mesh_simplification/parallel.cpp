@@ -2,7 +2,8 @@
 
 #include <iostream>
 #include <fstream>
-
+#include <sstream>
+#include <string>
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/boost/graph/copy_face_graph.h>
@@ -84,7 +85,7 @@ public:
       BOOST_FOREACH(halfedge_descriptor hd, halfedges_around_face(halfedge(fd,g.g),g.g)){
        halfedge_descriptor hop = opposite(hd,g.g);
        if(is_border(hop,g.g) || g.ecmap[edge(hd,g.g)] || (fd < face(hop ,g.g))){
-          edges->push_back(edge(hd,g.g));
+         edges->push_back(edge((hd<hop)?hd:hop, g.g));
         }
       }
     }
@@ -122,11 +123,21 @@ public:
   G& g;
   halfedge_descriptor cc;
   ECMap ecmap;
+  int ne;
 
   ComponentGraph(G& g, ECMap ecmap, halfedge_descriptor cc)
     : g(g), cc(cc), ecmap(ecmap)
   {}
   
+  int& num_edges()
+  {
+    return ne;
+  }
+
+  int num_edges() const
+  {
+    return ne;
+  }
 }; 
 
 
@@ -190,7 +201,7 @@ template <typename G, typename ECMap>
 typename boost::graph_traits<G>::edges_size_type
 num_edges(const ComponentGraph<G,ECMap>& cg)
 {
-  return num_edges(cg.g);
+  return cg.num_edges();
 }
 
 template <typename G, typename ECMap>
@@ -363,25 +374,58 @@ struct Simplify {
 
 int main(int argc, char** argv ) 
 {
-
+  typedef boost::graph_traits<Surface_mesh>::vertex_descriptor vertex_descriptor;
   typedef boost::graph_traits<Surface_mesh>::edge_descriptor edge_descriptor;
   typedef boost::graph_traits<Surface_mesh>::halfedge_descriptor halfedge_descriptor;
   typedef boost::graph_traits<Surface_mesh>::face_descriptor face_descriptor;
  
-  std::ifstream is1(argv[1]), is2(argv[2]) ;
-  Surface_mesh sm, tmp; 
+  std::ifstream is1(argv[1]);
+  Surface_mesh sm; 
   is1 >> sm;
-  is2 >> tmp;
-  CGAL::copy_face_graph(tmp,sm);
+  std::cerr << "#V = "<< num_vertices(sm) << "  #F = " << num_faces(sm) << std::endl;
+
+  
+
   typedef Surface_mesh::Property_map<face_descriptor,int> CCMap;
   Surface_mesh::Property_map<face_descriptor,int> ccmap 
     = sm.add_property_map<face_descriptor,int>("f:cc").first;
 
   typedef Surface_mesh::Property_map<edge_descriptor,bool> ECMap;
   Surface_mesh::Property_map<edge_descriptor,bool> ecmap 
-    = sm.add_property_map<edge_descriptor,bool>("e:constrained").first;
+    = sm.add_property_map<edge_descriptor,bool>("e:constrained",false).first;
 
-  int ncc = CGAL::Polygon_mesh_processing::connected_components(sm,ccmap);
+  std::ifstream is2(argv[2]);
+  std::string line;
+  std::size_t id, id2;
+  
+  if(!std::getline(is2, line)){
+    std::cerr << "error in selection: no first line"<< std::endl;
+    return 1; 
+  }
+  if(!std::getline(is2, line)){
+    std::cerr << "error in selection: no second line"<< std::endl;
+    return 1; 
+  }
+  if(!std::getline(is2, line)){
+    std::cerr << "error in selection: no third line"<< std::endl;
+    return 1; 
+  }
+  std::istringstream edge_line(line);
+  while(edge_line >> id >> id2) {
+    vertex_descriptor s(id), t(id2);
+     halfedge_descriptor hd;
+     bool exists;
+     boost::tie(hd,exists) = halfedge(s,t,sm);
+     if(! exists){
+       std::cerr << "error in selection: no edge" << s << " " << t << std::endl;
+       return 1; 
+     }
+     ecmap[edge(hd,sm)] = true;
+  }
+    
+  int ncc = PMP::connected_components(sm,
+                                      ccmap,
+                                      PMP::parameters::edge_is_constrained_map(ecmap));
   std::cout << "#CC = " << ncc << std::endl;
 
   typedef Surface_mesh::Property_map<halfedge_descriptor,int> HIMap;
@@ -392,29 +436,33 @@ int main(int argc, char** argv )
   // as a starting point for each simplification thread
   std::vector<halfedge_descriptor> cc_seed(ncc);
   BOOST_FOREACH(halfedge_descriptor hd, halfedges(sm)){
-    if(is_border(opposite(hd,sm),sm)){
-      cc_seed[ccmap[face(hd,sm)]] = hd;
-      ecmap[edge(hd,sm)] = true;
+    int hcc = ccmap[face(hd,sm)];
+    int hoppcc = ccmap[face(opposite(hd,sm),sm)];
+    if(hcc != hoppcc){
+      cc_seed[hcc] = hd;
     }
   }
   typedef ComponentGraph<Surface_mesh,ECMap>  Component_graph;
   Component_graph cg(sm, ecmap, cc_seed[0]); 
 
-  int i = 0;
+  int i = 2;
   BOOST_FOREACH(boost::graph_traits<Surface_mesh>::edge_descriptor ed, edges(cg)){
-    boost::graph_traits<Surface_mesh>::halfedge_descriptor hd;
+    boost::graph_traits<Surface_mesh>::halfedge_descriptor hd, hop;
     hd = halfedge(ed,sm);
-    if((!is_border(hd,sm)) && ccmap[face(hd,sm)] == 0){
+    hop = opposite(hd,sm);
+    if(ecmap[ed]){
+      put(himap,hd,0);
+      put(himap,hop,1);
+    }else{
       put(himap,hd,i); ++i;
-    }
-    hd = opposite(hd,sm);
-    if((!is_border(hd,sm)) && ccmap[face(hd,sm)] == 0){
-      put(himap,hd,i); ++i;
+      put(himap,hop,i); ++i;
     }
   }
-  std::cerr << i << " halfedges"<< std::endl;
+
+  cg.num_edges() = i/2;
+
   std::cerr << "before edge_collapse"<< std::endl;
-  SMS::Count_ratio_stop_predicate<Component_graph> stop(0.5);
+  SMS::Count_ratio_stop_predicate<Component_graph> stop(0.25);
   SMS::edge_collapse(cg,
                      stop
                      ,CGAL::parameters::vertex_index_map(get(boost::vertex_index,sm))
@@ -423,6 +471,7 @@ int main(int argc, char** argv )
                      .vertex_point_map(get(CGAL::vertex_point,sm)));
 
   sm.collect_garbage();
+  std::cerr << "#V = "<< num_vertices(sm) << "  #F = " << num_faces(sm) << std::endl;
   std::ofstream out("out.off");
   out << sm << std::endl;
   out.close();

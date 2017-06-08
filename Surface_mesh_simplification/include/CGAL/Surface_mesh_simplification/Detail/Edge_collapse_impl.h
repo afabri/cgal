@@ -118,6 +118,7 @@ namespace Surface_mesh_simplification
   // AF: num_edges is of the complete graph
   size_type lSize = num_edges(mSurface);
 
+  std::cerr << lSize << std::endl;
   // AF: For these two variables the real num_edges is important  
   mInitialEdgeCount = mCurrentEdgeCount = lSize;
   
