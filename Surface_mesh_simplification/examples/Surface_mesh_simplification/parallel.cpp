@@ -85,13 +85,10 @@ public:
        halfedge_descriptor hop = opposite(hd,g.g);
        if(is_border(hop,g.g) || g.ecmap[edge(hd,g.g)] || (fd < face(hop ,g.g))){
           edges->push_back(edge(hd,g.g));
-          //          std::cerr << edges->back() << std::endl;
         }
       }
     }
-    //    std::cerr << &(*edges) << std::endl;
     it = edges->begin();
-    // std::cerr << "*it = "<< *it << std::endl;
   }
   
 
@@ -110,10 +107,9 @@ public:
     return it == other.it;
   }
   
-  edge_descriptor dereference() const
+  edge_descriptor& dereference() const
   {
-    //std::cerr << &(*edges) << std::endl;
-    return *it;
+    return const_cast<edge_descriptor&>(*it);
   }
 };
 
@@ -390,7 +386,7 @@ int main(int argc, char** argv )
 
   typedef Surface_mesh::Property_map<halfedge_descriptor,int> HIMap;
   Surface_mesh::Property_map<halfedge_descriptor,int> himap 
-    = sm.add_property_map<halfedge_descriptor,int>("h:index_in_cc").first;
+    = sm.add_property_map<halfedge_descriptor,int>("h:index_in_cc",-1).first;
 
   // For each connected component find one halfedge opposite to a border halfedge
   // as a starting point for each simplification thread
@@ -403,21 +399,26 @@ int main(int argc, char** argv )
   }
   typedef ComponentGraph<Surface_mesh,ECMap>  Component_graph;
   Component_graph cg(sm, ecmap, cc_seed[0]); 
-#if 1
-  //boost::graph_traits<ComponentGraph<Surface_mesh,ECMap> >::edge_iterator b,e;
-  //for(boost::tie(b,e) = edges(cg); b!= e; ++b){
-  typedef boost::graph_traits<ComponentGraph<Surface_mesh,ECMap> >::edge_descriptor  ED;
-    BOOST_FOREACH(ED ed, edges(cg)){
-      //  boost::graph_traits<ComponentGraph<Surface_mesh,ECMap> >::edge_descriptor ed = *b;
-    std::cout << ed << std::endl;
-  }
-#endif
 
+  int i = 0;
+  BOOST_FOREACH(boost::graph_traits<Surface_mesh>::edge_descriptor ed, edges(cg)){
+    boost::graph_traits<Surface_mesh>::halfedge_descriptor hd;
+    hd = halfedge(ed,sm);
+    if((!is_border(hd,sm)) && ccmap[face(hd,sm)] == 0){
+      put(himap,hd,i); ++i;
+    }
+    hd = opposite(hd,sm);
+    if((!is_border(hd,sm)) && ccmap[face(hd,sm)] == 0){
+      put(himap,hd,i); ++i;
+    }
+  }
+  std::cerr << i << " halfedges"<< std::endl;
+  std::cerr << "before edge_collapse"<< std::endl;
   SMS::Count_ratio_stop_predicate<Component_graph> stop(0.5);
   SMS::edge_collapse(cg,
                      stop
                      ,CGAL::parameters::vertex_index_map(get(boost::vertex_index,sm))
-                     .halfedge_index_map(get(boost::halfedge_index,sm))
+                     .halfedge_index_map(himap)
                      .edge_is_constrained_map(ecmap)
                      .vertex_point_map(get(CGAL::vertex_point,sm)));
 

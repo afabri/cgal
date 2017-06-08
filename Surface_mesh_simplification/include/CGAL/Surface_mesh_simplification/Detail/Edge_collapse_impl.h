@@ -121,7 +121,7 @@ namespace Surface_mesh_simplification
   // AF: For these two variables the real num_edges is important  
   mInitialEdgeCount = mCurrentEdgeCount = lSize;
   
-  // AF: For this one we need either the real size + an edge index map
+  // AF: For this one we need the real size + a per component edge index map
   //     or the size of the complete graph
   mEdgeDataArray.reset( new Edge_data[lSize] ) ;
   
