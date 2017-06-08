@@ -21,6 +21,11 @@ endif()
 # include helper file
 include( ${CGAL_USE_FILE} )
 
+ find_package( TBB REQUIRED )
+    if( TBB_FOUND )
+      include(${TBB_USE_FILE})
+      list(APPEND CGAL_3RD_PARTY_LIBRARIES ${TBB_LIBRARIES})
+    endif()
 
 # Boost and its components
 find_package( Boost )
