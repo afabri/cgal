@@ -9,6 +9,7 @@
 #include <CGAL/boost/graph/copy_face_graph.h>
 #include <CGAL/Polygon_mesh_processing/connected_components.h>
 
+#include <CGAL/boost/graph/selection.h>
 #include <CGAL/Surface_mesh_simplification/edge_collapse.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Count_ratio_stop_predicate.h>
 
@@ -84,7 +85,7 @@ public:
     BOOST_FOREACH(face_descriptor fd, faces){
       BOOST_FOREACH(halfedge_descriptor hd, halfedges_around_face(halfedge(fd,g.g),g.g)){
        halfedge_descriptor hop = opposite(hd,g.g);
-       if(is_border(hop,g.g) || g.ecmap[edge(hd,g.g)] || (fd < face(hop ,g.g))){
+       if(is_border(hop,g.g) || get(g.ecmap,edge(hd,g.g)) || (fd < face(hop ,g.g))){
          edges->push_back(edge((hd<hop)?hd:hop, g.g));
         }
       }
@@ -371,6 +372,31 @@ struct Simplify {
   {}
 };
 
+template <typename ZOMap, typename G>
+struct Selection_is_constraint_map
+{  
+  typedef boost::readable_property_map_tag                 category;
+  typedef bool                                             value_type;
+  typedef bool                                             reference;
+  typedef typename boost::graph_traits<G>::edge_descriptor key_type;
+
+  ZOMap zomap;
+  const G& g;
+
+  Selection_is_constraint_map(ZOMap zomap, const G& g)
+    : zomap(zomap), g(g)
+  {}
+
+
+
+  friend bool get(const Selection_is_constraint_map& eicm, key_type ed)
+  {
+    int i = get(eicm.zomap, halfedge(ed, eicm.g));
+    return (i ==0) || (i == 1);
+  }
+  
+};
+
 
 int main(int argc, char** argv ) 
 {
@@ -382,7 +408,7 @@ int main(int argc, char** argv )
   std::ifstream is1(argv[1]);
   Surface_mesh sm; 
   is1 >> sm;
-  std::cerr << "#V = "<< num_vertices(sm) << "  #F = " << num_faces(sm) << std::endl;
+  std::cerr << "#V = "<< num_vertices(sm)  << "#E = "<< num_edges(sm) << "  #F = " << num_faces(sm) << std::endl;
 
   
 
@@ -394,6 +420,13 @@ int main(int argc, char** argv )
   Surface_mesh::Property_map<edge_descriptor,bool> ecmap 
     = sm.add_property_map<edge_descriptor,bool>("e:constrained",false).first;
 
+  typedef Surface_mesh::Property_map<halfedge_descriptor,int> HIMap;
+  HIMap himap = sm.add_property_map<halfedge_descriptor,int>("h:index_in_cc",-1).first;
+
+  typedef Selection_is_constraint_map<HIMap, Surface_mesh> SICM;
+  SICM sicm(himap,sm);
+  
+  
   std::ifstream is2(argv[2]);
   std::string line;
   std::size_t id, id2;
@@ -421,16 +454,15 @@ int main(int argc, char** argv )
        return 1; 
      }
      ecmap[edge(hd,sm)] = true;
+     himap[hd] = 0;
+     himap[opposite(hd,sm)] = 1;
   }
-    
+  
   int ncc = PMP::connected_components(sm,
                                       ccmap,
                                       PMP::parameters::edge_is_constrained_map(ecmap));
   std::cout << "#CC = " << ncc << std::endl;
 
-  typedef Surface_mesh::Property_map<halfedge_descriptor,int> HIMap;
-  Surface_mesh::Property_map<halfedge_descriptor,int> himap 
-    = sm.add_property_map<halfedge_descriptor,int>("h:index_in_cc",-1).first;
 
   // For each connected component find one halfedge opposite to a border halfedge
   // as a starting point for each simplification thread
@@ -442,26 +474,33 @@ int main(int argc, char** argv )
       cc_seed[hcc] = hd;
     }
   }
-  typedef ComponentGraph<Surface_mesh,ECMap>  Component_graph;
-  Component_graph cg(sm, ecmap, cc_seed[0]); 
+  typedef ComponentGraph<Surface_mesh,SICM>  Component_graph;
+  Component_graph cg(sm, sicm, cc_seed[0]); 
 
-  int i = 2;
+  std::vector<boost::graph_traits<Surface_mesh>::edge_descriptor> cc_edges, expansion;
+  int i = 2, count = 0;
   BOOST_FOREACH(boost::graph_traits<Surface_mesh>::edge_descriptor ed, edges(cg)){
+    ++count;
     boost::graph_traits<Surface_mesh>::halfedge_descriptor hd, hop;
     hd = halfedge(ed,sm);
     hop = opposite(hd,sm);
     if(ecmap[ed]){
-      put(himap,hd,0);
-      put(himap,hop,1);
+      cc_edges.push_back(ed);
     }else{
       put(himap,hd,i); ++i;
       put(himap,hop,i); ++i;
     }
   }
+  std::cerr << cc_edges.size() << "  " << count << std::endl;
+  cg.num_edges() = count;
 
-  cg.num_edges() = i/2;
-
-  std::cerr << "before edge_collapse"<< std::endl;
+  CGAL::expand_edge_selection(cc_edges,
+                              sm,
+                              1,
+                              ecmap,
+                              std::back_inserter(expansion));// CGAL::Emptyset_iterator());
+  
+  std::cerr << "before edge_collapse " << expansion.size()<< std::endl;
   SMS::Count_ratio_stop_predicate<Component_graph> stop(0.25);
   SMS::edge_collapse(cg,
                      stop
@@ -471,7 +510,8 @@ int main(int argc, char** argv )
                      .vertex_point_map(get(CGAL::vertex_point,sm)));
 
   sm.collect_garbage();
-  std::cerr << "#V = "<< num_vertices(sm) << "  #F = " << num_faces(sm) << std::endl;
+  std::cerr << "#V = "<< num_vertices(sm)  << "#E = "<< num_edges(sm) << "  #F = " << num_faces(sm) << std::endl;
+
   std::ofstream out("out.off");
   out << sm << std::endl;
   out.close();

@@ -117,7 +117,7 @@ namespace Surface_mesh_simplification
     
   // AF: num_edges is of the complete graph
   size_type lSize = num_edges(mSurface);
-
+  
   std::cerr << lSize << std::endl;
   // AF: For these two variables the real num_edges is important  
   mInitialEdgeCount = mCurrentEdgeCount = lSize;
@@ -853,7 +853,6 @@ template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,
 void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::Update_neighbors( vertex_descriptor const& aKeptV )
 {
   CGAL_ECMS_TRACE(3,"Updating cost of neighboring edges..." ) ;
-
   //
   // (A) Collect all edges to update their cost: all those around each vertex adjacent to the vertex kept
   //  
