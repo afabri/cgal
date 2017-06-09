@@ -24,7 +24,7 @@ typedef CGAL::Simple_cartesian<double> Kernel;
 typedef Kernel::Point_3 Point_3;
 typedef CGAL::Surface_mesh<Point_3> Surface_mesh; 
 typedef Surface_mesh::Property_map<boost::graph_traits<Surface_mesh>::halfedge_descriptor,int> HIMap;
-typedef Surface_mesh::Property_map<boost::graph_traits<Surface_mesh>::edge_descriptor,int> ECMap;
+typedef Surface_mesh::Property_map<boost::graph_traits<Surface_mesh>::edge_descriptor,char> ECMap;
 
 
 namespace SMS = CGAL::Surface_mesh_simplification;
@@ -136,8 +136,8 @@ int main(int argc, char** argv )
   Surface_mesh::Property_map<face_descriptor,int> ccmap 
     = sm.add_property_map<face_descriptor,int>("f:cc").first;
 
-  Surface_mesh::Property_map<edge_descriptor,int> ecmap 
-    = sm.add_property_map<edge_descriptor,int>("e:constrained",0).first;
+  Surface_mesh::Property_map<edge_descriptor,char> ecmap 
+    = sm.add_property_map<edge_descriptor,char>("e:constrained",0).first;
 
   
   HIMap himap = sm.add_property_map<halfedge_descriptor,int>("h:index_in_cc",-1).first;
