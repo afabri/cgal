@@ -94,7 +94,7 @@ namespace Surface_mesh_simplification
   
   // Then proceed to collapse each edge in turn
   Loop();
-
+  std::cerr << "||  Finished:  #E = "<< mCurrentEdgeCount << "(was: "<< mInitialEdgeCount << ")" << std::endl;
   CGAL_ECMS_TRACE(0,"Finished: " << (mInitialEdgeCount - mCurrentEdgeCount) << " edges removed." ) ;
 
   int r = (int)(mInitialEdgeCount - mCurrentEdgeCount) ;
@@ -118,7 +118,7 @@ namespace Surface_mesh_simplification
   // AF: num_edges is of the complete graph
   size_type lSize = num_edges(mSurface);
   
-  std::cerr << lSize << std::endl;
+  std::cerr << "|| #E = " << lSize << std::endl;
   // AF: For these two variables the real num_edges is important  
   mInitialEdgeCount = mCurrentEdgeCount = lSize;
   
