@@ -57,6 +57,28 @@ struct Selection_is_constraint_map
   
 };
 
+template <typename ECMap>
+struct Inverted_edge_constraint_map
+{  
+  typedef boost::readable_property_map_tag                 category;
+  typedef bool                                             value_type;
+  typedef bool                                             reference;
+  typedef typename boost::property_traits<ECMap>::key_type key_type;
+
+  ECMap ecmap;
+
+  Inverted_edge_constraint_map(ECMap ecmap)
+    : ecmap(ecmap)
+  {}
+
+
+  friend bool get(const Inverted_edge_constraint_map& iecm, key_type ed)
+  {
+    return ! get(iecm.ecmap, ed);
+  }
+  
+};
+
 // The parallel task
 struct Simplify {
 
@@ -209,6 +231,18 @@ int main(int argc, char** argv )
 #endif
 
   std::cerr << "parallel edge collapse in " << t.time() << " sec." << std::endl;
+  t.reset();
+  
+
+  Inverted_edge_constraint_map<ECMap> iecmap(ecmap);
+
+  SMS::Count_ratio_stop_predicate<Surface_mesh> stop(0.25);
+  SMS::edge_collapse(sm,
+                     stop
+                     ,CGAL::parameters::vertex_index_map(get(boost::vertex_index,sm))
+                     .edge_is_constrained_map(iecmap));
+
+  std::cerr << "sequential edge collapse on buffer in " << t.time() << " sec." << std::endl;
   t.reset();
   
   std::cerr << "collect garbage" << std::endl;
