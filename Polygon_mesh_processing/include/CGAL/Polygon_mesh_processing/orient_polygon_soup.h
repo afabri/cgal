@@ -30,7 +30,7 @@
 #include <CGAL/assertions.h>
 #include <boost/foreach.hpp>
 #include <boost/container/flat_set.hpp>
-
+#include <boost/shared_ptr.hpp>
 #include <set>
 #include <map>
 #include <stack>
@@ -43,6 +43,208 @@ namespace CGAL {
 namespace Polygon_mesh_processing {
 
 namespace internal {
+
+  struct M {
+    bool own;
+    typedef std::size_t ID;
+    char s; //  0, 1, 2, and it is three if the data are in more 
+    ID  one;
+    union {
+      ID two; 
+      boost::container::flat_set<std::size_t>* more;
+    } u;
+
+    M()
+      :s(0), own(false)
+    {}
+
+
+    M(const M& other)
+      : own(false), s(other.s), one(other.one), u(other.u)
+    {}
+
+
+    ~M()
+    {
+      if(own && (s  == 3)){
+        delete u.more;
+      }
+    }
+
+
+    friend std::ostream& operator<<(std::ostream& os, const M& m)
+    {
+      os << "[ ";
+      if(m.s != 0){
+        if(m.s == 1){
+          os << m.one;
+        } else if(m.s == 2){
+          os << m.one << " " << m.u.two << " ";
+        } else {
+          for(boost::container::flat_set<std::size_t>::iterator it = m.u.more->begin();
+              it != m.u.more->end();
+              ++it){
+            os << *it  << " ";
+          }
+        }
+      }
+      os << "]";
+      return os;
+    }
+
+    std::size_t size() const
+    {
+      if(s<3){
+        return s;
+      }
+      return u.more->size();
+    }
+
+
+    struct iterator {
+      M* m;
+      int pos;
+      boost::container::flat_set<std::size_t>::iterator it;
+
+      iterator(M* m)
+        : m(m)
+      {
+        if(m->empty()){ 
+          pos = 0;
+        }else{
+          if(m->s < 3){
+          pos = 1;
+        }else{
+            pos = 3;
+            it = m->u.more->begin();
+          }
+        }
+      }
+ 
+
+      std::size_t operator*() const
+      {
+        if((pos == 0) || (pos > m->s)){
+          //std::cerr << "dereference after beyond\n";
+        }else if((pos == 1) && (m->s < 3)){
+          return m->one;
+        }
+        if((pos == 2) && (m->s < 3)){
+          return m->u.two;
+        }
+        if(pos == 3){
+          return *it;
+        }
+        return 0;
+      }
+
+
+      iterator& operator++()
+      {
+        if(pos == 0){
+          //std::cerr << "operator++() after beyond\n";
+        } else if(pos == 1){
+          if(m->s > 1){
+            pos = 2;
+          } else {
+            pos = 0;
+          }
+        } else if(pos == 2){
+          if(m->s > 2){
+            pos = 3;
+          } else {
+            pos = 0;
+          }
+        } else { // pos == 3
+          ++it;
+        }
+      
+        return *this;
+      }
+    };
+
+
+    iterator begin() const 
+    {
+      return iterator(const_cast<M*>(this));
+    }
+
+
+    void insert(ID id)
+    {
+      if(s == 0){
+        one = id;
+        s=1;
+        return;
+      }else if(s == 1){
+        if(one == id){
+          return;
+        }
+        u.two = id;
+        s=2;
+        if(one > u.two){
+          std::swap(one,u.two);
+        }
+        return;
+      }else if(s == 2){
+        if((id == one)|| (id == u.two)){
+          return;
+        }
+        ID tmp = u.two;
+        u.more = new boost::container::flat_set<std::size_t>();
+        u.more->insert(one);
+        u.more->insert(tmp);
+        u.more->insert(id);
+      }else{
+        u.more->insert(id);
+      }
+      s = 3;
+    }
+    
+    std::size_t erase(ID id)
+    {
+      if(s == 0){
+        return 0;
+      }
+      if(s == 1){
+        if(one == id){
+          s = 0;
+          return 1;
+        } else {
+          return 0;
+        }
+      }else if(s == 2){
+        if(u.two == id){
+          s = 1;
+          return 1;
+        }else if(one == id){
+          one = u.two;
+          s = 1;
+          return 1;
+        }else{
+        }
+      }else{ // s == 3
+        std::size_t res = u.more->erase(id);
+        if(u.more->size() == 2){
+          boost::container::flat_set<std::size_t>::iterator it = u.more->begin();
+          one = *it;
+          ++it;
+          ID tmp = *it;
+          delete u.more;
+          u.two = tmp;
+          s = 2;
+        }
+        return res;
+      }
+      return 0;
+    }
+
+    bool empty() const
+    {
+      return s == 0;
+    }
+
+  };
 
 template<class PointRange, class PolygonRange>
 struct Polygon_soup_orienter
@@ -58,7 +260,7 @@ struct Polygon_soup_orienter
 /// Container types
   typedef PointRange                                                     Points;
   typedef PolygonRange                                                 Polygons;
-  typedef std::map<V_ID_pair, boost::container::flat_set<P_ID> >       Edge_map;
+  typedef std::map<V_ID_pair, M>       Edge_map;  // boost::container::flat_set<P_ID>
   typedef typename Edge_map::iterator                         Edge_map_iterator;
   typedef std::set<V_ID_pair>                                      Marked_edges;
 
