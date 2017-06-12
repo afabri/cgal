@@ -43,39 +43,39 @@ namespace Polygon_mesh_processing {
 
 namespace internal {
 
-  struct M {
-    typedef std::size_t ID;
-    // bool own;
+  template <typename SizeType>
+  struct One_two_or_more_set {
+    typedef SizeType size_type;
+    typedef SizeType ID;
     char s; //  0, 1, 2, and it is three if the data are in more 
     ID  one;
     union {
       ID two; 
-      boost::container::flat_set<std::size_t>* more;
+      boost::container::flat_set<ID>* more;
     } u;
 
-    M()
-      : /* , own(false), */ s(0)
+    One_two_or_more_set()
+      : s(0)
     {}
 
 
-    M(const M& other)
-      : /* own(false), */ s(other.s), one(other.one), u(other.u)
+    One_two_or_more_set(const One_two_or_more_set& other)
+      : s(other.s), one(other.one), u(other.u)
     {
       if( (s == 3) && (other.u.more != NULL) ){
-        const_cast<M&>(other).u.more = NULL;
+        const_cast<One_two_or_more_set&>(other).u.more = NULL;
       }
     }
 
-    ~M()
+    ~One_two_or_more_set()
     {
-      // if(own && (s  == 3)){
       if( (s ==3) && (u.more != NULL) ){
         delete u.more;
       }
     }
 
-
-    friend std::ostream& operator<<(std::ostream& os, const M& m)
+    template <typename SizeType>
+    friend std::ostream& operator<<(std::ostream& os, const One_two_or_more_set<SizeType>& m)
     {
       os << "[ ";
       if(m.s != 0){
@@ -84,7 +84,7 @@ namespace internal {
         } else if(m.s == 2){
           os << m.one << " " << m.u.two << " ";
         } else {
-          for(boost::container::flat_set<std::size_t>::iterator it = m.u.more->begin();
+          for(boost::container::flat_set<SizeType>::iterator it = m.u.more->begin();
               it != m.u.more->end();
               ++it){
             os << *it  << " ";
@@ -105,11 +105,11 @@ namespace internal {
 
 
     struct iterator {
-      M* m;
+      One_two_or_more_set* m;
       int pos;
-      boost::container::flat_set<std::size_t>::iterator it;
+      typename boost::container::flat_set<size_type>::iterator it;
 
-      iterator(M* m)
+      iterator(One_two_or_more_set* m)
         : m(m)
       {
         if(m->empty()){ 
@@ -125,7 +125,7 @@ namespace internal {
       }
  
 
-      std::size_t operator*() const
+      size_type operator*() const
       {
         if((pos == 0) || (pos > m->s)){
           //std::cerr << "dereference after beyond\n";
@@ -169,7 +169,7 @@ namespace internal {
 
     iterator begin() const 
     {
-      return iterator(const_cast<M*>(this));
+      return iterator(const_cast<One_two_or_more_set*>(this));
     }
 
 
@@ -194,7 +194,7 @@ namespace internal {
           return;
         }
         ID tmp = u.two;
-        u.more = new boost::container::flat_set<std::size_t>();
+        u.more = new boost::container::flat_set<size_type>();
         u.more->insert(one);
         u.more->insert(tmp);
         u.more->insert(id);
@@ -229,7 +229,7 @@ namespace internal {
       }else{ // s == 3
         std::size_t res = u.more->erase(id);
         if(u.more->size() == 2){
-          boost::container::flat_set<std::size_t>::iterator it = u.more->begin();
+          typename boost::container::flat_set<size_type>::iterator it = u.more->begin();
           one = *it;
           ++it;
           ID tmp = *it;
@@ -255,15 +255,21 @@ struct Polygon_soup_orienter
   typedef typename PointRange::value_type                               Point_3;
   typedef typename PolygonRange::value_type                           Polygon_3;
 /// Index types
+#if 0
   typedef typename std::iterator_traits<
             typename Polygon_3::iterator >::value_type                     V_ID;
   typedef typename std::vector<Polygon_3>::size_type                       P_ID;
+#else
+  typedef boost::uint32_t V_ID; 
+  typedef boost::uint32_t P_ID; 
+#endif
+
 //  typedef int                                                             CC_ID;
   typedef std::pair<V_ID, V_ID>                                       V_ID_pair;
 /// Container types
   typedef PointRange                                                     Points;
   typedef PolygonRange                                                 Polygons;
-  typedef std::map<V_ID_pair, M>       Edge_map;  // boost::container::flat_set<P_ID>
+  typedef std::map<V_ID_pair, One_two_or_more_set<P_ID> >       Edge_map;  // boost::container::flat_set<P_ID>
   typedef typename Edge_map::iterator                         Edge_map_iterator;
   typedef std::set<V_ID_pair>                                      Marked_edges;
 
@@ -349,7 +355,7 @@ struct Polygon_soup_orienter
     const Polygons& polygons,
     std::vector< std::vector<P_ID> >& incident_polygons_per_vertex)
   {
-    P_ID nb_polygons=polygons.size();
+    P_ID nb_polygons= static_cast<P_ID>(polygons.size());
     for(P_ID ip=0; ip<nb_polygons; ++ip)
     {
       BOOST_FOREACH(V_ID iv, polygons[ip])
@@ -367,7 +373,7 @@ struct Polygon_soup_orienter
     edges.clear();
     for (P_ID i = 0; i < polygons.size(); ++i)
     {
-      const P_ID size = polygons[i].size();
+      const P_ID size = static_cast<P_ID>(polygons[i].size());
       for (P_ID j = 0; j < size; ++j) {
         V_ID i0 = polygons[i][j];
         V_ID i1 = polygons[i][(j + 1) % size];
@@ -379,7 +385,7 @@ struct Polygon_soup_orienter
     marked_edges.clear();
     for (P_ID i = 0; i < polygons.size(); ++i)
     {
-      const P_ID size = polygons[i].size();
+      const P_ID size = static_cast<P_ID>(polygons[i].size());
       for (P_ID j = 0; j < size; ++j) {
         V_ID i0 = polygons[i][j];
         V_ID i1 = polygons[i][(j + 1) % size];
@@ -413,7 +419,7 @@ struct Polygon_soup_orienter
   void orient()
   {
     std::vector<bool> oriented;
-    std::stack<std::size_t> stack;
+    std::stack<P_ID> stack;
 //    polygon_cc_id.resize(polygons.size(), -1);
 
     // We first consider all polygons as non-oriented
@@ -443,7 +449,7 @@ struct Polygon_soup_orienter
 //        CGAL_assertion(polygon_cc_id[to_be_oriented_index]==-1);
 //        polygon_cc_id[to_be_oriented_index]=current_cc_index;
 
-        const P_ID size = polygons[to_be_oriented_index].size();
+        const P_ID size = static_cast<P_ID>(polygons[to_be_oriented_index].size());
         for(P_ID ih = 0 ; ih < size ; ++ih) {
           P_ID ihp1 = (ih+1)%size;
           const V_ID i1 = polygons[to_be_oriented_index][ih];
@@ -475,7 +481,7 @@ struct Polygon_soup_orienter
             }
 
             // reverse the orientation
-            const P_ID size = polygons[index].size();
+            const P_ID size = static_cast<P_ID>(polygons[index].size());
             for(P_ID j = 0; j < size; ++j) {
               V_ID i0 = polygons[index][j];
               V_ID i1 = polygons[index][(j+1)%size];
