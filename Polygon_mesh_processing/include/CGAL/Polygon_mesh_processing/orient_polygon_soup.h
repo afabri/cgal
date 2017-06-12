@@ -50,9 +50,15 @@ struct Polygon_soup_orienter
   typedef typename PointRange::value_type                               Point_3;
   typedef typename PolygonRange::value_type                           Polygon_3;
 /// Index types
+#if 0
   typedef typename std::iterator_traits<
             typename Polygon_3::iterator >::value_type                     V_ID;
   typedef typename std::vector<Polygon_3>::size_type                       P_ID;
+#else
+  typedef boost::uint32_t V_ID; 
+  typedef boost::uint32_t P_ID; 
+#endif
+
 //  typedef int                                                             CC_ID;
   typedef std::pair<V_ID, V_ID>                                       V_ID_pair;
 /// Container types
@@ -144,7 +150,7 @@ struct Polygon_soup_orienter
     const Polygons& polygons,
     std::vector< std::vector<P_ID> >& incident_polygons_per_vertex)
   {
-    P_ID nb_polygons=polygons.size();
+    P_ID nb_polygons= static_cast<P_ID>(polygons.size());
     for(P_ID ip=0; ip<nb_polygons; ++ip)
     {
       BOOST_FOREACH(V_ID iv, polygons[ip])
@@ -162,7 +168,7 @@ struct Polygon_soup_orienter
     edges.clear();
     for (P_ID i = 0; i < polygons.size(); ++i)
     {
-      const P_ID size = polygons[i].size();
+      const P_ID size = static_cast<P_ID>(polygons[i].size());
       for (P_ID j = 0; j < size; ++j) {
         V_ID i0 = polygons[i][j];
         V_ID i1 = polygons[i][(j + 1) % size];
@@ -174,7 +180,7 @@ struct Polygon_soup_orienter
     marked_edges.clear();
     for (P_ID i = 0; i < polygons.size(); ++i)
     {
-      const P_ID size = polygons[i].size();
+      const P_ID size = static_cast<P_ID>(polygons[i].size());
       for (P_ID j = 0; j < size; ++j) {
         V_ID i0 = polygons[i][j];
         V_ID i1 = polygons[i][(j + 1) % size];
@@ -208,7 +214,7 @@ struct Polygon_soup_orienter
   void orient()
   {
     std::vector<bool> oriented;
-    std::stack<std::size_t> stack;
+    std::stack<P_ID> stack;
 //    polygon_cc_id.resize(polygons.size(), -1);
 
     // We first consider all polygons as non-oriented
@@ -238,7 +244,7 @@ struct Polygon_soup_orienter
 //        CGAL_assertion(polygon_cc_id[to_be_oriented_index]==-1);
 //        polygon_cc_id[to_be_oriented_index]=current_cc_index;
 
-        const P_ID size = polygons[to_be_oriented_index].size();
+        const P_ID size = static_cast<P_ID>(polygons[to_be_oriented_index].size());
         for(P_ID ih = 0 ; ih < size ; ++ih) {
           P_ID ihp1 = (ih+1)%size;
           const V_ID i1 = polygons[to_be_oriented_index][ih];
@@ -270,7 +276,7 @@ struct Polygon_soup_orienter
             }
 
             // reverse the orientation
-            const P_ID size = polygons[index].size();
+            const P_ID size = static_cast<P_ID>(polygons[index].size());
             for(P_ID j = 0; j < size; ++j) {
               V_ID i0 = polygons[index][j];
               V_ID i1 = polygons[index][(j+1)%size];

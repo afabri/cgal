@@ -27,11 +27,11 @@
 
 namespace CGAL {
 
-template <class Point_3>
+  template <class Point_3, class Size_type>
 bool
 read_OBJ( std::istream& input,
           std::vector<Point_3> &points,
-          std::vector<std::vector<std::size_t> > &faces)
+          std::vector<std::vector<Size_type> > &faces)
 {
   Point_3 p;
   std::string line;
@@ -46,7 +46,7 @@ read_OBJ( std::istream& input,
     else if(line[0] == 'f') {
       std::istringstream iss(line.substr(1));
       int i;
-      faces.push_back( std::vector<std::size_t>() );
+      faces.push_back( std::vector<Size_type>() );
       while(iss >> i)
       {
         faces.back().push_back(i-1);

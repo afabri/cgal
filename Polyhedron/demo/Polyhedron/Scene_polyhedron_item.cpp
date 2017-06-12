@@ -942,7 +942,7 @@ Scene_polyhedron_item::load_obj(std::istream& in)
 {
   typedef Polyhedron::Vertex::Point Point;
   std::vector<Point> points;
-  std::vector<std::vector<std::size_t> > faces;
+  std::vector<std::vector<boost::uint32_t> > faces;
   bool failed = !CGAL::read_OBJ(in,points,faces);
 
   CGAL::Polygon_mesh_processing::orient_polygon_soup(points,faces);

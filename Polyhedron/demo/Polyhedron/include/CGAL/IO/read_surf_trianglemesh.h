@@ -234,7 +234,8 @@ bool read_surf(std::istream& input, std::vector<Mesh>& output,
     }
 
     //connect triangles
-    typedef CGAL::cpp11::array<std::size_t, 3> Triangle_ind;
+    typedef boost::uint32_t size_type;
+    typedef CGAL::cpp11::array<size_type, 3> Triangle_ind;
     std::vector<Triangle_ind> polygons;
     polygons.reserve(nb_triangles);
     while(std::getline(input, line))
@@ -242,7 +243,7 @@ bool read_surf(std::istream& input, std::vector<Mesh>& output,
       std::size_t fnws=line.find_first_not_of(" \t");
       if(fnws != std::string::npos)
         line.erase(0, fnws);
-      std::size_t index[3];
+      size_type index[3];
       if(line.compare(0, 1, "}") == 0)
       {
         break;

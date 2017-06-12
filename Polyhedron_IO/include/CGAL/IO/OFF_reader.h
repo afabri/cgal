@@ -89,7 +89,8 @@ namespace CGAL{
         scanner.scan_facet_vertex_index(id, i);
         if(id < scanner.size_of_vertices())
         {
-          polygons[i][j] = id;
+          typedef typename std::iterator_traits<typename Polygon_3::iterator>::value_type VT;
+          polygons[i][j] = static_cast<VT>(id);
         }
         else
           return false;
