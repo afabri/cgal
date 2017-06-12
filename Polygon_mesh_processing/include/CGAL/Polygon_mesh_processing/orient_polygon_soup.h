@@ -30,7 +30,6 @@
 #include <CGAL/assertions.h>
 #include <boost/foreach.hpp>
 #include <boost/container/flat_set.hpp>
-#include <boost/shared_ptr.hpp>
 #include <set>
 #include <map>
 #include <stack>
@@ -45,8 +44,8 @@ namespace Polygon_mesh_processing {
 namespace internal {
 
   struct M {
-    bool own;
     typedef std::size_t ID;
+    // bool own;
     char s; //  0, 1, 2, and it is three if the data are in more 
     ID  one;
     union {
@@ -55,18 +54,22 @@ namespace internal {
     } u;
 
     M()
-      :s(0), own(false)
+      : /* , own(false), */ s(0)
     {}
 
 
     M(const M& other)
-      : own(false), s(other.s), one(other.one), u(other.u)
-    {}
-
+      : /* own(false), */ s(other.s), one(other.one), u(other.u)
+    {
+      if( (s == 3) && (other.u.more != NULL) ){
+        const_cast<M&>(other).u.more = NULL;
+      }
+    }
 
     ~M()
     {
-      if(own && (s  == 3)){
+      // if(own && (s  == 3)){
+      if( (s ==3) && (u.more != NULL) ){
         delete u.more;
       }
     }
