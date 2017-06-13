@@ -88,6 +88,12 @@ bool read_surf(std::istream& input, std::vector<Mesh>& output,
   typedef typename CGAL::GetGeomTraits<Mesh,
       NamedParameters>::type Kernel;
   typedef typename Kernel::Point_3 Point_3;
+
+  Point_3 q(4.69398, 38.7002, -10.9382);
+  double delta = 1.0;
+  CGAL::Bbox_3 clip(q.x()-delta, q.y()-delta,q.z()-delta, q.x()+delta, q.y()+delta,q.z()+delta);
+  std::size_t ignored = 0;
+
   std::vector<Point_3> points;
   std::string line;
   std::istringstream iss;
@@ -255,9 +261,20 @@ bool read_surf(std::istream& input, std::vector<Mesh>& output,
       polygon[0] = index[0] - 1;
       polygon[1] = index[1] - 1;
       polygon[2] = index[2] - 1;
-      polygons.push_back(polygon);
+      
+      Point_3& p0 = points[polygon[0]];
+      Point_3& p1 = points[polygon[1]];
+      Point_3& p2 = points[polygon[2]];
+     
+      if(CGAL::do_overlap(clip, p0.bbox()) ||
+         CGAL::do_overlap(clip, p1.bbox()) ||
+         CGAL::do_overlap(clip, p2.bbox())){
+        polygons.push_back(polygon);
+      }else{
+        ++ignored;
+      }
     }
-    CGAL_assertion(nb_triangles == polygons.size());
+    CGAL_assertion(nb_triangles == ( polygons.size() + ignored) );
 
     //build patch
     namespace PMP = CGAL::Polygon_mesh_processing;
