@@ -112,7 +112,8 @@ void partition(const PolygonMesh& m,
   idx_t nn = num_vertices(m);
   idx_t ne = num_faces(m);
   idx_t d = 3; // number of nodes per element
-  idx_t eptr[ne + 1], eind[d * ne];
+  idx_t* eptr = new idx_t[ne + 1];
+  idx_t* eind = new idx_t[d * ne];
 
   // fill the adjacency info
   typedef typename boost::property_map<PolygonMesh,
