@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
   std::ifstream in((argc>1)?argv[1]:"data/blobby.off");
   in >> pm;
   CGAL::set_halfedgeds_items_id(pm);
-  PMP::partition(pm);
+  PMP::partition(pm, 8);
 #else
   // with a surface mesh, a property map, and a custom number of iterations
   typedef CGAL::Surface_mesh<K::Point_3> SM;
