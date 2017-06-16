@@ -327,10 +327,10 @@ int main(int argc, char** argv )
  IECMap iecmap(ecmap);
 
  
-  double icc_count = 0;
+  int icc_count = 0;
   BOOST_FOREACH(edge_descriptor ed, edges(sm)){
     if(get(iecmap,ed)){
-      icc_count += 1;
+      ++icc_count;
     }
   }
 
@@ -344,7 +344,10 @@ int main(int argc, char** argv )
   double ratio = uc_ratio + (1.0 - uc_ratio)*cc_ratio;
   assert(ratio < 1.0);
    
-  SMS::Count_ratio_stop_predicate<Surface_mesh> stop(0.25);
+  std::cout << icc_count << " constrained" << std::endl;
+  std::cout << "ratio : " << ratio << std::endl;
+
+  SMS::Count_ratio_stop_predicate<Surface_mesh> stop(ratio);
   SMS::edge_collapse(sm,
                      stop
                      ,CGAL::parameters::vertex_index_map(get(boost::vertex_index,sm))
