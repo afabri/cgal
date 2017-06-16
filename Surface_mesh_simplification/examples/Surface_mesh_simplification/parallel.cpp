@@ -62,6 +62,24 @@ struct Selection_is_constraint_map
   
 };
 
+
+template <typename Char_map>
+struct Bool_map
+{
+  Char_map cm;
+
+  Bool_map(Char_map cm)
+    : cm(cm)
+  {}
+
+  template <typename K>
+  friend bool get(const Bool_map& bm, const K& k)
+  {
+    return get(bm.cm,k) != 0;
+  }
+};
+
+
 template <typename ECMap>
 struct Inverted_edge_constraint_map
 {  
@@ -79,7 +97,7 @@ struct Inverted_edge_constraint_map
 
   friend bool get(const Inverted_edge_constraint_map& iecm, key_type ed)
   {
-    return ! get(iecm.ecmap, ed);
+    return ! (get(iecm.ecmap, ed)!= 0);
   }
   
 };
@@ -97,9 +115,10 @@ struct In_same_component_map
   CCMap ccmap;
   const G& g;
   int cc;
+  mutable int count;
 
   In_same_component_map(ECMap ecmap, CCMap ccmap, const G& g, int cc)
-    : ecmap(ecmap), ccmap(ccmap), g(g), cc(cc)
+    : ecmap(ecmap), ccmap(ccmap), g(g), cc(cc), count(0)
   {}
 
 
@@ -113,29 +132,40 @@ struct In_same_component_map
   {
     if( (! is_border(halfedge(ed,iscm.g),iscm.g) && iscm.ccmap[face(halfedge(ed,iscm.g),iscm.g)]== iscm.cc)||
         (! is_border(opposite(halfedge(ed,iscm.g),iscm.g),iscm.g) && iscm.ccmap[face(opposite(halfedge(ed,iscm.g),iscm.g),iscm.g)]== iscm.cc) ){
-      put(iscm.ecmap, ed, v);
+      if(! get(iscm.ecmap, ed)){
+        put(iscm.ecmap, ed, v);
+        ++(iscm.count);
+      }
     }
   }
   
+  int number_of_puts() const
+  {
+    return count;
+  }
 };
 
 
 // The parallel task
 struct Simplify {
 
+  typedef boost::graph_traits<Surface_mesh>::halfedge_descriptor halfedge_descriptor;
+  typedef boost::graph_traits<Surface_mesh>::edge_descriptor edge_descriptor;
   Surface_mesh &sm;
   HIMap himap;
   ECMap ecmap;
   CCMap ccmap;
-  boost::graph_traits<Surface_mesh>::halfedge_descriptor hd;
+  std::vector<int>& buffer_size;
+  halfedge_descriptor hd;
   int ccindex;
 
   Simplify(Surface_mesh& sm,
            HIMap himap,
            ECMap ecmap,
            CCMap ccmap,
-           boost::graph_traits<Surface_mesh>::halfedge_descriptor hd, int ccindex)
-    : sm(sm), himap(himap), ecmap(ecmap), ccmap(ccmap), hd(hd), ccindex(ccindex)
+           std::vector<int>& buffer_size,
+           halfedge_descriptor hd, int ccindex)
+    : sm(sm), himap(himap), ecmap(ecmap), ccmap(ccmap), buffer_size(buffer_size), hd(hd), ccindex(ccindex)
   {}
 
 
@@ -146,11 +176,11 @@ struct Simplify {
     SICM sicm(himap,sm);
     Component_graph cg(sm, sicm, hd); 
 
-    std::vector<boost::graph_traits<Surface_mesh>::edge_descriptor> cc_edges;
+    std::vector<edge_descriptor> cc_edges;
     int i = 2, count = 0;
-    BOOST_FOREACH(boost::graph_traits<Surface_mesh>::edge_descriptor ed, edges(cg)){
+    BOOST_FOREACH(edge_descriptor ed, edges(cg)){
       ++count;
-      boost::graph_traits<Surface_mesh>::halfedge_descriptor hd, hop;
+      halfedge_descriptor hd, hop;
       hd = halfedge(ed,sm);
       hop = opposite(hd,sm);
       if(get(sicm,ed)){
@@ -173,7 +203,20 @@ struct Simplify {
                                 2,
                                 iscmap,
                                 std::back_inserter(V));
-    cc_edges_count += V.size();
+    cc_edges_count += iscmap.number_of_puts();
+    buffer_size[ccindex] = iscmap.number_of_puts();
+
+    {
+      std::ofstream out(std::string("constraints-")+boost::lexical_cast<std::string>(ccindex)+".selection.txt");
+      out << std::endl << std::endl;
+      BOOST_FOREACH(edge_descriptor ed, V){
+        if(get(iscmap,ed)){
+          out << int(source(ed,sm)) << " " << int(target(ed,sm)) <<  " ";
+        }
+      }
+      out << std::endl;
+    }
+
     std::cerr << "cc_edges_count = " << cc_edges_count << std::endl;
     double uc_ratio = 0.25;
     double cc_ratio = double(cc_edges_count)/double(count);
@@ -181,20 +224,22 @@ struct Simplify {
     std::cerr << cc_ratio << " " << ratio << std::endl;
     assert(ratio < 1.0);
   
-#if 1
    SMS::Constrained_placement
      <SMS::LindstromTurk_placement<Component_graph>,
       ECMap>
           placement (ecmap);
     SMS::Count_ratio_stop_predicate<Component_graph> stop(ratio);
+    Bool_map<ECMap> becmap(ecmap);
     SMS::edge_collapse(cg,
                        stop
                        ,CGAL::parameters::vertex_index_map(get(boost::vertex_index,sm))
                        .halfedge_index_map(himap)
                        .get_placement(placement)
-                       .edge_is_constrained_map(ecmap)
+                       .edge_is_constrained_map(becmap)
                        .vertex_point_map(get(CGAL::vertex_point,sm)));
-#endif
+
+    
+    
     std::cerr << "|| done" << std::endl;
   }
 };
@@ -224,7 +269,9 @@ int main(int argc, char** argv )
   
   HIMap himap = sm.add_property_map<halfedge_descriptor,int>("h:index_in_cc",-1).first;
   
-  int ncc = 0;
+  std::vector<edge_descriptor> partition_edges;
+  int num_partition_edges = 0;
+  std::size_t ncc = 0;
   if(argc>2){
     std::ifstream is2(argv[2]);
     std::string line;
@@ -252,6 +299,8 @@ int main(int argc, char** argv )
         std::cerr << "error in selection: no edge" << s << " " << t << std::endl;
         return 1; 
       }
+      partition_edges.push_back(edge(hd,sm));
+      ++num_partition_edges;
       ecmap[edge(hd,sm)] = true;
       himap[hd] = 0;
       himap[opposite(hd,sm)] = 1;
@@ -263,19 +312,27 @@ int main(int argc, char** argv )
  
   } else {
     ncc = 8;
-    PMP::partition(sm, ccmap, ncc);
+    PMP::partition(sm, ccmap, static_cast<int>(ncc));
 
+    std::ofstream out("partition.selection.txt");
+      out << std::endl << std::endl;
     // now we have to find the constrained edges
-    BOOST_FOREACH(halfedge_descriptor hd, halfedges(sm)){
-      if(is_border(edge(hd,sm),sm)){
+    BOOST_FOREACH(edge_descriptor ed, edges(sm)){
+      if(is_border(ed,sm)){
         continue;
       }
-      if (ccmap[face(hd,sm)] !=ccmap[face(opposite(hd,sm),sm)]) {
-        ecmap[edge(hd,sm)] = true;
+      halfedge_descriptor hd = halfedge(ed,sm);
+      halfedge_descriptor hop = opposite(hd,sm);
+      if (ccmap[face(hd,sm)] !=ccmap[face(hop,sm)]) {
+        ++num_partition_edges;
+        partition_edges.push_back(ed);
+        ecmap[ed] = true;
         himap[hd] = 0;
-        himap[opposite(hd,sm)] = 1;
+        himap[hop] = 1;
+        out << int(source(ed,sm)) << " " << int(target(ed,sm)) <<  " ";
       }
     }
+    out << std::endl;
   }
   
   std::cerr << t.time() << " sec.\n";
@@ -292,26 +349,28 @@ int main(int argc, char** argv )
     if(is_border(opposite(hd,sm),sm)){
       cc_seed[ccmap[face(hd,sm)]] = hd;
     }else{
-      int hcc = ccmap[face(hd,sm)];
-      int hoppcc = ccmap[face(opposite(hd,sm),sm)];
+      std::size_t hcc = ccmap[face(hd,sm)];
+      std::size_t hoppcc = ccmap[face(opposite(hd,sm),sm)];
       if(hcc != hoppcc){
         cc_seed[hcc] = hd;
       }
     }
   } 
+  
+  std::vector<int> buffer_size(ncc); // the number of constrained edges inside each component
   std::cerr << "#CC = " << ncc << "  in " << t.time() << " sec." << std::endl;
   t.reset();
 #if 1
   tbb::task_group tasks;
   for(int i = 0; i < ncc; i++){
-    tasks.run(Simplify(sm, himap, ecmap, ccmap, cc_seed[i],i));
+    tasks.run(Simplify(sm, himap, ecmap, ccmap, buffer_size, cc_seed[i], i));
   }
 
   tasks.wait();
 #else
   for(int i = 0; i < ncc; i++){
     tbb::task_group tasks;
-    tasks.run(Simplify(sm, himap, ecmap, ccmap, cc_seed[i],i));
+    tasks.run(Simplify(sm, himap, ecmap, ccmap, buffer_size, cc_seed[i], i));
     tasks.wait();
   }
 #endif
@@ -323,16 +382,32 @@ int main(int argc, char** argv )
   outi << sm << std::endl;
 
 #if 1
+  // After the parallel edge_collapse make the same for the buffer
 
- typedef Inverted_edge_constraint_map<ECMap> IECMap;
- IECMap iecmap(ecmap);
-
- 
-  int icc_count = 0;
+#if 0
+  // We might increase the buffer by one more layer
+  
   BOOST_FOREACH(edge_descriptor ed, edges(sm)){
-    if(get(iecmap,ed)){
-      ++icc_count;
-    }
+    ecmap[ed]=0;
+  }
+
+  BOOST_FOREACH(edge_descriptor ed, partition_edges){
+    ecmap[ed]=1;
+  }
+  CGAL::expand_edge_selection(partition_edges,
+                              sm,
+                              3,
+                              ecmap,
+                              CGAL::Emptyset_iterator());
+#endif
+
+  typedef Inverted_edge_constraint_map<ECMap> IECMap;
+  IECMap iecmap(ecmap);
+  
+  // When we increase the buffer by one layer the next lines should change
+  int num_buffer_edges = num_partition_edges;
+  for(int i =0; i < buffer_size.size(); i++){
+    num_buffer_edges += buffer_size[i];
   }
 
   SMS::Constrained_placement
@@ -340,12 +415,12 @@ int main(int argc, char** argv )
      IECMap>
     placement (iecmap);
   
-  double uc_ratio = 0.25;
-  double cc_ratio = double(icc_count)/double(sm.number_of_edges());
+  double uc_ratio = 0.75;
+  double cc_ratio = double(num_buffer_edges)/double(sm.number_of_edges());
   double ratio = uc_ratio + (1.0 - uc_ratio)*cc_ratio;
   assert(ratio < 1.0);
    
-  std::cout << icc_count << " constrained" << std::endl;
+  std::cout << num_buffer_edges << " constrained" << std::endl;
   std::cout << "ratio : " << ratio << std::endl;
 
   SMS::Count_ratio_stop_predicate<Surface_mesh> stop(ratio);
