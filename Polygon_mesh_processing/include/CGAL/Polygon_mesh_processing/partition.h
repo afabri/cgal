@@ -167,7 +167,7 @@ void partition(const PolygonMesh& m,
   for(int i=0; fit!=fe; ++fit, ++i)
     put(partition_id_map, *fit, epart[i]);
 
-  output_partitions(m, partition_id_map, nparts);
+  //  output_partitions(m, partition_id_map, nparts);
 }
 
 template<typename PolygonMesh>

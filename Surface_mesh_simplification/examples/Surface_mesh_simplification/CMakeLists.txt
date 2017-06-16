@@ -47,6 +47,14 @@ else()
   message(STATUS "Examples that use OpenMesh will not be compiled.")
 endif()
 
+find_package(METIS)
+
+if(METIS_FOUND)
+  include_directories (${METIS_INCLUDE_DIRS})
+else()
+  message(STATUS "Examples that use the metis library will not be compiled.")
+endif()
+
 # include for local directory
 
 # include for local package
@@ -60,7 +68,8 @@ include_directories( BEFORE ../../include )
 include( CGAL_CreateSingleSourceCGALProgram )
 
 
-create_single_source_cgal_program( "parallel.cpp" )
+
+create_single_source_cgal_program( "toto.cpp" )
 create_single_source_cgal_program( "edge_collapse_constrain_sharp_edges.cpp" )
 create_single_source_cgal_program( "edge_collapse_constrained_border_polyhedron.cpp" )
 create_single_source_cgal_program( "edge_collapse_enriched_polyhedron.cpp" )
@@ -75,4 +84,9 @@ if(OpenMesh_FOUND)
   create_single_source_cgal_program( "edge_collapse_OpenMesh.cpp" )
 
   target_link_libraries( edge_collapse_OpenMesh ${OPENMESH_LIBRARIES} )
+endif()
+
+if(METIS_FOUND)
+  create_single_source_cgal_program( "parallel.cpp" )
+  target_link_libraries( parallel ${METIS_LIBRARIES} )
 endif()
