@@ -319,7 +319,8 @@ int main(int argc, char** argv )
   std::cerr << "parallel edge collapse in " << t.time() << " sec." << std::endl;
   t.reset();
   
- 
+  std::ofstream outi("out-intermediary.off");
+  outi << sm << std::endl;
 
 #if 1
 
