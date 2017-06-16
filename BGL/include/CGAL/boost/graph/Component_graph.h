@@ -20,7 +20,11 @@
 #ifndef CGAL_BOOST_COMPONENT_GRAPH_H
 #define CGAL_BOOST_COMPONENT_GRAPH_H
 
+#include <CGAL/Polygon_mesh_processing/connected_components.h>
+
 namespace CGAL {
+
+namespace PMP = Polygon_mesh_processing;
 
   namespace internal {
 template <typename G>
