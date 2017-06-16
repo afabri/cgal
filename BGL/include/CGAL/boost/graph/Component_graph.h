@@ -372,4 +372,4 @@ get(CGAL::vertex_point_t t, Component_graph<G,ECMap>& cg)
 
 } // namespace CGAL
 
-#endif CGAL_BOOST_COMPONENT_GRAPH_H
+#endif // CGAL_BOOST_COMPONENT_GRAPH_H
