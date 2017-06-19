@@ -1,3 +1,7 @@
+
+#define INCREASE
+
+
 #include "tbb/task_group.h"
 
 #include <iostream>
@@ -115,10 +119,10 @@ struct In_same_component_map
   CCMap ccmap;
   const G& g;
   int cc;
-  mutable int count;
+  mutable int& count;
 
-  In_same_component_map(ECMap ecmap, CCMap ccmap, const G& g, int cc)
-    : ecmap(ecmap), ccmap(ccmap), g(g), cc(cc), count(0)
+  In_same_component_map(ECMap ecmap, CCMap ccmap, const G& g, int cc, int& count)
+    : ecmap(ecmap), ccmap(ccmap), g(g), cc(cc), count(count)
   {}
 
 
@@ -139,10 +143,6 @@ struct In_same_component_map
     }
   }
   
-  int number_of_puts() const
-  {
-    return count;
-  }
 };
 
 
@@ -196,15 +196,16 @@ struct Simplify {
     std::cerr << "cc_edges_count = " << cc_edges_count << std::endl;
 
     std::vector<boost::graph_traits<Surface_mesh>::edge_descriptor> V;
-    In_same_component_map<ECMap,CCMap,Surface_mesh> iscmap(ecmap,ccmap,sm,ccindex);
+    int number_of_puts = 0;
+    In_same_component_map<ECMap,CCMap,Surface_mesh> iscmap(ecmap,ccmap,sm,ccindex, number_of_puts);
 
     CGAL::expand_edge_selection(cc_edges,
                                 sm,
                                 2,
                                 iscmap,
                                 std::back_inserter(V));
-    cc_edges_count += iscmap.number_of_puts();
-    buffer_size[ccindex] = iscmap.number_of_puts();
+    cc_edges_count += number_of_puts;
+    buffer_size[ccindex] = number_of_puts;
 
     {
       std::ofstream out(std::string("constraints-")+boost::lexical_cast<std::string>(ccindex)+".selection.txt");
@@ -217,17 +218,18 @@ struct Simplify {
       out << std::endl;
     }
 
-    std::cerr << "cc_edges_count = " << cc_edges_count << std::endl;
+    std::cerr << "# constrained edges in the partition = " << cc_edges_count << std::endl;
     double uc_ratio = 0.25;
     double cc_ratio = double(cc_edges_count)/double(count);
     double ratio = uc_ratio + (1.0 - uc_ratio)*cc_ratio;
     std::cerr << cc_ratio << " " << ratio << std::endl;
     assert(ratio < 1.0);
-  
-   SMS::Constrained_placement
-     <SMS::LindstromTurk_placement<Component_graph>,
-      ECMap>
-          placement (ecmap);
+
+#ifdef INCREASE  
+    SMS::Constrained_placement < SMS::LindstromTurk_placement<Component_graph>, ECMap> placement (ecmap);
+#else
+    SMS::LindstromTurk_placement<Component_graph> placement;
+#endif
     SMS::Count_ratio_stop_predicate<Component_graph> stop(ratio);
     Bool_map<ECMap> becmap(ecmap);
     SMS::edge_collapse(cg,
@@ -270,7 +272,6 @@ int main(int argc, char** argv )
   HIMap himap = sm.add_property_map<halfedge_descriptor,int>("h:index_in_cc",-1).first;
   
   std::vector<edge_descriptor> partition_edges;
-  int num_partition_edges = 0;
   std::size_t ncc = 0;
   if(argc>2){
     std::ifstream is2(argv[2]);
@@ -300,7 +301,6 @@ int main(int argc, char** argv )
         return 1; 
       }
       partition_edges.push_back(edge(hd,sm));
-      ++num_partition_edges;
       ecmap[edge(hd,sm)] = true;
       himap[hd] = 0;
       himap[opposite(hd,sm)] = 1;
@@ -324,7 +324,6 @@ int main(int argc, char** argv )
       halfedge_descriptor hd = halfedge(ed,sm);
       halfedge_descriptor hop = opposite(hd,sm);
       if (ccmap[face(hd,sm)] !=ccmap[face(hop,sm)]) {
-        ++num_partition_edges;
         partition_edges.push_back(ed);
         ecmap[ed] = true;
         himap[hd] = 0;
@@ -360,7 +359,9 @@ int main(int argc, char** argv )
   std::vector<int> buffer_size(ncc); // the number of constrained edges inside each component
   std::cerr << "#CC = " << ncc << "  in " << t.time() << " sec." << std::endl;
   t.reset();
+
 #if 1
+  // Simplify the partition in parallel
   tbb::task_group tasks;
   for(int i = 0; i < ncc; i++){
     tasks.run(Simplify(sm, himap, ecmap, ccmap, buffer_size, cc_seed[i], i));
@@ -377,16 +378,15 @@ int main(int argc, char** argv )
 
   std::cerr << "parallel edge collapse in " << t.time() << " sec." << std::endl;
   t.reset();
-  
-  std::ofstream outi("out-intermediary.off");
-  outi << sm << std::endl;
+  //sm.collect_garbage();
+  //std::ofstream outi("out-intermediary.off");
+  //outi << sm << std::endl;
 
 #if 1
   // After the parallel edge_collapse make the same for the buffer
-
-#if 0
-  // We might increase the buffer by one more layer
-  
+#ifdef INCREASE
+  // Increase the buffer by one more layer
+  std::size_t num_constrained_edges = 0;
   BOOST_FOREACH(edge_descriptor ed, edges(sm)){
     ecmap[ed]=0;
   }
@@ -398,29 +398,33 @@ int main(int argc, char** argv )
                               sm,
                               3,
                               ecmap,
-                              CGAL::Emptyset_iterator());
+                              CGAL::Counting_output_iterator(&num_constrained_edges));
+  num_constrained_edges += partition_edges.size();
+#else
+  std::size_t num_constrained_edges = partition_edges.size();
+  for(int i =0; i < buffer_size.size(); i++){
+    std::cout << "# partition edges = "<<   partition_edges.size() <<   " " << buffer_size[i] << std::endl;
+    num_constrained_edges += buffer_size[i];
+  }
 #endif
 
   typedef Inverted_edge_constraint_map<ECMap> IECMap;
   IECMap iecmap(ecmap);
   
-  // When we increase the buffer by one layer the next lines should change
-  int num_buffer_edges = num_partition_edges;
-  for(int i =0; i < buffer_size.size(); i++){
-    num_buffer_edges += buffer_size[i];
-  }
+  num_constrained_edges = num_edges(sm) - num_constrained_edges; 
 
-  SMS::Constrained_placement
-    <SMS::LindstromTurk_placement<Surface_mesh>,
-     IECMap>
-    placement (iecmap);
   
-  double uc_ratio = 0.75;
-  double cc_ratio = double(num_buffer_edges)/double(sm.number_of_edges());
+#ifdef INCREASE
+  SMS::Constrained_placement <SMS::LindstromTurk_placement<Surface_mesh>, IECMap> placement (iecmap);
+#else
+  SMS::LindstromTurk_placement<Surface_mesh> placement;
+#endif
+  double uc_ratio = 0.3;
+  double cc_ratio = double(num_constrained_edges)/double(num_edges(sm));
   double ratio = uc_ratio + (1.0 - uc_ratio)*cc_ratio;
   assert(ratio < 1.0);
    
-  std::cout << num_buffer_edges << " constrained" << std::endl;
+  std::cout << num_constrained_edges << " constrained; cc_ratio: " << cc_ratio << std::endl;
   std::cout << "ratio : " << ratio << std::endl;
 
   SMS::Count_ratio_stop_predicate<Surface_mesh> stop(ratio);
