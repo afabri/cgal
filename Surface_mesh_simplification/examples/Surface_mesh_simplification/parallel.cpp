@@ -1,6 +1,7 @@
 
 #define INCREASE
 
+bool dump = false;
 
 #include "tbb/task_group.h"
 
@@ -67,6 +68,7 @@ struct Selection_is_constraint_map
 };
 
 
+// Adapter which interprets char as bool to avoid "performance warning" with VC++
 template <typename Char_map>
 struct Bool_map
 {
@@ -193,7 +195,6 @@ struct Simplify {
     cg.num_edges() = count;
 
     std::size_t cc_edges_count = cc_edges.size();
-    std::cerr << "cc_edges_count = " << cc_edges_count << std::endl;
 
     std::vector<boost::graph_traits<Surface_mesh>::edge_descriptor> V;
     int number_of_puts = 0;
@@ -207,7 +208,7 @@ struct Simplify {
     cc_edges_count += number_of_puts;
     buffer_size[ccindex] = number_of_puts;
 
-    {
+    if(dump){
       std::ofstream out(std::string("constraints-")+boost::lexical_cast<std::string>(ccindex)+".selection.txt");
       out << std::endl << std::endl;
       BOOST_FOREACH(edge_descriptor ed, V){
@@ -314,8 +315,11 @@ int main(int argc, char** argv )
     ncc = 8;
     PMP::partition(sm, ccmap, static_cast<int>(ncc));
 
-    std::ofstream out("partition.selection.txt");
+    std::ofstream out;
+    if(dump){
+      out.open("partition.selection.txt");
       out << std::endl << std::endl;
+    }
     // now we have to find the constrained edges
     BOOST_FOREACH(edge_descriptor ed, edges(sm)){
       if(is_border(ed,sm)){
@@ -328,10 +332,14 @@ int main(int argc, char** argv )
         ecmap[ed] = true;
         himap[hd] = 0;
         himap[hop] = 1;
-        out << int(source(ed,sm)) << " " << int(target(ed,sm)) <<  " ";
+        if(dump){
+          out << int(source(ed,sm)) << " " << int(target(ed,sm)) <<  " ";
+        }
       }
     }
-    out << std::endl;
+    if(dump){
+      out << std::endl;
+    }
   }
   
   std::cerr << t.time() << " sec.\n";
@@ -378,9 +386,14 @@ int main(int argc, char** argv )
 
   std::cerr << "parallel edge collapse in " << t.time() << " sec." << std::endl;
   t.reset();
-  //sm.collect_garbage();
-  //std::ofstream outi("out-intermediary.off");
-  //outi << sm << std::endl;
+
+  if(dump){
+    Surface_mesh sm2;
+    CGAL::copy_face_graph(sm,sm2);
+    
+    std::ofstream outi("out-intermediary.off");
+    outi << sm2 << std::endl;
+  }
 
 #if 1
   // After the parallel edge_collapse make the same for the buffer
