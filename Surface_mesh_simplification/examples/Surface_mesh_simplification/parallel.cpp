@@ -274,44 +274,7 @@ int main(int argc, char** argv )
   
   std::vector<edge_descriptor> partition_edges;
   std::size_t ncc = 0;
-  if(argc>2){
-    std::ifstream is2(argv[2]);
-    std::string line;
-    int id, id2;
-    
-    if(!std::getline(is2, line)){
-      std::cerr << "error in selection: no first line"<< std::endl;
-      return 1; 
-    }
-    if(!std::getline(is2, line)){
-      std::cerr << "error in selection: no second line"<< std::endl;
-      return 1; 
-    }
-    if(!std::getline(is2, line)){
-      std::cerr << "error in selection: no third line"<< std::endl;
-      return 1; 
-    }
-    std::istringstream edge_line(line);
-    while(edge_line >> id >> id2) {
-      vertex_descriptor s(id), t(id2);
-      halfedge_descriptor hd;
-      bool exists;
-      boost::tie(hd,exists) = halfedge(s,t,sm);
-      if(! exists){
-        std::cerr << "error in selection: no edge" << s << " " << t << std::endl;
-        return 1; 
-      }
-      partition_edges.push_back(edge(hd,sm));
-      ecmap[edge(hd,sm)] = true;
-      himap[hd] = 0;
-      himap[opposite(hd,sm)] = 1;
-    }
 
-    ncc = PMP::connected_components(sm,
-                                    ccmap,
-                                    PMP::parameters::edge_is_constrained_map(ecmap));
- 
-  } else {
     ncc = 8;
     PMP::partition(sm, ccmap, static_cast<int>(ncc));
 
@@ -340,7 +303,7 @@ int main(int argc, char** argv )
     if(dump){
       out << std::endl;
     }
-  }
+
   
   std::cerr << t.time() << " sec.\n";
   t.reset();
