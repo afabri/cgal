@@ -121,26 +121,23 @@ public:
 template <typename G, typename ECMap>
 class Component_graph {
 public:
-  typedef internal::CG_edge_iterator<Component_graph<G,ECMap> > edge_iterator;
+  typedef typename boost::graph_traits<G>::edge_descriptor edge_descriptor;
   typedef typename boost::graph_traits<G>::halfedge_descriptor halfedge_descriptor;
   typedef typename boost::graph_traits<G>::face_descriptor face_descriptor;
+  typedef typename tbb::concurrent_vector<edge_descriptor>::iterator edge_iterator;
+
   G& g;
-  face_descriptor cc;
+  tbb::concurrent_vector<edge_descriptor>& cc;
   ECMap ecmap;
   int ne;
 
-  Component_graph(G& g, ECMap ecmap, face_descriptor cc)
+  Component_graph(G& g, ECMap ecmap,  tbb::concurrent_vector<edge_descriptor>&cc)
     : g(g), cc(cc), ecmap(ecmap)
   {}
   
-  int& num_edges()
-  {
-    return ne;
-  }
-
   int num_edges() const
   {
-    return ne;
+    return cc.size();
   }
 }; 
 
@@ -174,11 +171,10 @@ struct graph_traits<CGAL::Component_graph<G,ECMap> > {
 namespace CGAL {
 
 template <typename G, typename ECMap>
-CGAL::Iterator_range<internal::CG_edge_iterator<Component_graph<G,ECMap> > >
+CGAL::Iterator_range<typename tbb::concurrent_vector<typename boost::graph_traits<G>::edge_descriptor>::iterator>
 edges(const Component_graph<G,ECMap>& cg)
 {
-  return CGAL::make_range(internal::CG_edge_iterator<Component_graph<G,ECMap> >(cg),
-                          internal::CG_edge_iterator<Component_graph<G,ECMap> >(0));
+  return CGAL::make_range(cg.cc.begin(), cg.cc.end());
 }
 
 template <typename G, typename ECMap>

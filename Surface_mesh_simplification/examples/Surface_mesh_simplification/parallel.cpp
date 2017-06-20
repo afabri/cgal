@@ -4,6 +4,8 @@
 bool dump = false;
 
 #include "tbb/task_group.h"
+#include "tbb/concurrent_vector.h"
+# include <tbb/parallel_for.h>
 
 #include <iostream>
 #include <fstream>
@@ -25,8 +27,8 @@ bool dump = false;
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/foreach.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/lexical_cast.hpp>
+
 typedef CGAL::Simple_cartesian<double> Kernel;
 
 typedef Kernel::Point_3 Point_3;
@@ -159,7 +161,7 @@ struct Simplify {
   ECMap ecmap;
   CCMap ccmap;
   std::vector<int>& buffer_size;
-  face_descriptor fd;
+  tbb::concurrent_vector<edge_descriptor>& cc_edges;
   int ccindex;
 
   Simplify(Surface_mesh& sm,
@@ -167,8 +169,8 @@ struct Simplify {
            ECMap ecmap,
            CCMap ccmap,
            std::vector<int>& buffer_size,
-           face_descriptor fd, int ccindex)
-    : sm(sm), himap(himap), ecmap(ecmap), ccmap(ccmap), buffer_size(buffer_size), fd(fd), ccindex(ccindex)
+           tbb::concurrent_vector<edge_descriptor>& cc_edges, int ccindex)
+    : sm(sm), himap(himap), ecmap(ecmap), ccmap(ccmap), buffer_size(buffer_size), cc_edges(cc_edges), ccindex(ccindex)
   {}
 
 
@@ -177,36 +179,35 @@ struct Simplify {
     typedef Selection_is_constraint_map<HIMap, Surface_mesh> SICM;
     typedef CGAL::Component_graph<Surface_mesh,SICM>  Component_graph;
     SICM sicm(himap,sm);
-    Component_graph cg(sm, sicm, fd); 
+    Component_graph cg(sm, sicm, cc_edges); 
 
-    std::vector<edge_descriptor> cc_edges;
+    std::vector<edge_descriptor> buffer_edges;
     int i = 2, count = 0;
-    BOOST_FOREACH(edge_descriptor ed, edges(cg)){
+    BOOST_FOREACH(edge_descriptor ed, cc_edges){
       ++count;
       halfedge_descriptor hd, hop;
       hd = halfedge(ed,sm);
       hop = opposite(hd,sm);
       if(get(sicm,ed)){
-        cc_edges.push_back(ed);
+        buffer_edges.push_back(ed);
       }else{
         put(himap,hd,i); ++i;
         put(himap,hop,i); ++i;
       }
     }
-    cg.num_edges() = count;
 
-    std::size_t cc_edges_count = cc_edges.size();
+    std::size_t buffer_edges_count = buffer_edges.size();
 
     std::vector<boost::graph_traits<Surface_mesh>::edge_descriptor> V;
     int number_of_puts = 0;
     In_same_component_map<ECMap,CCMap,Surface_mesh> iscmap(ecmap,ccmap,sm,ccindex, number_of_puts);
 
-    CGAL::expand_edge_selection(cc_edges,
+    CGAL::expand_edge_selection(buffer_edges,
                                 sm,
                                 2,
                                 iscmap,
                                 std::back_inserter(V));
-    cc_edges_count += number_of_puts;
+    buffer_edges_count += number_of_puts;
     buffer_size[ccindex] = number_of_puts;
 
     if(dump){
@@ -220,9 +221,9 @@ struct Simplify {
       out << std::endl;
     }
 
-    std::cerr << "# constrained edges in the partition = " << cc_edges_count << std::endl;
+    std::cerr << "# constrained edges in the partition = " << buffer_edges_count << std::endl;
     double uc_ratio = 0.25;
-    double cc_ratio = double(cc_edges_count)/double(count);
+    double cc_ratio = double(buffer_edges_count)/double(count);
     double ratio = uc_ratio + (1.0 - uc_ratio)*cc_ratio;
     std::cerr << cc_ratio << " " << ratio << std::endl;
     assert(ratio < 1.0);
@@ -246,6 +247,45 @@ struct Simplify {
     
     std::cerr << "|| done" << std::endl;
   }
+};
+
+ 
+
+struct Collect_edges {
+    
+  typedef boost::graph_traits<Surface_mesh>::vertex_descriptor vertex_descriptor;
+  typedef boost::graph_traits<Surface_mesh>::edge_descriptor edge_descriptor;
+  typedef boost::graph_traits<Surface_mesh>::halfedge_descriptor halfedge_descriptor;
+  typedef boost::graph_traits<Surface_mesh>::face_descriptor face_descriptor;
+  std::vector<tbb::concurrent_vector<edge_descriptor> >& cc_edges;
+  std::size_t ncc;
+  ECMap ecmap;
+  CCMap ccmap;
+  Surface_mesh& sm;
+
+  Collect_edges(std::vector<tbb::concurrent_vector<edge_descriptor> >& cc_edges,
+                std::size_t ncc,
+                ECMap ecmap,
+                CCMap ccmap,
+                Surface_mesh& sm)
+    : cc_edges(cc_edges), ncc(ncc), ecmap(ecmap), ccmap(ccmap), sm(sm)
+  {}
+
+  void operator()( const tbb::blocked_range<std::size_t>& r ) const
+    {
+      for( std::size_t i = r.begin() ;  i != r.end() ; ++i)
+        { 
+          face_descriptor fd(i);
+          std::size_t cc = ccmap[fd];  // this is the partition
+          BOOST_FOREACH(halfedge_descriptor hd, halfedges_around_face(halfedge(fd,sm),sm)){
+            halfedge_descriptor hop = opposite(hd,sm);
+            if(is_border(hop,sm) || get(ecmap,edge(hd,sm)) || (fd < face(hop ,sm))){
+              cc_edges[cc].push_back(edge((hd<hop)?hd:hop, sm));
+            }
+          }
+        }
+    }
+  
 };
 
 
@@ -309,25 +349,14 @@ int main(int argc, char** argv )
   std::cerr << t.time() << " sec.\n";
   t.reset();
 
-
-  // For each connected component find one halfedge on the "border"
-  // as a starting point for each simplification thread
-  std::vector<face_descriptor> cc_seed(ncc);
-  BOOST_FOREACH(halfedge_descriptor hd, halfedges(sm)){
-    if(is_border(hd,sm)){
-      continue;
-    }
-    if(is_border(opposite(hd,sm),sm)){
-      cc_seed[ccmap[face(hd,sm)]] = face(hd,sm);
-    }else{
-      std::size_t hcc = ccmap[face(hd,sm)];
-      std::size_t hoppcc = ccmap[face(opposite(hd,sm),sm)];
-      if(hcc != hoppcc){
-        cc_seed[hcc] = face(hd,sm);
-      }
-    }
-  } 
-  
+  std::vector<tbb::concurrent_vector<edge_descriptor> > cc_edges(ncc);
+  tbb::parallel_for(tbb::blocked_range<size_t>( 0, num_faces(sm)),
+                    Collect_edges(cc_edges, ncc, ecmap, ccmap, sm));
+ 
+  for(int i=0; i < ncc; i++){
+    std::cout << "#edges in component "<< i << ": " << cc_edges[i].size() << std::endl;
+  }
+ 
   std::vector<int> buffer_size(ncc); // the number of constrained edges inside each component
   std::cerr << "#CC = " << ncc << "  in " << t.time() << " sec." << std::endl;
   t.reset();
@@ -336,14 +365,14 @@ int main(int argc, char** argv )
   // Simplify the partition in parallel
   tbb::task_group tasks;
   for(int i = 0; i < ncc; i++){
-    tasks.run(Simplify(sm, himap, ecmap, ccmap, buffer_size, cc_seed[i], i));
+    tasks.run(Simplify(sm, himap, ecmap, ccmap, buffer_size, cc_edges[i], i));
   }
 
   tasks.wait();
 #else
   for(int i = 0; i < ncc; i++){
     tbb::task_group tasks;
-    tasks.run(Simplify(sm, himap, ecmap, ccmap, buffer_size, cc_seed[i], i));
+    tasks.run(Simplify(sm, himap, ecmap, ccmap, buffer_size, cc_edges[i], i));
     tasks.wait();
   }
 #endif

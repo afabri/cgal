@@ -96,7 +96,7 @@ void partition(const PolygonMesh& m,
 
   idx_t options[METIS_NOPTIONS];
   options[METIS_OPTION_CTYPE] = METIS_CTYPE_SHEM;
-  options[METIS_OPTION_CONTIG] = 1;
+  options[METIS_OPTION_CONTIG] = 0;
   options[METIS_OPTION_DBGLVL] = METIS_DBG_INFO;
 //  options[METIS_OPTION_IPTYPE] = METIS_IPTYPE_RANDOM;
   options[METIS_OPTION_MINCONN] = 0;

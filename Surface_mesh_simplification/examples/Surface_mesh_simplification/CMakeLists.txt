@@ -88,5 +88,7 @@ endif()
 
 if(METIS_FOUND)
   create_single_source_cgal_program( "parallel.cpp" )
+  create_single_source_cgal_program( "parallel-CC.cpp" )
   target_link_libraries( parallel ${METIS_LIBRARIES} )
+  target_link_libraries( parallel-CC ${METIS_LIBRARIES} )
 endif()
