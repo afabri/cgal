@@ -153,12 +153,13 @@ struct Simplify {
 
   typedef boost::graph_traits<Surface_mesh>::halfedge_descriptor halfedge_descriptor;
   typedef boost::graph_traits<Surface_mesh>::edge_descriptor edge_descriptor;
+  typedef boost::graph_traits<Surface_mesh>::face_descriptor face_descriptor;
   Surface_mesh &sm;
   HIMap himap;
   ECMap ecmap;
   CCMap ccmap;
   std::vector<int>& buffer_size;
-  halfedge_descriptor hd;
+  face_descriptor fd;
   int ccindex;
 
   Simplify(Surface_mesh& sm,
@@ -166,8 +167,8 @@ struct Simplify {
            ECMap ecmap,
            CCMap ccmap,
            std::vector<int>& buffer_size,
-           halfedge_descriptor hd, int ccindex)
-    : sm(sm), himap(himap), ecmap(ecmap), ccmap(ccmap), buffer_size(buffer_size), hd(hd), ccindex(ccindex)
+           face_descriptor fd, int ccindex)
+    : sm(sm), himap(himap), ecmap(ecmap), ccmap(ccmap), buffer_size(buffer_size), fd(fd), ccindex(ccindex)
   {}
 
 
@@ -176,7 +177,7 @@ struct Simplify {
     typedef Selection_is_constraint_map<HIMap, Surface_mesh> SICM;
     typedef CGAL::Component_graph<Surface_mesh,SICM>  Component_graph;
     SICM sicm(himap,sm);
-    Component_graph cg(sm, sicm, hd); 
+    Component_graph cg(sm, sicm, fd); 
 
     std::vector<edge_descriptor> cc_edges;
     int i = 2, count = 0;
@@ -311,18 +312,18 @@ int main(int argc, char** argv )
 
   // For each connected component find one halfedge on the "border"
   // as a starting point for each simplification thread
-  std::vector<halfedge_descriptor> cc_seed(ncc);
+  std::vector<face_descriptor> cc_seed(ncc);
   BOOST_FOREACH(halfedge_descriptor hd, halfedges(sm)){
     if(is_border(hd,sm)){
       continue;
     }
     if(is_border(opposite(hd,sm),sm)){
-      cc_seed[ccmap[face(hd,sm)]] = hd;
+      cc_seed[ccmap[face(hd,sm)]] = face(hd,sm);
     }else{
       std::size_t hcc = ccmap[face(hd,sm)];
       std::size_t hoppcc = ccmap[face(opposite(hd,sm),sm)];
       if(hcc != hoppcc){
-        cc_seed[hcc] = hd;
+        cc_seed[hcc] = face(hd,sm);
       }
     }
   } 
@@ -420,10 +421,11 @@ int main(int argc, char** argv )
   std::cerr << "\nResult: #V = "<< num_vertices(sm)  << " #E = "<< num_edges(sm) 
             << "  #F = " << num_faces(sm) << "  in " << t.time() << " sec." << std::endl;
 
-  std::ofstream out("out.off");
-  out << sm << std::endl;
-  out.close();
-  std::cerr << "Writing result in " << t.time() << " sec." << std::endl;
-
+  {
+    std::ofstream out("out.off");
+    out << sm << std::endl;
+    out.close();
+    std::cerr << "Writing result in " << t.time() << " sec." << std::endl;
+  }
   return EXIT_SUCCESS;
 }

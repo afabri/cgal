@@ -35,6 +35,7 @@ public:
  
   friend class boost::iterator_core_access;
   typedef typename boost::graph_traits<G>::edge_descriptor edge_descriptor;
+  typedef typename boost::graph_traits<G>::face_descriptor face_descriptor;
   typedef typename boost::graph_traits<G>::halfedge_descriptor halfedge_descriptor;
   bool end;
   boost::shared_ptr<std::vector<edge_descriptor> > edges;
@@ -77,7 +78,7 @@ public:
     // TODO: replace faces by a functor that writes directly into edges
     //       Or write the iterator so that increment does the work without the vector edges
     std::vector<face_descriptor> faces;
-    PMP::connected_component(face(g.cc,g.g),
+    PMP::connected_component(g.cc,
                              g.g,
                              std::back_inserter(faces),
                              PMP::parameters::edge_is_constrained_map(g.ecmap));
@@ -122,12 +123,13 @@ class Component_graph {
 public:
   typedef internal::CG_edge_iterator<Component_graph<G,ECMap> > edge_iterator;
   typedef typename boost::graph_traits<G>::halfedge_descriptor halfedge_descriptor;
+  typedef typename boost::graph_traits<G>::face_descriptor face_descriptor;
   G& g;
-  halfedge_descriptor cc;
+  face_descriptor cc;
   ECMap ecmap;
   int ne;
 
-  Component_graph(G& g, ECMap ecmap, halfedge_descriptor cc)
+  Component_graph(G& g, ECMap ecmap, face_descriptor cc)
     : g(g), cc(cc), ecmap(ecmap)
   {}
   
