@@ -60,10 +60,12 @@ public:
     : mRatio(aRatio), first_pass(true)
   {}
   
-  void second_pass(size_type a_, size_type b_)
-  {
+  void second_pass(size_type a, size_type b)
+  { 
+    double uc_ratio = 0.3;
+    double cc_ratio = double(a)/double(b);
+    mRatio = uc_ratio + (1.0 - uc_ratio)*cc_ratio;
     first_pass = false;
-    //mRatio = ;
   }
 
   template <typename F, typename Profile_> 
