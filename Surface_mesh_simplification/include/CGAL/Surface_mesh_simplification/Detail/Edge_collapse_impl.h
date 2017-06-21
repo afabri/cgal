@@ -240,7 +240,7 @@ namespace Surface_mesh_simplification
     CGAL_SURF_SIMPL_TEST_assertion ( lLoop_watchdog ++ < mInitialEdgeCount ) ;
 
     CGAL_ECMS_TRACE(1,"Popped " << edge_to_string(*lEdge) ) ;
-
+    std::cerr << *lEdge << std::endl;
     CGAL_assertion( !is_constrained(*lEdge) );
     
     Profile const& lProfile = create_profile(*lEdge);

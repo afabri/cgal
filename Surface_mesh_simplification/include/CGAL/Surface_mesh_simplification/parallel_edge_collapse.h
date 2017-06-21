@@ -170,6 +170,7 @@ struct Simplify {
   Cost cost;
   Stop stop;
   std::vector<int>& buffer_size;
+  std::vector<int>& results;
   tbb::concurrent_vector<edge_descriptor>& cc_edges;
   int ccindex;
   bool dump,increase;
@@ -182,11 +183,12 @@ struct Simplify {
            Cost cost,
            Stop stop,
            std::vector<int>& buffer_size,
+           std::vector<int>& results,
            tbb::concurrent_vector<edge_descriptor>& cc_edges,
            int ccindex,
            bool dump,
            bool increase)
-    : sm(sm), himap(himap), ecmap(ecmap), placement(placement), cost(cost), stop(stop), ccmap(ccmap), buffer_size(buffer_size), cc_edges(cc_edges), ccindex(ccindex), dump(dump), increase(increase)
+    : sm(sm), himap(himap), ecmap(ecmap), placement(placement), cost(cost), stop(stop), ccmap(ccmap), buffer_size(buffer_size), results(results), cc_edges(cc_edges), ccindex(ccindex), dump(dump), increase(increase)
   {}
 
 
@@ -249,29 +251,28 @@ struct Simplify {
 
     if(increase){
       Constrained_placement <Placement, ECMap> constrained_placement(ecmap,placement);
-      edge_collapse(cg
-                    ,stop
-                    ,Parallel_tag()
-                    ,parameters::vertex_index_map(get(boost::vertex_index,sm))
-                    .halfedge_index_map(himap)
-                    .get_placement(constrained_placement)
-                    .get_cost(cost)
-                    .edge_is_constrained_map(becmap)
-                    .vertex_point_map(get(CGAL::vertex_point,sm)));
+      results[ccindex] 
+        = edge_collapse(cg
+                        ,stop
+                        ,Parallel_tag()
+                        ,parameters::vertex_index_map(get(boost::vertex_index,sm))
+                        .halfedge_index_map(himap)
+                        .get_placement(constrained_placement)
+                        .get_cost(cost)
+                        .edge_is_constrained_map(becmap)
+                        .vertex_point_map(get(CGAL::vertex_point,sm)));
     } else {
-      edge_collapse(cg
-                    ,stop
-                    ,Parallel_tag()
-                    ,parameters::vertex_index_map(get(boost::vertex_index,sm))
-                    .halfedge_index_map(himap)
-                    .get_placement(placement)
-                    .get_cost(cost)
-                    .edge_is_constrained_map(becmap)
-                    .vertex_point_map(get(CGAL::vertex_point,sm)));
+      results[ccindex] 
+        = edge_collapse(cg
+                        ,stop
+                        ,Parallel_tag()
+                        ,parameters::vertex_index_map(get(boost::vertex_index,sm))
+                        .halfedge_index_map(himap)
+                        .get_placement(placement)
+                        .get_cost(cost)
+                        .edge_is_constrained_map(becmap)
+                        .vertex_point_map(get(CGAL::vertex_point,sm)));
     }
-    
-    
-    
     std::cerr << "|| done" << std::endl;
   }
 };
@@ -379,6 +380,7 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, Placement placement, S
   }
  
   std::vector<int> buffer_size(ncc); // the number of constrained edges inside each component
+  std::vector<int> results(ncc); // the number of collapsed edges in each thread 
   std::cerr << "#CC = " << ncc << "  in " << t.time() << " sec." << std::endl;
   t.reset();
 
@@ -386,26 +388,29 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, Placement placement, S
   // Simplify the partition in parallel
   tbb::task_group tasks;
   for(int i = 0; i < ncc; i++){
-    tasks.run(internal::Simplify<TriangleMesh,Placement,Cost,Stop,HIMap,ECMap,CCMap>(sm, himap, ecmap, ccmap, placement, cost, stop, buffer_size, cc_edges[i], i, dump, increase));
+    tasks.run(internal::Simplify<TriangleMesh,Placement,Cost,Stop,HIMap,ECMap,CCMap>(sm, himap, ecmap, ccmap, placement, cost, stop, buffer_size, results, cc_edges[i], i, dump, increase));
   }
 
   tasks.wait();
 #else
   for(int i = 0; i < ncc; i++){
     tbb::task_group tasks;
-    tasks.run(internal::Simplify<TriangleMesh,Placement,Cost,Stop,HIMap,ECMap,CCMap>(sm, himap, ecmap, ccmap, placement, cost, stop, buffer_size, cc_edges[i], i,dump, increase));
+    tasks.run(internal::Simplify<TriangleMesh,Placement,Cost,Stop,HIMap,ECMap,CCMap>(sm, himap, ecmap, ccmap, placement, cost, stop, buffer_size, results, cc_edges[i], i,dump, increase));
     tasks.wait();
   }
 #endif
+
+  int result = 0;
+  for(int i =0; i < results.size(); i++){
+    result += results[i];
+  }
 
   std::cerr << "parallel edge collapse in " << t.time() << " sec." << std::endl;
   t.reset();
 
   if(dump){
     TriangleMesh sm2;
-    std::cerr << "before copy_face_graph()"<< std::endl;
     copy_face_graph(sm,sm2);
-    std::cerr << "after copy_face_graph()"<< std::endl;
     std::ofstream outi("out-intermediary.off");
     outi << sm2 << std::endl;
   }
@@ -445,29 +450,29 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, Placement placement, S
  
   if(increase){
     Constrained_placement <Placement, IECMap> constrained_placement (iecmap, placement);
-    edge_collapse(sm,
-                  stop,
-                  Sequential_tag(),
-                  parameters::vertex_index_map(get(boost::vertex_index,sm))
-                  .get_placement(constrained_placement)
-                  .get_cost(cost)
-                  .edge_is_constrained_map(iecmap)
-                );
+    result += edge_collapse(sm,
+                            stop,
+                            Sequential_tag(),
+                            parameters::vertex_index_map(get(boost::vertex_index,sm))
+                            .get_placement(constrained_placement)
+                            .get_cost(cost)
+                            .edge_is_constrained_map(iecmap)
+                            );
   }else{
-    edge_collapse(sm,
-                  stop,
-                  Sequential_tag(),
-                  parameters::vertex_index_map(get(boost::vertex_index,sm))
-                  .get_placement(placement)
-                  .get_cost(cost)
-                  .edge_is_constrained_map(iecmap)
-                  );
+    result += edge_collapse(sm,
+                            stop,
+                            Sequential_tag(),
+                            parameters::vertex_index_map(get(boost::vertex_index,sm))
+                            .get_placement(placement)
+                            .get_cost(cost)
+                            .edge_is_constrained_map(iecmap)
+                            );
   }
 
   std::cerr << "sequential edge collapse on buffer in " << t.time() << " sec." << std::endl;
 
 
-  return 0;  // AF fix this: We have to return the # of collapsed edges
+  return result;
 }
 
 
