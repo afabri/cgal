@@ -39,6 +39,7 @@ int main( int argc, char** argv )
   int r = SMS::edge_collapse
             (surface_mesh
              , CGAL::Surface_mesh_simplification::Edge_length_stop_predicate<double>(threshold)
+             , CGAL::Sequential_tag()
              , CGAL::parameters::vertex_index_map(get(CGAL::vertex_external_index,surface_mesh))
                                .halfedge_index_map  (get(CGAL::halfedge_external_index  ,surface_mesh))
                                .get_cost (SMS::Edge_length_cost <Surface_mesh>())

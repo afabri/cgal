@@ -28,8 +28,8 @@ namespace CGAL {
 namespace Surface_mesh_simplification 
 {
 
-  template<class M, class SP, class VIM, class VPM,class EIM, class ECTM, class CF, class PF, class V>
-  EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::EdgeCollapse( ECM&                         aSurface
+  template<class M, class SP, class VIM, class VPM,class EIM, class ECTM, class CF, class PF, class V, class P>
+  EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::EdgeCollapse( ECM&                         aSurface
                                                     , ShouldStop            const& aShould_stop
                                                     , VertexIndexMap        const& aVertex_index_map
                                                     , VertexPointMap        const& aVertex_point_map
@@ -82,8 +82,8 @@ namespace Surface_mesh_simplification
 #endif
 }
 
-  template<class M,class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V>
-  int EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::run()
+  template<class M,class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
+  int EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::run()
 {
   CGAL_SURF_SIMPL_TEST_assertion( mSurface.is_valid() && mSurface.is_pure_triangle() ) ;
 
@@ -104,8 +104,8 @@ namespace Surface_mesh_simplification
   return r ;
 }
 
-  template<class M,class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V>
-  void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::Collect()
+  template<class M,class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
+  void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Collect()
 {
   CGAL_ECMS_TRACE(0,"Collecting edges...");
 
@@ -220,8 +220,8 @@ namespace Surface_mesh_simplification
   CGAL_ECMS_TRACE(0,"Initial edge count: " << mInitialEdgeCount ) ;
 }
 
-  template<class M,class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V>
-  void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::Loop()
+  template<class M,class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
+  void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Loop()
 {
   CGAL_ECMS_TRACE(0,"Collapsing edges...") ;
 
@@ -302,8 +302,8 @@ namespace Surface_mesh_simplification
   }
 }
 
-template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V>
-bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::is_border( vertex_descriptor const& aV ) const
+template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
+bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::is_border( vertex_descriptor const& aV ) const
 {
   bool rR = false ;
   
@@ -321,8 +321,8 @@ bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::is_border( vertex_descriptor c
   return rR ;  
 }
 
-template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V>
-bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::is_border_or_constrained( vertex_descriptor const& aV ) const
+template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
+bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::is_border_or_constrained( vertex_descriptor const& aV ) const
 {
   in_edge_iterator eb, ee ;
   for ( boost::tie(eb,ee) = halfedges_around_target(aV,mSurface) ; eb != ee ; ++ eb )
@@ -334,8 +334,8 @@ bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::is_border_or_constrained( vert
   return false;
 }
 
-template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V>
-bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::is_constrained( vertex_descriptor const& aV ) const
+template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
+bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::is_constrained( vertex_descriptor const& aV ) const
 {
   in_edge_iterator eb, ee ;
   for ( boost::tie(eb,ee) = halfedges_around_target(aV,mSurface) ; eb != ee ; ++ eb )
@@ -352,8 +352,8 @@ bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::is_constrained( vertex_descrip
 // The link condition is as follows: for every vertex 'k' adjacent to both 'p and 'q',
 // "p,k,q" is a facet of the mesh.
 //
-template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V>
-bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::Is_collapse_topologically_valid( Profile const& aProfile )
+template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
+bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Is_collapse_topologically_valid( Profile const& aProfile )
 {
   bool rR = true ;
 
@@ -521,14 +521,14 @@ bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::Is_collapse_topologically_vali
   return rR ;
 }
 
-template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V>
-bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::Is_tetrahedron( halfedge_descriptor const& h1 )
+template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
+bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Is_tetrahedron( halfedge_descriptor const& h1 )
 {
   return is_tetrahedron(h1,mSurface);
 }
 
-template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V>
-bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::Is_open_triangle( halfedge_descriptor const& h1 )
+template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
+bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Is_open_triangle( halfedge_descriptor const& h1 )
 {
   bool rR = false ;
   
@@ -558,8 +558,8 @@ bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::Is_open_triangle( halfedge_des
 // respective areas is no greater than a max value and the internal
 // dihedral angle formed by their supporting planes is no greater than
 // a given threshold
-template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V>
-bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::are_shared_triangles_valid( Point const& p0, Point const& p1, Point const& p2, Point const& p3 ) const
+template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
+bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::are_shared_triangles_valid( Point const& p0, Point const& p1, Point const& p2, Point const& p3 ) const
 {
   bool rR = false ;
 
@@ -610,9 +610,9 @@ bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::are_shared_triangles_valid( Po
 
 
 // Returns the directed halfedge connecting v0 to v1, if exists.
-template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V>
-typename EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::halfedge_descriptor
-EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::find_connection ( vertex_descriptor const& v0, vertex_descriptor const& v1 ) const
+template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
+typename EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::halfedge_descriptor
+EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::find_connection ( vertex_descriptor const& v0, vertex_descriptor const& v1 ) const
 {
   out_edge_iterator eb, ee ; 
   for ( boost::tie(eb,ee) = halfedges_around_source(v0,mSurface) ; eb != ee ; ++ eb )
@@ -627,9 +627,9 @@ EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::find_connection ( vertex_descriptor
 
 // Given the edge 'e' around the link for the collapsinge edge "v0-v1", finds the vertex that makes a triangle adjacent to 'e' but exterior to the link (i.e not containing v0 nor v1)
 // If 'e' is a null handle OR 'e' is a border edge, there is no such triangle and a null handle is returned.
-template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V>
-typename EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::vertex_descriptor
-EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::find_exterior_link_triangle_3rd_vertex ( halfedge_descriptor const& e, vertex_descriptor const& v0, vertex_descriptor const& v1 ) const
+template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
+typename EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::vertex_descriptor
+EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::find_exterior_link_triangle_3rd_vertex ( halfedge_descriptor const& e, vertex_descriptor const& v0, vertex_descriptor const& v1 ) const
 {
   vertex_descriptor r ;
   
@@ -661,8 +661,8 @@ EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::find_exterior_link_triangle_3rd_ver
 // A collapse is geometrically valid if, in the resulting local mesh no two adjacent triangles form an internal dihedral angle
 // greater than a fixed threshold (i.e. triangles do not "fold" into each other)
 //
-template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V>
-bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::Is_collapse_geometrically_valid( Profile const& aProfile, Placement_type k0)
+template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
+bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Is_collapse_geometrically_valid( Profile const& aProfile, Placement_type k0)
 {
   bool rR = true ;
 
@@ -747,8 +747,8 @@ bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::Is_collapse_geometrically_vali
   return rR ;
 }
 
-template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V>
-void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::Collapse( Profile const& aProfile, Placement_type aPlacement )
+template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
+void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Collapse( Profile const& aProfile, Placement_type aPlacement )
 {
 
   CGAL_ECMS_TRACE(1,"S" << mStep << ". Collapsing " << edge_to_string(aProfile.v0_v1()) ) ;
@@ -849,8 +849,8 @@ void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::Collapse( Profile const& aProf
   CGAL_ECMS_DEBUG_CODE ( ++mStep ; )
 }
 
-template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V>
-void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V>::Update_neighbors( vertex_descriptor const& aKeptV )
+template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
+void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Update_neighbors( vertex_descriptor const& aKeptV )
 {
   CGAL_ECMS_TRACE(3,"Updating cost of neighboring edges..." ) ;
   //

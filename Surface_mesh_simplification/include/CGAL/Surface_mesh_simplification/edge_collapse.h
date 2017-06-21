@@ -37,6 +37,7 @@ namespace Surface_mesh_simplification
 
 template<class ECM
         ,class ShouldStop
+        ,class ConcurrencyTag
         ,class VertexIndexMap
         ,class VertexPointMap
         ,class EdgeIndexMap
@@ -47,6 +48,7 @@ template<class ECM
         >
 int edge_collapse ( ECM&                       aSurface
                   , ShouldStop           const& aShould_stop
+                  , ConcurrencyTag aConcurrency_tag
                   // optional mesh information policies 
                   , VertexIndexMap       const& aVertex_index_map     // defaults to get(vertex_index,aSurface)
                   , VertexPointMap       const& aVertex_point_map     // defaults to get(vertex_point,aSurface)
@@ -58,7 +60,35 @@ int edge_collapse ( ECM&                       aSurface
                   , GetPlacement         const& aGet_placement
                   
                   , Visitor                     aVisitor
-                  ) 
+                    );
+
+
+
+template<class ECM
+        ,class ShouldStop
+        ,class VertexIndexMap
+        ,class VertexPointMap
+        ,class EdgeIndexMap
+        ,class EdgeIsConstrainedMap
+        ,class GetCost
+        ,class GetPlacement
+        ,class Visitor
+        >
+int edge_collapse ( ECM&                       aSurface
+                  , ShouldStop           const& aShould_stop
+                  , Sequential_tag       const&
+                  // optional mesh information policies 
+                  , VertexIndexMap       const& aVertex_index_map     // defaults to get(vertex_index,aSurface)
+                  , VertexPointMap       const& aVertex_point_map     // defaults to get(vertex_point,aSurface)
+                  , EdgeIndexMap         const& aEdge_index_map       // defaults to get(edge_index,aSurface)
+                  , EdgeIsConstrainedMap const& aEdge_is_constrained_map   // defaults to No_constrained_edge_map<ECM>()
+                  
+                  // optional strategy policies - defaults to LindstomTurk
+                  , GetCost              const& aGet_cost
+                  , GetPlacement         const& aGet_placement
+                  
+                  , Visitor                     aVisitor
+                    )
 {
   typedef EdgeCollapse< ECM
                       , ShouldStop
@@ -69,6 +99,7 @@ int edge_collapse ( ECM&                       aSurface
                       , GetCost
                       , GetPlacement
                       , Visitor
+                      , Edge_profile<ECM,VertexPointMap>
                       >
                       Algorithm;
                       
@@ -87,6 +118,59 @@ int edge_collapse ( ECM&                       aSurface
 }                          
 
 
+template<class ECM
+        ,class ShouldStop
+        ,class VertexIndexMap
+        ,class VertexPointMap
+        ,class EdgeIndexMap
+        ,class EdgeIsConstrainedMap
+        ,class GetCost
+        ,class GetPlacement
+        ,class Visitor
+        >
+int edge_collapse ( ECM&                       aSurface
+                  , ShouldStop           const& aShould_stop
+                  , Parallel_tag         const&
+                  // optional mesh information policies 
+                  , VertexIndexMap       const& aVertex_index_map     // defaults to get(vertex_index,aSurface)
+                  , VertexPointMap       const& aVertex_point_map     // defaults to get(vertex_point,aSurface)
+                  , EdgeIndexMap         const& aEdge_index_map       // defaults to get(edge_index,aSurface)
+                  , EdgeIsConstrainedMap const& aEdge_is_constrained_map   // defaults to No_constrained_edge_map<ECM>()
+                  
+                  // optional strategy policies - defaults to LindstomTurk
+                  , GetCost              const& aGet_cost
+                  , GetPlacement         const& aGet_placement
+                  
+                  , Visitor                     aVisitor
+                    )
+{
+  typedef EdgeCollapse< ECM
+                      , ShouldStop
+                      , VertexIndexMap
+                      , VertexPointMap
+                      , EdgeIndexMap
+                      , EdgeIsConstrainedMap
+                      , GetCost
+                      , GetPlacement
+                      , Visitor
+                      , CG_Edge_profile<Edge_profile<ECM,VertexPointMap> >
+                      >
+                      Algorithm;
+                      
+  Algorithm algorithm( aSurface
+                     , aShould_stop
+                     , aVertex_index_map
+                     , aVertex_point_map
+                     , aEdge_index_map
+                     , aEdge_is_constrained_map
+                     , aGet_cost
+                     , aGet_placement
+                     , aVisitor
+                     ) ;
+                     
+  return algorithm.run();
+}                 
+
 struct Dummy_visitor
 {
   template<class ECM>                                 void OnStarted( ECM& ) const {} 
@@ -99,9 +183,10 @@ struct Dummy_visitor
   template<class Profile>                             void OnNonCollapsable(Profile const& ) const {}                
 } ;
 
-template<class ECM, class ShouldStop, class P, class T, class R>
+template<class ECM, class ShouldStop, class ConcurrencyTag, class P, class T, class R>
 int edge_collapse ( ECM& aSurface
                   , ShouldStop const& aShould_stop
+                  , ConcurrencyTag aConcurrency_tag 
                   , cgal_bgl_named_params<P,T,R> const& aParams 
                   ) 
 {
@@ -115,6 +200,7 @@ int edge_collapse ( ECM& aSurface
 
   return edge_collapse(aSurface
                       ,aShould_stop
+                      ,aConcurrency_tag
                       ,choose_const_pmap(get_param(aParams,internal_np::vertex_index),aSurface,boost::vertex_index)
                       ,choose_pmap(get_param(aParams,internal_np::vertex_point),aSurface,boost::vertex_point)
                       ,choose_const_pmap(get_param(aParams,internal_np::halfedge_index),aSurface,boost::halfedge_index)
@@ -125,9 +211,21 @@ int edge_collapse ( ECM& aSurface
                       );
 
 }
-  template<class ECM, class ShouldStop, class GT, class P, class T, class R>
+
+template<class ECM, class ShouldStop, class P, class T, class R>
 int edge_collapse ( ECM& aSurface
                   , ShouldStop const& aShould_stop
+                  , cgal_bgl_named_params<P,T,R> const& aParams 
+                  ) 
+{
+  return edge_collapse(aSurface, Sequential_tag(), aShould_stop, aParams);
+}
+
+
+template<class ECM, class ShouldStop, class ConcurrencyTag, class GT, class P, class T, class R>
+int edge_collapse ( ECM& aSurface
+                  , ShouldStop const& aShould_stop
+                  , ConcurrencyTag aConcurrency_tag 
                   , cgal_bgl_named_params<P,T,R> const& aParams 
                   ) 
 {
@@ -141,6 +239,7 @@ int edge_collapse ( ECM& aSurface
     
   return edge_collapse(aSurface
                       ,aShould_stop
+                      ,aConcurrency_tag
                       ,choose_const_pmap(get_param(aParams,internal_np::vertex_index),aSurface,boost::vertex_index)
                       ,choose_const_pmap(get_param(aParams,internal_np::vertex_point),aSurface,boost::vertex_point)
                       ,choose_const_pmap(get_param(aParams,internal_np::halfedge_index),aSurface,boost::halfedge_index)
@@ -151,6 +250,16 @@ int edge_collapse ( ECM& aSurface
                       );
 
 }
+
+template<class ECM, class ShouldStop, class GT, class P, class T, class R>
+int edge_collapse ( ECM& aSurface
+                  , ShouldStop const& aShould_stop
+                  , cgal_bgl_named_params<P,T,R> const& aParams 
+                  ) 
+{
+  return edge_collapse(aSurface, aShould_stop, Sequential_tag(), aParams);
+}
+
 
 template<class ECM, class ShouldStop>
 int edge_collapse ( ECM& aSurface, ShouldStop const& aShould_stop ) 

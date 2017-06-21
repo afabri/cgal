@@ -45,10 +45,10 @@ LindstromTurkCore<ECM,K>::LindstromTurkCore( Params const& aParams, Profile cons
   ,mConstraints_A(NULL_MATRIX)
   ,mConstraints_b(NULL_VECTOR) 
 {
-  double alpha = 1.0 * CGAL_PI / 180.0;
+  static const double alpha = 1.0 * CGAL_PI / 180.0;
  
-  FT cos_alpha = std::cos(alpha);
-  FT sin_alpha = std::sin(alpha);
+  static const FT cos_alpha = std::cos(alpha);
+  static const FT sin_alpha = std::sin(alpha);
 
   mSquared_cos_alpha = cos_alpha * cos_alpha ;
   mSquared_sin_alpha = sin_alpha * sin_alpha ;

@@ -44,6 +44,7 @@ template<class ECM_
         ,class GetCost_
         ,class GetPlacement_
         ,class VisitorT_
+        ,class Profile_ 
         >
 class EdgeCollapse
 {
@@ -60,8 +61,7 @@ public:
   typedef VisitorT_         VisitorT ;
   
   typedef EdgeCollapse Self ;
-  
-  typedef Edge_profile<ECM,VertexPointMap> Profile ;
+  typedef Profile_ Profile ;
   
   typedef boost::graph_traits  <ECM>       GraphTraits ;
   typedef boost::graph_traits  <ECM const> ConstGraphTraits ;

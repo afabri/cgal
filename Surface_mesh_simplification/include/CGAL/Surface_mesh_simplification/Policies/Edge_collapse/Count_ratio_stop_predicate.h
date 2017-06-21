@@ -42,7 +42,7 @@ namespace Surface_mesh_simplification
 // 
 // Stops when the ratio of initial to current vertex pairs is below some value.
 //
-template<class ECM_>    
+  template<class ECM_>    
 class Count_ratio_stop_predicate
 {
 public:
@@ -51,14 +51,24 @@ public:
   
   typedef Edge_profile<ECM> Profile ;
   
+  typedef typename boost::graph_traits<ECM>::edges_size_type size_type;
+
   typedef typename boost::graph_traits<ECM>::edge_descriptor edge_descriptor ;
   typedef typename boost::graph_traits<ECM>::edges_size_type size_type ;
     
-  Count_ratio_stop_predicate( double aRatio ) : mRatio(aRatio) {}
+  Count_ratio_stop_predicate( double aRatio ) 
+    : mRatio(aRatio), first_pass(true)
+  {}
   
-  template <typename F> 
+  void second_pass(size_type a_, size_type b_)
+  {
+    first_pass = false;
+    //mRatio = ;
+  }
+
+  template <typename F, typename Profile_> 
   bool operator()( F const&       // aCurrentCost
-                 , Profile const& // aEdgeProfile
+                 , Profile_ const& // aEdgeProfile
                  , size_type         aInitialCount
                  , size_type         aCurrentCount
                  ) const 
@@ -66,8 +76,10 @@ public:
     return ( static_cast<double>(aCurrentCount) / static_cast<double>(aInitialCount) ) < mRatio ;
   }
   
-private:
   
+private:
+  bool first_pass;
+  size_type a, b;
   double mRatio ;
 };    
 

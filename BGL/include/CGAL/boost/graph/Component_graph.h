@@ -20,111 +20,20 @@
 #ifndef CGAL_BOOST_COMPONENT_GRAPH_H
 #define CGAL_BOOST_COMPONENT_GRAPH_H
 
-#include <CGAL/Polygon_mesh_processing/connected_components.h>
 
 namespace CGAL {
 
-namespace PMP = Polygon_mesh_processing;
 
-  namespace internal {
-template <typename G>
-class CG_edge_iterator
-  : public boost::iterator_facade<CG_edge_iterator<G>, typename boost::graph_traits<G>::edge_descriptor, std::forward_iterator_tag> {
-
-public:
- 
-  friend class boost::iterator_core_access;
-  typedef typename boost::graph_traits<G>::edge_descriptor edge_descriptor;
-  typedef typename boost::graph_traits<G>::face_descriptor face_descriptor;
-  typedef typename boost::graph_traits<G>::halfedge_descriptor halfedge_descriptor;
-  bool end;
-  boost::shared_ptr<std::vector<edge_descriptor> > edges;
-  typename std::vector<edge_descriptor>::iterator it;
-
-  CG_edge_iterator()
-    : edges(NULL)
-  {
-    //    std::cerr << "default construct" << std::endl;
-  }
-
-  CG_edge_iterator(const CG_edge_iterator& other)
-    : end(other.end), edges(other.edges), it(other.it)
-  {
-    // std::cerr << "copy construct" << std::endl;
-  }
-
-  // for end()
-  CG_edge_iterator(int)
-    : end(true),edges(NULL)
-  {
-    // std::cerr << "end construct" << std::endl;
-}
-
-  CG_edge_iterator& 
-  operator=(const CG_edge_iterator other)
-  {
-    end = other.end;
-    edges = other.edges;
-    it = other.it;
-    return *this;
-  }
-  
-  CG_edge_iterator(const G& g)
-    : end(false)
-  {
-    //    std::cerr << "G construct" << std::endl;
-    edges = boost::shared_ptr<std::vector<edge_descriptor> >(new std::vector<edge_descriptor>());
-    typedef typename boost::graph_traits<G>::face_descriptor face_descriptor;
-    // TODO: replace faces by a functor that writes directly into edges
-    //       Or write the iterator so that increment does the work without the vector edges
-    std::vector<face_descriptor> faces;
-    PMP::connected_component(g.cc,
-                             g.g,
-                             std::back_inserter(faces),
-                             PMP::parameters::edge_is_constrained_map(g.ecmap));
-
-    BOOST_FOREACH(face_descriptor fd, faces){
-      BOOST_FOREACH(halfedge_descriptor hd, halfedges_around_face(halfedge(fd,g.g),g.g)){
-       halfedge_descriptor hop = opposite(hd,g.g);
-       if(is_border(hop,g.g) || get(g.ecmap,edge(hd,g.g)) || (fd < face(hop ,g.g))){
-         edges->push_back(edge((hd<hop)?hd:hop, g.g));
-        }
-      }
-    }
-    it = edges->begin();
-  }
-  
-
-  void increment()
-  {
-    ++it;
-  }
-  
-  // so far only other may be end
-  bool equal (const CG_edge_iterator& other) const
-  {
-    if(end) std::cerr << "oops"<< std::endl;
-    if(other.end){
-      return it == edges->end();
-    }
-    return it == other.it;
-  }
-  
-  edge_descriptor& dereference() const
-  {
-    return const_cast<edge_descriptor&>(*it);
-  }
-};
-
-  } // namespace internal
-
-template <typename G, typename ECMap>
+template <typename G_, typename ECMap>
 class Component_graph {
 public:
+  typedef G_ G;
+
   typedef typename boost::graph_traits<G>::edge_descriptor edge_descriptor;
   typedef typename boost::graph_traits<G>::halfedge_descriptor halfedge_descriptor;
   typedef typename boost::graph_traits<G>::face_descriptor face_descriptor;
   typedef typename tbb::concurrent_vector<edge_descriptor>::iterator edge_iterator;
+
 
   G& g;
   tbb::concurrent_vector<edge_descriptor>& cc;
@@ -135,9 +44,9 @@ public:
     : g(g), cc(cc), ecmap(ecmap)
   {}
   
-  int num_edges() const
+  typename boost::graph_traits<G>::edges_size_type num_edges() const
   {
-    return cc.size();
+    return static_cast<typename boost::graph_traits<G>::edges_size_type>(cc.size());
   }
 }; 
 

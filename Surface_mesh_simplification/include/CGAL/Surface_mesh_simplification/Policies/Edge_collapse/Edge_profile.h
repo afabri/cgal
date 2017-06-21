@@ -32,7 +32,7 @@ namespace CGAL {
 
 namespace Surface_mesh_simplification
 {
-
+  
   template<class ECM_, class VertexPointMap_ = typename boost::property_map<ECM_, CGAL::vertex_point_t>::type>
 class Edge_profile
 {
@@ -90,7 +90,7 @@ public :
                , EdgeIdxMap       const& aEdge_index_map
                , bool has_border 
                ) ;
-     
+
 public :
 
   halfedge_descriptor const& v0_v1() const { return mV0V1; }
@@ -133,7 +133,7 @@ public :
   ECM& surface_mesh() const { return *mSurface ; } 
  
   VertexPointMap vertex_point_map() const { return mvpm ; }
-  
+
 public :
 
   Point const& p0() const { return mP0; }  
@@ -189,6 +189,40 @@ private:
   VertexPointMap mvpm;  
 } ;
   
+template < typename EP>
+class CG_Edge_profile
+  : public EP
+{
+
+public:
+  typedef typename EP::halfedge_descriptor halfedge_descriptor;
+  typedef typename EP::ECM::G ECM;
+  typedef typename EP::VertexPointMap VertexPointMap;
+
+  template<class VertexIdxMap
+          ,class EdgeIdxMap
+          >
+  CG_Edge_profile ( halfedge_descriptor  const& aV0V1
+                    , typename EP::ECM&                    aSurface
+                    , VertexIdxMap     const& aVertex_index_map
+                    , VertexPointMap   const& aVertex_point_map
+                    , EdgeIdxMap       const& aEdge_index_map
+                    , bool has_border 
+                    )
+    : EP(aV0V1, aSurface, aVertex_index_map, aVertex_point_map, aEdge_index_map, has_border)
+  {}
+
+  ECM& surface_mesh() const
+  {
+    return EP::surface_mesh().g;
+  }
+
+  ECM& surface() const
+  {
+    return EP::surface_mesh().g;
+  }
+};
+
 } // namespace Surface_mesh_simplification
 
 } //namespace CGAL

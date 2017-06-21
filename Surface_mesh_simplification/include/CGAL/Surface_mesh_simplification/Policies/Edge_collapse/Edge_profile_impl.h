@@ -141,6 +141,7 @@ template<class VertexIdxMap
   #ifdef CGAL_SMS_EDGE_PROFILE_ALWAYS_NEED_UNIQUE_VERTEX_IN_LINK
   std::set<vertex_descriptor> vertex_already_inserted;
   #endif
+  mTriangles.reserve(16);
   // look at the two faces or holes adjacent to edge (v0,v1)
   // and at the opposite vertex if it exists
   halfedge_descriptor endleft = next(v1_v0(), surface_mesh());
