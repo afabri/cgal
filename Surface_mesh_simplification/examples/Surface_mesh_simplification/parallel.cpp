@@ -23,18 +23,15 @@ typedef CGAL::Simple_cartesian<double> Kernel;
 typedef Kernel::Point_3 Point_3;
 typedef CGAL::Surface_mesh<Point_3> Surface_mesh; 
 
-typedef Surface_mesh::Property_map<boost::graph_traits<Surface_mesh>::face_descriptor,std::size_t> CCMap;
-
 namespace SMS = CGAL::Surface_mesh_simplification;
 namespace PMP = CGAL::Polygon_mesh_processing;
-
-
 
 
 int main(int argc, char** argv ) 
 {
   bool dump = false;
 
+  typedef boost::graph_traits<Surface_mesh>::edge_descriptor edge_descriptor;
   typedef boost::graph_traits<Surface_mesh>::face_descriptor face_descriptor;
  
   CGAL::Real_timer t;
@@ -53,6 +50,12 @@ int main(int argc, char** argv )
   Surface_mesh::Property_map<face_descriptor,std::size_t> ccmap 
     = sm.add_property_map<face_descriptor,std::size_t>("f:cc").first;
 
+  typedef Surface_mesh::Property_map<edge_descriptor,bool> ECMap;
+  Surface_mesh::Property_map<edge_descriptor,bool> ecmap 
+    = sm.add_property_map<edge_descriptor,bool>("e:ec", false).first;
+
+  ecmap[*(edges(sm).first)] = true;
+
   std::size_t ncc = 8;
   unsigned int layers = 1;
   bool verbose = false;
@@ -68,7 +71,7 @@ int main(int argc, char** argv )
   //SMS::Edge_length_cost<Surface_mesh> cost;
   //SMS::Edge_length_stop_predicate<double> stop(0.01);
 
-  SMS::parallel_edge_collapse(sm, ccmap, placement, stop, cost, ncc, layers, dump, verbose);
+  SMS::parallel_edge_collapse(sm, ccmap, ecmap, placement, stop, cost, ncc, layers, dump, verbose);
 
   sm.collect_garbage();
 
