@@ -94,7 +94,6 @@ namespace Surface_mesh_simplification
   
   // Then proceed to collapse each edge in turn
   Loop();
-  std::cerr << "||  Finished:  #E = "<< mCurrentEdgeCount << "(was: "<< mInitialEdgeCount << ")" << std::endl;
   CGAL_ECMS_TRACE(0,"Finished: " << (mInitialEdgeCount - mCurrentEdgeCount) << " edges removed." ) ;
 
   int r = (int)(mInitialEdgeCount - mCurrentEdgeCount) ;
@@ -115,19 +114,12 @@ namespace Surface_mesh_simplification
   
   Equal_3 equal_points = Traits().equal_3_object();
     
-  // AF: num_edges is of the complete graph
   size_type lSize = num_edges(mSurface);
   
-  std::cerr << "|| #E = " << lSize << std::endl;
-  // AF: For these two variables the real num_edges is important  
   mInitialEdgeCount = mCurrentEdgeCount = lSize;
   
-  // AF: For this one we need the real size + a per component edge index map
-  //     or the size of the complete graph
   mEdgeDataArray.reset( new Edge_data[lSize] ) ;
   
-  // AF: No idea yet what the impact of the real or complete size is for the PQ
-  //     A comment says it must be the largest index
   mPQ.reset( new PQ (lSize, Compare_cost(this), edge_id(this) ) ) ;
   
   std::size_t id = 0 ;
@@ -240,7 +232,6 @@ namespace Surface_mesh_simplification
     CGAL_SURF_SIMPL_TEST_assertion ( lLoop_watchdog ++ < mInitialEdgeCount ) ;
 
     CGAL_ECMS_TRACE(1,"Popped " << edge_to_string(*lEdge) ) ;
-    std::cerr << *lEdge << std::endl;
     CGAL_assertion( !is_constrained(*lEdge) );
     
     Profile const& lProfile = create_profile(*lEdge);
@@ -875,7 +866,9 @@ void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Update_neighbors( vertex_des
     for ( boost::tie(eb2,ee2) = halfedges_around_target(lAdj_k,mSurface) ; eb2 != ee2 ; ++ eb2 )
     {
       halfedge_descriptor lEdge2 = primary_edge(*eb2) ;
-      
+      if(is_constrained(lEdge2)){
+        continue;
+      }
       Edge_data& lData2 = get_data(lEdge2);
       CGAL_ECMS_TRACE(4,"Inedge around V" << get(Vertex_index_map,lAdj_k) << edge_to_string(lEdge2) ) ;
     

@@ -218,7 +218,7 @@ int edge_collapse ( ECM& aSurface
                   , cgal_bgl_named_params<P,T,R> const& aParams 
                   ) 
 {
-  return edge_collapse(aSurface, Sequential_tag(), aShould_stop, aParams);
+  return edge_collapse(aSurface, aShould_stop, Sequential_tag(), aParams);
 }
 
 
