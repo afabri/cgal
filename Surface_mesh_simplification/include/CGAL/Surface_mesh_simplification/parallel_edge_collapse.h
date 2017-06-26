@@ -379,10 +379,9 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
   Real_timer t;
 
 
-  ECMap ecmap = sm.add_property_map<edge_descriptor,char>("e:constrained",false).first;
-
+  ECMap ecmap = sm.add_property_map<edge_descriptor,char>("e:internal::constrained",false).first;
   
-  HIMap himap = sm.add_property_map<halfedge_descriptor,int>("h:index_in_cc",-1).first;
+  HIMap himap = sm.add_property_map<halfedge_descriptor,int>("h:internal::index_in_cc",-1).first;
   
   std::vector<edge_descriptor> partition_edges;
  
@@ -527,6 +526,8 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
                             );
   }
 
+  sm.remove_property_map(ecmap);
+  sm.remove_property_map(himap);
   if(verbose){
     std::cerr << "sequential edge collapse on buffer in " << t.time() << " sec." << std::endl;
   }
