@@ -31,7 +31,7 @@
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/LindstromTurk.h>
 
 #ifdef CGAL_LINKED_WITH_TBB
-#include <CGAL/Surface_mesh_simplification/parallel_edge_collapse.h>
+#include <CGAL/Surface_mesh_simplification/Detail/parallel_edge_collapse.h>
 #endif 
 
 namespace CGAL {

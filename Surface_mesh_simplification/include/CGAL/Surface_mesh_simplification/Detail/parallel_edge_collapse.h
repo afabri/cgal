@@ -16,8 +16,8 @@
 //
 // Author(s)     : Andreas Fabri
 //
-#ifndef CGAL_SURFACE_MESH_SIMPLIFICATION_PARALLEL_EDGE_COLLAPSE_H
-#define CGAL_SURFACE_MESH_SIMPLIFICATION_PARALLEL_EDGE_COLLAPSE_H 1
+#ifndef CGAL_SURFACE_MESH_SIMPLIFICATION_DETAIL_PARALLEL_EDGE_COLLAPSE_H
+#define CGAL_SURFACE_MESH_SIMPLIFICATION_DETAIL_PARALLEL_EDGE_COLLAPSE_H 1
 
 #include <CGAL/license/Surface_mesh_simplification.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Constrained_placement.h>
@@ -543,4 +543,4 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
 }//  namespace CGAL
 
 
-#endif CGAL_SURFACE_MESH_SIMPLIFICATION_PARALLEL_EDGE_COLLAPSE_H
+#endif CGAL_SURFACE_MESH_SIMPLIFICATION_DETAIL_PARALLEL_EDGE_COLLAPSE_H

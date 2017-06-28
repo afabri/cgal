@@ -11,7 +11,7 @@
 #include <CGAL/Polygon_mesh_processing/partition.h>
 #include <CGAL/Real_timer.h>
 
-#include <CGAL/Surface_mesh_simplification/parallel_edge_collapse.h>
+#include <CGAL/Surface_mesh_simplification/edge_collapse.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Count_ratio_stop_predicate.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_length_stop_predicate.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_length_cost.h>
@@ -29,15 +29,12 @@ namespace PMP = CGAL::Polygon_mesh_processing;
 
 int main(int argc, char** argv ) 
 {
-  bool dump = false;
-
   typedef boost::graph_traits<Surface_mesh>::edge_descriptor edge_descriptor;
   typedef boost::graph_traits<Surface_mesh>::face_descriptor face_descriptor;
  
   CGAL::Real_timer t;
   t.start();
   std::ifstream in(argv[1]);
-
 
   Surface_mesh sm; 
   in >> sm;
@@ -85,11 +82,11 @@ int main(int argc, char** argv )
             << " #F = " << num_faces(sm) << std::endl;
 
   t.reset();
-  {
-    std::ofstream out("out.off");
-    out << sm << std::endl;
-    out.close();
-    std::cerr << "Writing result in " << t.time() << " sec." << std::endl;
-  }
+
+  std::ofstream out("out.off");
+  out << sm << std::endl;
+  out.close();
+  std::cerr << "Writing result in " << t.time() << " sec." << std::endl;
+
   return EXIT_SUCCESS;
 }
