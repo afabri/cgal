@@ -55,11 +55,6 @@ else()
   message(STATUS "Examples that use the metis library will not be compiled.")
 endif()
 
-# include for local directory
-
-# include for local package
-include_directories( BEFORE ../../include )
-
 
 
 # Creating entries for all .cpp/.C files with "main" routine
