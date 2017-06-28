@@ -260,14 +260,15 @@ visitor(vis)             : function object tracking the simplification process
 int r = edge_collapse(surface_mesh
                      ,stop_predicate
                      ,vertex_index_map(vimap)
-                       .edge_index_map(eimap)
-                       .edge_is_border_map(ebmap)
-                       .get_cost(cf)
-                       .get_placement(pf)
-                       .visitor(vis)
+                     .edge_index_map(eimap)
+                     .edge_is_border_map(ebmap)
+                     .get_cost(cf)
+                     .get_placement(pf)
+                     .visitor(vis)
                      );
 
 \endcode
+
 
 \subsection Surface_mesh_simplificationExamples Examples
 
@@ -327,6 +328,34 @@ rejects this placement by returning `boost::none`.
 
 \cgalExample{Surface_mesh_simplification/edge_collapse_bounded_normal_change.cpp}
 
+\subsection Surface_mesh_simplificationParallel Experimental: Parallel Surface Mesh Simplification
+
+\ attention The parallel mesh simplification function is only available for the class `Surface_mesh`.
+
+For the class `Surface_mesh` \cgal offers a rather naive parallel mesh simplification algorithm. 
+It requires a partition of the faces. Each component of the partition is simplified
+in a parallel task with the edges between the components getting constrained. 
+In a sequential pass the faces close to these constrained edges get simplified
+with the edges being no longer constrained.
+
+The gain in performance as well as the overall quality of the simplified meah 
+will depend on the quality of the partition, and on the input mesh. Take for
+example a terrain model with a flat zone and a zone with mountains. If the two zones
+are simplified by two parallel tasks it may be that the task on the flat zone has
+to do all the work.
+
+Note that the sequential algorithm collapses the edges in the order of the cost
+their collapse has. The parallel algorithm does not have a global priority 
+queue for the edges to collapse, but as many priority queues as there are
+components.
+
+The number of components of the partition may be the number of cores, if you 
+expect that for all components the work to do is more or less the same. It
+may be larger than the number of cores, but note that the more components
+the partition has, the longer is the boundary zone that will be simplified
+sequentially once the components have been simplified in parallel.
+
+\cgalExample{Surface_mesh_simplification/parallel_edge_collapse.cpp}
 
 */ 
 } /* namespace CGAL */
