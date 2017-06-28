@@ -97,6 +97,16 @@ struct No_constrained_edge_map{
   }
 };
 
+template <class ECM>
+struct Zero_face_partition_map{
+  typedef typename boost::graph_traits<ECM>::face_descriptor key_type;
+  typedef int value_type;
+  typedef value_type reference;
+  typedef boost::readable_property_map_tag category;
+  friend int get(Zero_face_partition_map, key_type) {
+    return 0;
+  }
+};
 } // namespace Surface_mesh_simplification
 
 template<class N>

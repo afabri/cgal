@@ -56,10 +56,10 @@ int main(int argc, char** argv )
 
   ecmap[*(edges(sm).first)] = true;
 
-  std::size_t ncc = 8;
+  int ncc = 8;
   unsigned int layers = 1;
   bool verbose = false;
-  PMP::partition(sm, ccmap, static_cast<int>(ncc));
+  PMP::partition(sm, ccmap, ncc);
 
   std::cerr << "Partition in " << t.time() << " sec."<< std::endl;
   t.reset();
@@ -71,7 +71,11 @@ int main(int argc, char** argv )
   //SMS::Edge_length_cost<Surface_mesh> cost;
   //SMS::Edge_length_stop_predicate<double> stop(0.01);
 
-  SMS::parallel_edge_collapse(sm, ccmap, ecmap, placement, stop, cost, ncc, layers, dump, verbose);
+  SMS::parallel_edge_collapse(sm, stop, ccmap, ncc
+                              ,CGAL::parameters::get_placement(placement)
+                              .edge_is_constrained_map(ecmap)
+                              .get_cost(cost)
+                              );
 
   sm.collect_garbage();
 

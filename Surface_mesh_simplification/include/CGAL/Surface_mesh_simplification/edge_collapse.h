@@ -30,6 +30,10 @@
 #include <CGAL/Surface_mesh_simplification/Detail/Common.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/LindstromTurk.h>
 
+#ifdef CGAL_LINKED_WITH_TBB
+#include <CGAL/Surface_mesh_simplification/parallel_edge_collapse.h>
+#endif 
+
 namespace CGAL {
 
 namespace Surface_mesh_simplification
@@ -183,12 +187,12 @@ struct Dummy_visitor
   template<class Profile>                             void OnNonCollapsable(Profile const& ) const {}                
 } ;
 
-template<class ECM, class ShouldStop, class ConcurrencyTag, class P, class T, class R>
+template<class ECM, class ShouldStop, class P, class T, class R>
 int edge_collapse ( ECM& aSurface
-                  , ShouldStop const& aShould_stop
-                  , ConcurrencyTag aConcurrency_tag 
-                  , cgal_bgl_named_params<P,T,R> const& aParams 
-                  ) 
+                    , ShouldStop const& aShould_stop
+                    , Sequential_tag&
+                    , cgal_bgl_named_params<P,T,R> const& aParams 
+                               ) 
 {
   using boost::choose_param ;
   using boost::choose_const_pmap ;
@@ -197,10 +201,9 @@ int edge_collapse ( ECM& aSurface
   LindstromTurk_params lPolicyParams ;
   
   internal_np::graph_visitor_t vis = internal_np::graph_visitor_t() ;
-
-  return edge_collapse(aSurface
+   return edge_collapse(aSurface
                       ,aShould_stop
-                      ,aConcurrency_tag
+                      , Sequential_tag()  
                       ,choose_const_pmap(get_param(aParams,internal_np::vertex_index),aSurface,boost::vertex_index)
                       ,choose_pmap(get_param(aParams,internal_np::vertex_point),aSurface,boost::vertex_point)
                       ,choose_const_pmap(get_param(aParams,internal_np::halfedge_index),aSurface,boost::halfedge_index)
@@ -209,8 +212,34 @@ int edge_collapse ( ECM& aSurface
                        ,choose_param     (get_param(aParams,internal_np::get_placement_policy), LindstromTurk_placement<ECM>())
                       ,choose_param     (get_param(aParams,vis), Dummy_visitor())
                       );
-
 }
+template<class ECM, class ShouldStop, class P, class T, class R>
+int edge_collapse ( ECM& aSurface
+                    , ShouldStop const& aShould_stop
+                    , Parallel_tag&
+                    , cgal_bgl_named_params<P,T,R> const& aParams 
+                               ) 
+{
+  using boost::choose_param ;
+  using boost::choose_const_pmap ;
+  using boost::get_param ;
+  
+  LindstromTurk_params lPolicyParams ;
+  
+  internal_np::graph_visitor_t vis = internal_np::graph_visitor_t() ;
+   return edge_collapse(aSurface
+                      ,aShould_stop
+                      , Parallel_tag()  
+                      ,choose_const_pmap(get_param(aParams,internal_np::vertex_index),aSurface,boost::vertex_index)
+                      ,choose_pmap(get_param(aParams,internal_np::vertex_point),aSurface,boost::vertex_point)
+                      ,choose_const_pmap(get_param(aParams,internal_np::halfedge_index),aSurface,boost::halfedge_index)
+                       ,choose_param     (get_param(aParams,internal_np::edge_is_constrained),No_constrained_edge_map<ECM>())
+                       ,choose_param     (get_param(aParams,internal_np::get_cost_policy), LindstromTurk_cost<ECM>())
+                       ,choose_param     (get_param(aParams,internal_np::get_placement_policy), LindstromTurk_placement<ECM>())
+                      ,choose_param     (get_param(aParams,vis), Dummy_visitor())
+                      );
+}
+
 
 template<class ECM, class ShouldStop, class P, class T, class R>
 int edge_collapse ( ECM& aSurface
@@ -220,12 +249,50 @@ int edge_collapse ( ECM& aSurface
 {
   return edge_collapse(aSurface, aShould_stop, Sequential_tag(), aParams);
 }
+  
+template<class ECM, class ShouldStop, class FacePartionMap, class P, class T, class R>
+int parallel_edge_collapse ( ECM& aSurface
+                             , ShouldStop const& aShould_stop
+                             , FacePartionMap fpm
+                             , int partition_size
+                             , cgal_bgl_named_params<P,T,R> const& aParams 
+                  ) 
+{
+  using boost::choose_param ;
+  using boost::get_param ;
+  
+#ifndef CGAL_LINKED_WITH_TBB
+  if(partition_size > 1){
+    partition_size = 1; // so let's do it sequentially
+    std::cerr << "Not linked with TBB, so we perform the sequential algorithm" << std::endl;
+  }
+#endif
+  if(partition_size == 1){
+    return edge_collapse(aSurface, aShould_stop, Sequential_tag(), aParams);
+  } else {
+#ifdef CGAL_LINKED_WITH_TBB
+  
+    return parallel_edge_collapse(aSurface
+                                  ,fpm // ,choose_param(get_param(aParams,internal_np::face_partition), Zero_face_partition_map<ECM>())
+                                  ,choose_param(get_param(aParams,internal_np::edge_is_constrained),No_constrained_edge_map<ECM>())
+                                  ,choose_param(get_param(aParams,internal_np::get_placement_policy), LindstromTurk_placement<ECM>())
+                                  ,aShould_stop
+                                  ,choose_param(get_param(aParams,internal_np::get_cost_policy), LindstromTurk_cost<ECM>())
+                                  , partition_size // ,choose_param(get_param(aParams,internal_np::partition_size),1)
+
+                                  );
+  
+    return 0;
+#endif
+  }
+
+}
 
 
-template<class ECM, class ShouldStop, class ConcurrencyTag, class GT, class P, class T, class R>
+
+template<class ECM, class ShouldStop, class GT, class P, class T, class R>
 int edge_collapse ( ECM& aSurface
                   , ShouldStop const& aShould_stop
-                  , ConcurrencyTag aConcurrency_tag 
                   , cgal_bgl_named_params<P,T,R> const& aParams 
                   ) 
 {
@@ -239,7 +306,6 @@ int edge_collapse ( ECM& aSurface
     
   return edge_collapse(aSurface
                       ,aShould_stop
-                      ,aConcurrency_tag
                       ,choose_const_pmap(get_param(aParams,internal_np::vertex_index),aSurface,boost::vertex_index)
                       ,choose_const_pmap(get_param(aParams,internal_np::vertex_point),aSurface,boost::vertex_point)
                       ,choose_const_pmap(get_param(aParams,internal_np::halfedge_index),aSurface,boost::halfedge_index)
@@ -249,15 +315,6 @@ int edge_collapse ( ECM& aSurface
                       ,choose_param     (get_param(aParams,vis), Dummy_visitor())
                       );
 
-}
-
-template<class ECM, class ShouldStop, class GT, class P, class T, class R>
-int edge_collapse ( ECM& aSurface
-                  , ShouldStop const& aShould_stop
-                  , cgal_bgl_named_params<P,T,R> const& aParams 
-                  ) 
-{
-  return edge_collapse(aSurface, aShould_stop, Sequential_tag(), aParams);
 }
 
 

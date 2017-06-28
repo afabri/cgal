@@ -291,7 +291,7 @@ struct Simplify {
     OrMap ormap(ecmap, uecmap);
 
     //Bool_map<ECMap> becmap(ecmap);    
-
+#if 1
     if(increase){
       Constrained_placement <Placement, OrMap> constrained_placement(ormap,placement);
       results[ccindex] 
@@ -316,6 +316,7 @@ struct Simplify {
                         .edge_is_constrained_map(ormap)
                         .vertex_point_map(get(CGAL::vertex_point,sm)));
     }
+#endif
     if(verbose){
       std::cerr << "|| done" << std::endl;
     }
@@ -373,7 +374,8 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
   typedef boost::graph_traits<TriangleMesh>::edge_descriptor edge_descriptor;
   typedef boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
   typedef boost::graph_traits<TriangleMesh>::face_descriptor face_descriptor;
- 
+  typedef boost::graph_traits<TriangleMesh>::edges_size_type size_type;
+
   typedef TriangleMesh::Property_map<halfedge_descriptor,int> HIMap;
   typedef TriangleMesh::Property_map<edge_descriptor,char> ECMap;
   Real_timer t;
@@ -397,7 +399,7 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
     }
     halfedge_descriptor hd = halfedge(ed,sm);
     halfedge_descriptor hop = opposite(hd,sm);
-    if (ccmap[face(hd,sm)] !=ccmap[face(hop,sm)]) {
+    if (get(ccmap,face(hd,sm)) != get(ccmap,face(hop,sm))) {
       partition_edges.push_back(ed);
       ecmap[ed] = true;
       himap[hd] = 0;
@@ -486,7 +488,7 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
                           Counting_output_iterator(&num_constrained_edges));
     num_constrained_edges += partition_edges.size();
   }else{
-    std::size_t num_constrained_edges = partition_edges.size();
+    num_constrained_edges = partition_edges.size();
     for(int i =0; i < buffer_size.size(); i++){
       if(verbose){
         std::cout << "# partition edges = "<<   partition_edges.size()
@@ -503,8 +505,8 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
   
   num_constrained_edges = num_edges(sm) - num_constrained_edges; 
   
-  stop.second_pass(num_constrained_edges,num_edges(sm));  
- 
+  stop.second_pass(static_cast<size_type>(num_constrained_edges), static_cast<size_type>(num_edges(sm)));  
+
   if(increase){
     Constrained_placement <Placement, OrMap> constrained_placement (ormap, placement);
     result += edge_collapse(sm,
