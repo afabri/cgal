@@ -21,7 +21,7 @@ endif()
 # include helper file
 include( ${CGAL_USE_FILE} )
 
- find_package( TBB REQUIRED )
+find_package( TBB )
     if( TBB_FOUND )
       include(${TBB_USE_FILE})
       list(APPEND CGAL_3RD_PARTY_LIBRARIES ${TBB_LIBRARIES})
@@ -88,6 +88,6 @@ if(OpenMesh_FOUND)
 endif()
 
 if(METIS_FOUND)
-  create_single_source_cgal_program( "parallel.cpp" )
-  target_link_libraries( parallel ${METIS_LIBRARIES} )
+  create_single_source_cgal_program( "parallel_edge_collapse.cpp" )
+  target_link_libraries( parallel_edge_collapse ${METIS_LIBRARIES} )
 endif()
