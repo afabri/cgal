@@ -30,6 +30,8 @@
 #include <CGAL/Surface_mesh_simplification/Detail/Common.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/LindstromTurk.h>
 
+#include <CGAL/tags.h>
+
 #ifdef CGAL_LINKED_WITH_TBB
 #include <CGAL/Surface_mesh_simplification/Detail/parallel_edge_collapse.h>
 #endif 
@@ -80,7 +82,7 @@ template<class ECM
         >
 int edge_collapse ( ECM&                       aSurface
                   , ShouldStop           const& aShould_stop
-                  , Sequential_tag       const&
+                  , Sequential_tag
                   // optional mesh information policies 
                   , VertexIndexMap       const& aVertex_index_map     // defaults to get(vertex_index,aSurface)
                   , VertexPointMap       const& aVertex_point_map     // defaults to get(vertex_point,aSurface)
@@ -134,7 +136,7 @@ template<class ECM
         >
 int edge_collapse ( ECM&                       aSurface
                   , ShouldStop           const& aShould_stop
-                  , Parallel_tag         const&
+                  , Parallel_tag
                   // optional mesh information policies 
                   , VertexIndexMap       const& aVertex_index_map     // defaults to get(vertex_index,aSurface)
                   , VertexPointMap       const& aVertex_point_map     // defaults to get(vertex_point,aSurface)
@@ -190,7 +192,7 @@ struct Dummy_visitor
 template<class ECM, class ShouldStop, class P, class T, class R>
 int edge_collapse ( ECM& aSurface
                     , ShouldStop const& aShould_stop
-                    , Sequential_tag&
+                    , Sequential_tag
                     , cgal_bgl_named_params<P,T,R> const& aParams 
                                ) 
 {
@@ -216,7 +218,7 @@ int edge_collapse ( ECM& aSurface
 template<class ECM, class ShouldStop, class P, class T, class R>
 int edge_collapse ( ECM& aSurface
                     , ShouldStop const& aShould_stop
-                    , Parallel_tag&
+                    , Parallel_tag
                     , cgal_bgl_named_params<P,T,R> const& aParams 
                                ) 
 {

@@ -50,12 +50,10 @@ public:
   typedef ECM_ ECM ;
   
   typedef Edge_profile<ECM> Profile ;
-  
-  typedef typename boost::graph_traits<ECM>::edges_size_type size_type;
 
   typedef typename boost::graph_traits<ECM>::edge_descriptor edge_descriptor ;
   typedef typename boost::graph_traits<ECM>::edges_size_type size_type ;
-    
+
   Count_ratio_stop_predicate( double aRatio ) 
     : mRatio(aRatio), first_pass(true)
   {}
@@ -80,10 +78,10 @@ public:
   
   
 private:
-  bool first_pass;
   size_type a, b;
   double mRatio ;
-};    
+  bool first_pass;
+};
 
 } // namespace Surface_mesh_simplification
 

@@ -34,9 +34,16 @@ int main(int argc, char** argv )
  
   CGAL::Real_timer t;
   t.start();
+
+  if(argc < 2)
+  {
+    std::cerr << "Usage: ./parallel_edge_collapse input_mesh" << std::endl;
+    return EXIT_FAILURE;
+  }
+
   std::ifstream in(argv[1]);
 
-  Surface_mesh sm; 
+  Surface_mesh sm;
   in >> sm;
   std::cerr << "Input: #V = "<< num_vertices(sm)  << " #E = "<< num_edges(sm) 
             << " #F = " << num_faces(sm)  <<  " read in " << t.time() << " sec." << std::endl;

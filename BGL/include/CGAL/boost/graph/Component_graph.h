@@ -20,9 +20,9 @@
 #ifndef CGAL_BOOST_COMPONENT_GRAPH_H
 #define CGAL_BOOST_COMPONENT_GRAPH_H
 
+#include <tbb/concurrent_vector.h>
 
 namespace CGAL {
-
 
 template <typename G_, typename ECMap>
 class Component_graph {
