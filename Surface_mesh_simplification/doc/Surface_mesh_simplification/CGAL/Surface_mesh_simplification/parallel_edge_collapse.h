@@ -7,7 +7,14 @@ namespace Surface_mesh_simplification {
 Simplifies `surface_mesh` in-place by collapsing edges, and returns
 the number of edges effectively removed.
 
-The function `Surface_mesh_simplification::parallel edge_collapse()` simplifies in-place a triangulated surface mesh by iteratively collapsing edges. 
+The function `parallel_edge_collapse()` simplifies in-place a triangulated surface mesh.
+A property map that associates a number between `0` and `partition_size-1` to each face
+defines a partition of the faces in components. Each component is simplified 
+with the sequential algorithm with a layer of edges incident to the boundary
+of the components being constrained. The simplification of components is done
+in parallel tasks. Once finished 4 layers of edges incident to the boundary
+of the components are simplified with the sequential algorithm, while all other
+edges are constrained. 
 
 \cgalHeading{Non-Named Parameters}
 
@@ -18,7 +25,7 @@ It must be a `Surface_mesh` or a class derived from it.
 It must be a model of the `StopPredicate` concept. 
 
 `fpm` must be a model of `ReadablePropertyMap` with the key type
-boost::graph_traits<EdgeCollapsableSurfaceMesh>::face_descriptor` 
+`boost::graph_traits<EdgeCollapsableSurfaceMesh>::face_descriptor` 
 and the value type `boost::graph_traits<EdgeCollapsableSurfaceMesh>::faces_size_type`.
 
 `partition_size` must be the number of different values in `fpm`.
