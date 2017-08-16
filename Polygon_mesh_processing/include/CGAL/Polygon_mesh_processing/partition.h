@@ -51,10 +51,6 @@ void output_partitions(const PolygonMesh& m,
                        const FacePartitionIDPmap fpmap,
                        const idx_t n)
 {
-  typedef typename boost::graph_traits<PolygonMesh>::vertex_iterator     vertex_iterator;
-  typedef typename boost::graph_traits<PolygonMesh>::halfedge_descriptor halfedge_descriptor;
-  typedef typename boost::graph_traits<PolygonMesh>::face_iterator       face_iterator;
-
   typedef CGAL::Face_filtered_graph<PolygonMesh>                       Filtered_graph;
 
   for(int i=0; i<n; ++i)
@@ -90,7 +86,7 @@ void partition(const PolygonMesh& m,
                int nparts)
 {
   typedef typename boost::graph_traits<PolygonMesh>::vertex_descriptor   vertex_descriptor;
-  typedef typename boost::graph_traits<PolygonMesh>::vertex_iterator     vertex_iterator;
+
   typedef typename boost::graph_traits<PolygonMesh>::halfedge_descriptor halfedge_descriptor;
   typedef typename boost::graph_traits<PolygonMesh>::face_iterator       face_iterator;
 

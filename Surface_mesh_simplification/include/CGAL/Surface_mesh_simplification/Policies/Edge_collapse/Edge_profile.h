@@ -188,9 +188,10 @@ private:
   ECM* mSurface ;
   VertexPointMap mvpm;  
 } ;
-  
+
+/// \todo can we get rid of it by using a wrapper for placement anc cost?
 template < typename EP>
-class CG_Edge_profile
+class CG_Edge_profile // used so that the placement and cost get the input mesh and not the wrapped one
   : public EP
 {
 

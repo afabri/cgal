@@ -50,19 +50,17 @@ int main(int argc, char** argv )
   t.reset();
   double ratio = (argc>2)?boost::lexical_cast<double>(argv[2]):0.25;
 
-  typedef Surface_mesh::Property_map<face_descriptor,std::size_t> CCMap;
   Surface_mesh::Property_map<face_descriptor,std::size_t> ccmap 
     = sm.add_property_map<face_descriptor,std::size_t>("f:cc").first;
 
-  typedef Surface_mesh::Property_map<edge_descriptor,bool> ECMap;
   Surface_mesh::Property_map<edge_descriptor,bool> ecmap 
     = sm.add_property_map<edge_descriptor,bool>("e:ec", false).first;
 
   ecmap[*(edges(sm).first)] = true;
 
   int ncc = 8;
-  unsigned int layers = 1;
-  bool verbose = false;
+//  unsigned int layers = 1;
+//  bool verbose = false;
   PMP::partition(sm, ccmap, ncc);
 
   std::cerr << "Partition in " << t.time() << " sec."<< std::endl;

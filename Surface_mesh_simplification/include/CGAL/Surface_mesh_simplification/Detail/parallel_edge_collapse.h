@@ -140,7 +140,7 @@ struct In_same_component_map
   ECMap ecmap;
   CCMap ccmap;
   const G& g;
-  int cc;
+  std::size_t cc;
   int& count;
 
   In_same_component_map(ECMap ecmap, CCMap ccmap, const G& g, int cc, int& count)
@@ -254,7 +254,7 @@ struct Simplify {
                           sm,
                           layers,
                           iscmap,
-                          std::back_inserter(V));
+                          std::back_inserter(V)); // V might contain edges from an adjacent patch
     
     buffer_edges_count += number_of_puts;
     buffer_size[ccindex] = number_of_puts;
