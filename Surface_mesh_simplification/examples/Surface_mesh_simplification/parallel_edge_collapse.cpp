@@ -37,7 +37,7 @@ int main(int argc, char** argv )
 
   if(argc < 2)
   {
-    std::cerr << "Usage: ./parallel_edge_collapse input_mesh" << std::endl;
+    std::cerr << "Usage: ./parallel_edge_collapse input_mesh keep_ratio (default:0.25) number_of_tasks (default: 8)" << std::endl;
     return EXIT_FAILURE;
   }
 
@@ -58,7 +58,7 @@ int main(int argc, char** argv )
 
   ecmap[*(edges(sm).first)] = true;
 
-  int ncc = 8;
+  int ncc = (argc>3)?boost::lexical_cast<int>(argv[3]):8;
 //  unsigned int layers = 1;
 //  bool verbose = false;
   PMP::partition(sm, ccmap, ncc);
