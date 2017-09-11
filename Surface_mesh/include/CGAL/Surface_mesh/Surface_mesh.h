@@ -25,6 +25,7 @@
 
 #include <CGAL/license/Surface_mesh.h>
 
+#include <CGAL/mutex.h>
 
 #include <iterator>
 #include <algorithm>
@@ -968,6 +969,7 @@ public:
     /// adjusting anything.
     void remove_vertex(Vertex_index v)
     {
+        CGAL_SCOPED_LOCK(removed_property_mutex);
         vremoved_ = add_property_map<Vertex_index, bool>("v:removed", false).first;
         vremoved_[v] = true; ++removed_vertices_; garbage_ = true;
         vconn_[v].halfedge_ = Halfedge_index(vertices_freelist_);
@@ -978,6 +980,7 @@ public:
     /// adjusting anything.
     void remove_edge(Edge_index e)
     {
+        CGAL_SCOPED_LOCK(removed_property_mutex);
         eremoved_ = add_property_map<Edge_index, bool>("e:removed", false).first;
         eremoved_[e] = true; ++removed_edges_; garbage_ = true;
         hconn_[Halfedge_index((size_type)e << 1)].next_halfedge_ = Halfedge_index(edges_freelist_ );
@@ -989,6 +992,7 @@ public:
 
     void remove_face(Face_index f)
     {
+        CGAL_SCOPED_LOCK(removed_property_mutex);
         fremoved_ = add_property_map<Face_index, bool>("f:removed", false).first;
         fremoved_[f] = true; ++removed_faces_; garbage_ = true;
         fconn_[f].halfedge_ = Halfedge_index(faces_freelist_);
@@ -1935,6 +1939,8 @@ private: //------------------------------------------------------- private data
 
     Property_map<Vertex_index, Point>   vpoint_;
 
+    mutable CGAL_MUTEX removed_property_mutex;
+  
     size_type removed_vertices_;
     size_type removed_edges_;
     size_type removed_faces_;
