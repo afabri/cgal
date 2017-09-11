@@ -285,6 +285,8 @@ template <typename P>
 class Surface_mesh
 {
 
+    typedef bool BOOL_FOR_REMOVE;
+      
     typedef Surface_mesh<P> Self;
 
     template<typename>
@@ -970,7 +972,7 @@ public:
     void remove_vertex(Vertex_index v)
     {
         CGAL_SCOPED_LOCK(removed_property_mutex);
-        vremoved_ = add_property_map<Vertex_index, bool>("v:removed", false).first;
+        vremoved_ = add_property_map<Vertex_index, BOOL_FOR_REMOVE>("v:removed", false).first;
         vremoved_[v] = true; ++removed_vertices_; garbage_ = true;
         vconn_[v].halfedge_ = Halfedge_index(vertices_freelist_);
         vertices_freelist_ = (size_type)v;
@@ -981,7 +983,7 @@ public:
     void remove_edge(Edge_index e)
     {
         CGAL_SCOPED_LOCK(removed_property_mutex);
-        eremoved_ = add_property_map<Edge_index, bool>("e:removed", false).first;
+        eremoved_ = add_property_map<Edge_index, BOOL_FOR_REMOVE>("e:removed", false).first;
         eremoved_[e] = true; ++removed_edges_; garbage_ = true;
         hconn_[Halfedge_index((size_type)e << 1)].next_halfedge_ = Halfedge_index(edges_freelist_ );
         edges_freelist_ = ((size_type)e << 1);
@@ -993,7 +995,7 @@ public:
     void remove_face(Face_index f)
     {
         CGAL_SCOPED_LOCK(removed_property_mutex);
-        fremoved_ = add_property_map<Face_index, bool>("f:removed", false).first;
+        fremoved_ = add_property_map<Face_index, BOOL_FOR_REMOVE>("f:removed", false).first;
         fremoved_[f] = true; ++removed_faces_; garbage_ = true;
         fconn_[f].halfedge_ = Halfedge_index(faces_freelist_);
         faces_freelist_ = (size_type)f;
@@ -1933,9 +1935,9 @@ private: //------------------------------------------------------- private data
     Property_map<Halfedge_index, Halfedge_connectivity>  hconn_;
     Property_map<Face_index, Face_connectivity>          fconn_;
 
-    Property_map<Vertex_index, bool>  vremoved_;
-    Property_map<Edge_index, bool>    eremoved_;
-    Property_map<Face_index, bool>    fremoved_;
+    Property_map<Vertex_index, BOOL_FOR_REMOVE>  vremoved_;
+    Property_map<Edge_index, BOOL_FOR_REMOVE>    eremoved_;
+    Property_map<Face_index, BOOL_FOR_REMOVE>    fremoved_;
 
     Property_map<Vertex_index, Point>   vpoint_;
 
@@ -2189,9 +2191,9 @@ Surface_mesh()
     hconn_    = add_property_map<Halfedge_index, Halfedge_connectivity>("h:connectivity").first;
     fconn_    = add_property_map<Face_index, Face_connectivity>("f:connectivity").first;
     vpoint_   = add_property_map<Vertex_index, Point>("v:point").first;
-    vremoved_ = add_property_map<Vertex_index, bool>("v:removed", false).first;
-    eremoved_ = add_property_map<Edge_index, bool>("e:removed", false).first;
-    fremoved_ = add_property_map<Face_index, bool>("f:removed", false).first;
+    vremoved_ = add_property_map<Vertex_index, BOOL_FOR_REMOVE>("v:removed", false).first;
+    eremoved_ = add_property_map<Edge_index, BOOL_FOR_REMOVE>("e:removed", false).first;
+    fremoved_ = add_property_map<Face_index, BOOL_FOR_REMOVE>("f:removed", false).first;
 
     removed_vertices_ = removed_edges_ = removed_faces_ = 0;
     vertices_freelist_ = edges_freelist_ = faces_freelist_ = -1;
@@ -2217,9 +2219,9 @@ operator=(const Surface_mesh<P>& rhs)
         vconn_    = property_map<Vertex_index, Vertex_connectivity>("v:connectivity").first;
         hconn_    = property_map<Halfedge_index, Halfedge_connectivity>("h:connectivity").first;
         fconn_    = property_map<Face_index, Face_connectivity>("f:connectivity").first;
-        vremoved_ = property_map<Vertex_index, bool>("v:removed").first;
-        eremoved_ = property_map<Edge_index, bool>("e:removed").first;
-        fremoved_ = property_map<Face_index, bool>("f:removed").first;
+        vremoved_ = property_map<Vertex_index, BOOL_FOR_REMOVE>("v:removed").first;
+        eremoved_ = property_map<Edge_index, BOOL_FOR_REMOVE>("e:removed").first;
+        fremoved_ = property_map<Face_index, BOOL_FOR_REMOVE>("f:removed").first;
         vpoint_   = property_map<Vertex_index, P>("v:point").first;
 
         // how many elements are removed?
@@ -2255,9 +2257,9 @@ assign(const Surface_mesh<P>& rhs)
         hconn_    = add_property_map<Halfedge_index, Halfedge_connectivity>("h:connectivity").first;
         fconn_    = add_property_map<Face_index, Face_connectivity>("f:connectivity").first;
         vpoint_   = add_property_map<Vertex_index, P>("v:point").first;
-        vremoved_ = add_property_map<Vertex_index, bool>("v:removed", false).first;
-        eremoved_ = add_property_map<Edge_index, bool>("e:removed", false).first;
-        fremoved_ = add_property_map<Face_index, bool>("f:removed", false).first;
+        vremoved_ = add_property_map<Vertex_index, BOOL_FOR_REMOVE>("v:removed", false).first;
+        eremoved_ = add_property_map<Edge_index, BOOL_FOR_REMOVE>("e:removed", false).first;
+        fremoved_ = add_property_map<Face_index, BOOL_FOR_REMOVE>("f:removed", false).first;
 
         // copy properties from other mesh
         vconn_.array()     = rhs.vconn_.array();
