@@ -25,7 +25,7 @@
 
 #include <boost/graph/graph_traits.hpp>
 #include <CGAL/boost/graph/properties.h>
-
+#include <CGAL/mutex.h>
 #include <CGAL/assertions.h>
 #include <CGAL/boost/graph/helpers.h>
 #include <CGAL/boost/graph/internal/helpers.h>
