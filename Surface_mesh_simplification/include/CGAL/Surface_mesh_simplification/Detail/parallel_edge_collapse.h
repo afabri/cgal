@@ -28,6 +28,7 @@
 #include <CGAL/boost/graph/selection.h>
 #include <CGAL/Surface_mesh_simplification/edge_collapse.h>
 #include <CGAL/Real_timer.h>
+#include <CGAL/mutex.h>
 
 #include <tbb/task_group.h>
 #include <tbb/concurrent_vector.h>
@@ -186,6 +187,7 @@ struct Simplify {
   int ccindex;
   unsigned int layers;
   bool dump, verbose, increase;
+  CGAL_MUTEX* removal_mutex;
 
   Simplify(TriangleMesh& sm,
            HIMap himap,
@@ -202,7 +204,8 @@ struct Simplify {
            unsigned int layers,
            bool dump,
            bool verbose,
-           bool increase)
+           bool increase,
+           CGAL_MUTEX* removal_mutex)
     :
       sm(sm),
       himap(himap),
@@ -219,7 +222,8 @@ struct Simplify {
       layers(layers),
       dump(dump),
       verbose(verbose),
-      increase(increase)
+      increase(increase),
+      removal_mutex(removal_mutex)
   { }
 
   void operator()() const
@@ -301,6 +305,7 @@ struct Simplify {
         = edge_collapse(cg
                         ,stop
                         ,Parallel_tag()
+                        , removal_mutex
                         ,parameters::vertex_index_map(get(boost::vertex_index,sm))
                         .halfedge_index_map(himap)
                         .get_placement(constrained_placement)
@@ -312,6 +317,7 @@ struct Simplify {
         = edge_collapse(cg
                         ,stop
                         ,Parallel_tag()
+                        ,removal_mutex
                         ,parameters::vertex_index_map(get(boost::vertex_index,sm))
                         .halfedge_index_map(himap)
                         .get_placement(placement)
@@ -432,16 +438,17 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
 
 #if 1
   // Simplify the partition in parallel
+  CGAL_MUTEX removal_mutex;
   tbb::task_group tasks;
   for(std::size_t i = 0; i < ncc; i++){
-    tasks.run(internal::Simplify<TriangleMesh,Placement,Cost,Stop,HIMap,ECMap,UECMap,CCMap>(sm, himap, ecmap, uecmap, ccmap, placement, cost, stop, buffer_size, results, cc_edges[i], i, layers, dump, verbose, increase));
+    tasks.run(internal::Simplify<TriangleMesh,Placement,Cost,Stop,HIMap,ECMap,UECMap,CCMap>(sm, himap, ecmap, uecmap, ccmap, placement, cost, stop, buffer_size, results, cc_edges[i], i, layers, dump, verbose, increase,  &removal_mutex));
   }
 
   tasks.wait();
 #else
   for(std::size_t i = 0; i < ncc; i++){
     tbb::task_group tasks;
-    tasks.run(internal::Simplify<TriangleMesh,Placement,Cost,Stop,HIMap,ECMap,UECMap,CCMap>(sm, himap, ecmap, uecmap, ccmap, placement, cost, stop, buffer_size, results, cc_edges[i], i, layers, dump, verbose, increase));
+    tasks.run(internal::Simplify<TriangleMesh,Placement,Cost,Stop,HIMap,ECMap,UECMap,CCMap>(sm, himap, ecmap, uecmap, ccmap, placement, cost, stop, buffer_size, results, cc_edges[i], i, layers, dump, verbose, increase, NULL));
     tasks.wait();
   }
 #endif
@@ -506,6 +513,7 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
     result += edge_collapse(sm,
                             stop,
                             Sequential_tag(),
+                            NULL,
                             parameters::vertex_index_map(get(boost::vertex_index,sm))
                             .get_placement(constrained_placement)
                             .get_cost(cost)
@@ -515,6 +523,7 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
     result += edge_collapse(sm,
                             stop,
                             Sequential_tag(),
+                            NULL,
                             parameters::vertex_index_map(get(boost::vertex_index,sm))
                             .get_placement(placement)
                             .get_cost(cost)

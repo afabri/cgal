@@ -30,6 +30,7 @@
 #include <CGAL/Surface_mesh_simplification/Detail/Common.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/LindstromTurk.h>
 
+#include <CGAL/mutex.h>
 #include <CGAL/tags.h>
 
 #ifdef CGAL_LINKED_WITH_TBB
@@ -55,6 +56,7 @@ template<class ECM
 int edge_collapse ( ECM&                       aSurface
                   , ShouldStop           const& aShould_stop
                   , ConcurrencyTag aConcurrency_tag
+                  , CGAL_MUTEX* removal_mutex
                   // optional mesh information policies 
                   , VertexIndexMap       const& aVertex_index_map     // defaults to get(vertex_index,aSurface)
                   , VertexPointMap       const& aVertex_point_map     // defaults to get(vertex_point,aSurface)
@@ -83,6 +85,7 @@ template<class ECM
 int edge_collapse ( ECM&                       aSurface
                   , ShouldStop           const& aShould_stop
                   , Sequential_tag
+                  , CGAL_MUTEX* removal_mutex
                   // optional mesh information policies 
                   , VertexIndexMap       const& aVertex_index_map     // defaults to get(vertex_index,aSurface)
                   , VertexPointMap       const& aVertex_point_map     // defaults to get(vertex_point,aSurface)
@@ -120,7 +123,7 @@ int edge_collapse ( ECM&                       aSurface
                      , aVisitor
                      ) ;
                      
-  return algorithm.run();
+  return algorithm.run(removal_mutex);
 }                          
 
 
@@ -137,6 +140,7 @@ template<class ECM
 int edge_collapse ( ECM&                       aSurface
                   , ShouldStop           const& aShould_stop
                   , Parallel_tag
+                  , CGAL_MUTEX* removal_mutex
                   // optional mesh information policies 
                   , VertexIndexMap       const& aVertex_index_map     // defaults to get(vertex_index,aSurface)
                   , VertexPointMap       const& aVertex_point_map     // defaults to get(vertex_point,aSurface)
@@ -174,7 +178,7 @@ int edge_collapse ( ECM&                       aSurface
                      , aVisitor
                      ) ;
                      
-  return algorithm.run();
+  return algorithm.run(removal_mutex);
 }                 
 
 struct Dummy_visitor
@@ -193,6 +197,7 @@ template<class ECM, class ShouldStop, class P, class T, class R>
 int edge_collapse ( ECM& aSurface
                     , ShouldStop const& aShould_stop
                     , Sequential_tag
+                  , CGAL_MUTEX* removal_mutex
                     , cgal_bgl_named_params<P,T,R> const& aParams 
                                ) 
 {
@@ -205,7 +210,8 @@ int edge_collapse ( ECM& aSurface
   internal_np::graph_visitor_t vis = internal_np::graph_visitor_t() ;
    return edge_collapse(aSurface
                       ,aShould_stop
-                      , Sequential_tag()  
+                      , Sequential_tag()
+                      , removal_mutex
                       ,choose_const_pmap(get_param(aParams,internal_np::vertex_index),aSurface,boost::vertex_index)
                       ,choose_pmap(get_param(aParams,internal_np::vertex_point),aSurface,boost::vertex_point)
                       ,choose_const_pmap(get_param(aParams,internal_np::halfedge_index),aSurface,boost::halfedge_index)
@@ -215,10 +221,14 @@ int edge_collapse ( ECM& aSurface
                       ,choose_param     (get_param(aParams,vis), Dummy_visitor())
                       );
 }
+
+
+
 template<class ECM, class ShouldStop, class P, class T, class R>
 int edge_collapse ( ECM& aSurface
                     , ShouldStop const& aShould_stop
                     , Parallel_tag
+                    , CGAL_MUTEX* removal_mutex
                     , cgal_bgl_named_params<P,T,R> const& aParams 
                                ) 
 {
@@ -231,7 +241,8 @@ int edge_collapse ( ECM& aSurface
   internal_np::graph_visitor_t vis = internal_np::graph_visitor_t() ;
    return edge_collapse(aSurface
                       ,aShould_stop
-                      , Parallel_tag()  
+                      , Parallel_tag()
+                      , removal_mutex
                       ,choose_const_pmap(get_param(aParams,internal_np::vertex_index),aSurface,boost::vertex_index)
                       ,choose_pmap(get_param(aParams,internal_np::vertex_point),aSurface,boost::vertex_point)
                       ,choose_const_pmap(get_param(aParams,internal_np::halfedge_index),aSurface,boost::halfedge_index)
@@ -249,7 +260,7 @@ int edge_collapse ( ECM& aSurface
                   , cgal_bgl_named_params<P,T,R> const& aParams 
                   ) 
 {
-  return edge_collapse(aSurface, aShould_stop, Sequential_tag(), aParams);
+  return edge_collapse(aSurface, aShould_stop, Sequential_tag(), NULL, aParams);
 }
   
 template<class ECM, class ShouldStop, class FacePartionMap, class P, class T, class R>
@@ -270,7 +281,7 @@ int parallel_edge_collapse ( ECM& aSurface
   }
 #endif
   if(partition_size == 1){
-    return edge_collapse(aSurface, aShould_stop, Sequential_tag(), aParams);
+    return edge_collapse(aSurface, aShould_stop, Sequential_tag(), NULL, aParams);
   } else {
 #ifdef CGAL_LINKED_WITH_TBB
   

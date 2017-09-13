@@ -83,17 +83,17 @@ namespace Surface_mesh_simplification
 }
 
   template<class M,class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
-  int EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::run()
+  int EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::run(CGAL_MUTEX* removal_mutex)
 {
   CGAL_SURF_SIMPL_TEST_assertion( mSurface.is_valid() && mSurface.is_pure_triangle() ) ;
 
   Visitor.OnStarted(mSurface);
    
   // First collect all candidate edges in a PQ
-  Collect(); 
+  Collect(removal_mutex);
   
   // Then proceed to collapse each edge in turn
-  Loop();
+  Loop(removal_mutex);
   CGAL_ECMS_TRACE(0,"Finished: " << (mInitialEdgeCount - mCurrentEdgeCount) << " edges removed." ) ;
 
   int r = (int)(mInitialEdgeCount - mCurrentEdgeCount) ;
@@ -104,7 +104,7 @@ namespace Surface_mesh_simplification
 }
 
   template<class M,class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
-  void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Collect()
+  void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Collect(CGAL_MUTEX* removal_mutex)
 {
   CGAL_ECMS_TRACE(0,"Collecting edges...");
 
@@ -204,7 +204,7 @@ namespace Surface_mesh_simplification
     //the placement is trivial, it's always the point itself
     Placement_type lPlacement = lProfile.p0();
     vertex_descriptor rResult
-      = halfedge_collapse_bk_compatibility(lProfile.v0_v1(), Edge_is_constrained_map);
+      = halfedge_collapse_bk_compatibility(lProfile.v0_v1(), Edge_is_constrained_map, removal_mutex);
     put(Vertex_point_map,rResult,*lPlacement);
     Visitor.OnCollapsed(lProfile,rResult);
   }
@@ -213,7 +213,7 @@ namespace Surface_mesh_simplification
 }
 
   template<class M,class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
-  void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Loop()
+  void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Loop(CGAL_MUTEX* removal_mutex)
 {
   CGAL_ECMS_TRACE(0,"Collapsing edges...") ;
 
@@ -264,7 +264,7 @@ namespace Surface_mesh_simplification
           #ifdef CGAL_SURF_SIMPL_INTERMEDIATE_STEPS_PRINTING
           std::cout << "step " << i_rm << " " << source(*lEdge,mSurface)->point() << " " << target(*lEdge,mSurface)->point() << "\n";
           #endif
-          Collapse(lProfile,lPlacement);
+          Collapse(lProfile,lPlacement, removal_mutex);
           #ifdef CGAL_SURF_SIMPL_INTERMEDIATE_STEPS_PRINTING
           std::stringstream sstr;
           sstr << "debug/P-";
@@ -739,7 +739,7 @@ bool EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Is_collapse_geometrically_va
 }
 
 template<class M, class SP, class VIM, class VPM,class EIM,class ECTM, class CF,class PF,class V, class P>
-void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Collapse( Profile const& aProfile, Placement_type aPlacement )
+void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Collapse( Profile const& aProfile, Placement_type aPlacement, CGAL_MUTEX* removal_mutex )
 {
 
   CGAL_ECMS_TRACE(1,"S" << mStep << ". Collapsing " << edge_to_string(aProfile.v0_v1()) ) ;
@@ -807,7 +807,7 @@ void EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::Collapse( Profile const& aPr
   // (PT and QB are removed if they are not null).
   // All other edges must be kept.
   // All directed edges incident to vertex removed are relink to the vertex kept.
-  rResult = halfedge_collapse_bk_compatibility(aProfile.v0_v1(), Edge_is_constrained_map);
+  rResult = halfedge_collapse_bk_compatibility(aProfile.v0_v1(), Edge_is_constrained_map, removal_mutex);
 
   CGAL_SURF_SIMPL_TEST_assertion_code( -- lResultingEdgeCount ) ; 
 

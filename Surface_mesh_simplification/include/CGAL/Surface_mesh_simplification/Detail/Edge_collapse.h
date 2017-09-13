@@ -27,6 +27,8 @@
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_profile.h>
 #include <CGAL/boost/graph/Euler_operations.h>
 #include <CGAL/boost/graph/helpers.h>
+#include <CGAL/mutex.h>
+
 namespace CGAL {
 
 namespace Surface_mesh_simplification
@@ -181,17 +183,17 @@ public:
               , VisitorT                    aVisitor
               ) ;
 
-  int run() ;
+  int run(CGAL_MUTEX* removal_mutex) ;
   
 private:
   
-  void Collect();
-  void Loop();
+  void Collect(CGAL_MUTEX* removal_mutex);
+  void Loop(CGAL_MUTEX* removal_mutex);
   bool Is_collapse_topologically_valid( Profile const& aProfile ) ;
   bool Is_tetrahedron( halfedge_descriptor const& h1 ) ;
   bool Is_open_triangle( halfedge_descriptor const& h1 ) ;
   bool Is_collapse_geometrically_valid( Profile const& aProfile, Placement_type aPlacement ) ;
-  void Collapse( Profile const& aProfile, Placement_type aPlacement ) ;
+  void Collapse( Profile const& aProfile, Placement_type aPlacement, CGAL_MUTEX* removal_mutex ) ;
   void Update_neighbors( vertex_descriptor const& aKeptV ) ;
   
   Profile create_profile ( halfedge_descriptor const& aEdge )
@@ -337,18 +339,18 @@ private:
   template<class AEdgeIsConstrainedMap>
   vertex_descriptor
   halfedge_collapse_bk_compatibility(
-    halfedge_descriptor const& pq, AEdgeIsConstrainedMap aEdge_is_constrained_map)
+                                     halfedge_descriptor const& pq, AEdgeIsConstrainedMap aEdge_is_constrained_map, CGAL_MUTEX* removal_mutex)
   {
-    return CGAL::Euler::collapse_edge(edge(pq,mSurface), mSurface, aEdge_is_constrained_map);
+    return CGAL::Euler::collapse_edge(edge(pq,mSurface), mSurface, aEdge_is_constrained_map, removal_mutex);
   }
 
 
   template<class ECM>
   vertex_descriptor
   halfedge_collapse_bk_compatibility(
-    halfedge_descriptor const& pq, No_constrained_edge_map<ECM> )
+                                     halfedge_descriptor const& pq, No_constrained_edge_map<ECM>, CGAL_MUTEX* removal_mutex )
   {
-    vertex_descriptor vd = CGAL::Euler::collapse_edge(edge(pq,mSurface), mSurface);
+    vertex_descriptor vd = CGAL::Euler::collapse_edge(edge(pq,mSurface), mSurface, removal_mutex);
     return vd;
   }
 
