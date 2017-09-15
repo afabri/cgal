@@ -201,7 +201,7 @@ private:
     return Profile(aEdge,mSurface,Vertex_index_map,Vertex_point_map,Edge_index_map, m_has_border);
   }  
   
-  size_type get_halfedge_id   ( halfedge_descriptor const& aEdge ) const { return Edge_index_map[aEdge]; }
+  size_type get_halfedge_id   ( halfedge_descriptor const& aEdge ) const { return get(Edge_index_map,aEdge); }
   size_type get_edge_id ( halfedge_descriptor const& aEdge ) const { return get_halfedge_id(aEdge) / 2 ; }
 
   bool is_primary_edge ( halfedge_descriptor const& aEdge ) const { return ( get_halfedge_id(aEdge) % 2 ) == 0 ; }

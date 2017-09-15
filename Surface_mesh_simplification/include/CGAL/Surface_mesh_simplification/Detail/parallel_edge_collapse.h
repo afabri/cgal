@@ -226,7 +226,7 @@ struct Simplify {
       removal_mutex(removal_mutex)
   { }
 
-  void operator()() const
+  void operator()()
   {
     typedef Selection_is_constraint_map<HIMap, TriangleMesh> SICM;
     typedef Component_graph<TriangleMesh,SICM>  Component_graph;
@@ -277,7 +277,7 @@ struct Simplify {
       out << std::endl << std::endl;
       BOOST_FOREACH(edge_descriptor ed, V){
         if(get(iscmap,ed)){
-          out << int(source(ed,sm)) << " " << int(target(ed,sm)) <<  " ";
+          //out << int(source(ed,sm)) << " " << int(target(ed,sm)) <<  " ";
         }
       }
       out << std::endl;
@@ -356,7 +356,7 @@ struct Collect_edges
     {
       for( std::size_t i = r.begin() ;  i != r.end() ; ++i)
         { 
-          face_descriptor fd(static_cast<typename boost::graph_traits<TriangleMesh>::faces_size_type>(i));
+          face_descriptor fd; // AF FIX (static_cast<typename boost::graph_traits<TriangleMesh>::faces_size_type>(i));
           std::size_t cc = ccmap[fd];  // this is the partition
           BOOST_FOREACH(halfedge_descriptor hd, halfedges_around_face(halfedge(fd,sm),sm)){
             halfedge_descriptor hop = opposite(hd,sm);
@@ -374,6 +374,7 @@ template <typename TriangleMesh, typename Placement, typename CCMap, typename UE
 int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placement placement, Stop stop, Cost cost, std::size_t ncc, unsigned int layers = 1, bool dump = false, bool verbose = false, bool increase = true)
 {
   typedef typename boost::graph_traits<TriangleMesh>::edge_descriptor edge_descriptor;
+    typedef typename boost::graph_traits<TriangleMesh>::face_descriptor face_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::edges_size_type size_type;
 
@@ -431,9 +432,22 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
   }
 
   std::vector<tbb::concurrent_vector<edge_descriptor> > cc_edges(ncc);
+#if 1
+  BOOST_FOREACH(face_descriptor fd, faces(sm)){
+    std::size_t cc = ccmap[fd];  // this is the partition
+    BOOST_FOREACH(halfedge_descriptor hd, halfedges_around_face(halfedge(fd,sm),sm)){
+      halfedge_descriptor hop = opposite(hd,sm);
+      if(is_border(hop,sm) || get(ecmap,edge(hd,sm)) || (fd < face(hop ,sm))){
+        cc_edges[cc].push_back(edge((hd<hop)?hd:hop, sm));
+      }
+    }
+  }
+#else  
+
   tbb::parallel_for(tbb::blocked_range<size_t>( 0, num_faces(sm)),
                     internal::Collect_edges<TriangleMesh,ECMap,CCMap>(cc_edges, ncc, ecmap, ccmap, sm));
- 
+#endif
+  
   if(verbose){
     for(std::size_t i=0; i < ncc; i++){
       std::cout << "#edges in component "<< i << ": " << cc_edges[i].size() << std::endl;
@@ -448,7 +462,7 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
     t.start();
   }
 
-#if 1
+#if 0
   // Simplify the partition in parallel
   CGAL_MUTEX removal_mutex;
   tbb::task_group tasks;
