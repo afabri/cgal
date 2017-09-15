@@ -10,7 +10,7 @@
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/Polyhedron_3.h>
 #include <CGAL/Polyhedron_items_with_id_3.h>
-#include <CGAL/Polygon_mesh_processing/partition.h>
+//#include <CGAL/Polygon_mesh_processing/partition.h>
 #include <CGAL/Real_timer.h>
 
 #include <CGAL/Surface_mesh_simplification/edge_collapse.h>
@@ -81,12 +81,12 @@ int main(int argc, char** argv )
   int ncc = (argc>3)?boost::lexical_cast<int>(argv[3]):8;
 
   if(ncc > 1){
-    PMP::partition(sm, ccpmap, ncc);
+    //    PMP::partition(sm, ccpmap, ncc);
     
     std::cerr << "Partition in " << t.time() << " sec."<< std::endl;
     t.reset();
   }
-#if 0
+#if 1
   SMS::LindstromTurk_placement<Surface_mesh> placement;
   SMS::LindstromTurk_cost<Surface_mesh> cost;
   SMS::Count_ratio_stop_predicate<Surface_mesh> stop(ratio);
@@ -96,7 +96,7 @@ int main(int argc, char** argv )
   //SMS::Edge_length_stop_predicate<double> stop(0.01);
 
   if(ncc > 1){
-    SMS::parallel_edge_collapse(sm, stop, ccmap, ncc
+    SMS::parallel_edge_collapse(sm, stop, ccpmap, ncc
                                 ,CGAL::parameters::get_placement(placement)
                                 .edge_is_constrained_map(ecmap)
                                 .get_cost(cost)

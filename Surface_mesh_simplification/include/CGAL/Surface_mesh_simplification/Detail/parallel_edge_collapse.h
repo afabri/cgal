@@ -377,13 +377,22 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
   typedef typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::edges_size_type size_type;
 
-  typedef typename TriangleMesh::template Property_map<halfedge_descriptor, int> HIMap;
-  typedef typename TriangleMesh::template Property_map<edge_descriptor, char> ECMap;
+  //  typedef typename TriangleMesh::template Property_map<halfedge_descriptor, int> HIMap;
+  //  typedef typename TriangleMesh::template Property_map<edge_descriptor, char> ECMap;
+  
   Real_timer t;
 
-  ECMap ecmap = sm.template add_property_map<edge_descriptor, char>("e:internal::constrained",false).first;
+  typedef CGAL::internal::halfedge_property_t<int> Halfedge_property_tag;
+  typedef typename CGAL::internal::dynamic_property_map<TriangleMesh, Halfedge_property_tag >::type HIMap;
+  HIMap himap = CGAL::internal::add_property(Halfedge_property_tag("h:internal::index_in_cc"), sm);
   
-  HIMap himap = sm.template add_property_map<halfedge_descriptor,int>("h:internal::index_in_cc",-1).first;
+  typedef CGAL::internal::edge_property_t<char> Edge_property_tag;
+  typedef typename CGAL::internal::dynamic_property_map<TriangleMesh, Edge_property_tag >::type ECMap;
+  ECMap ecmap = CGAL::internal::add_property(Edge_property_tag("e:internal::constrained"), sm);
+
+  //ECMap ecmap = sm.template add_property_map<edge_descriptor, char>("e:internal::constrained",false).first;
+  
+  // HIMap himap = sm.template add_property_map<halfedge_descriptor,int>("h:internal::index_in_cc",-1).first;
   
   std::vector<edge_descriptor> partition_edges;
  
@@ -394,18 +403,21 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
   }
   // now we have to find the constrained edges
   BOOST_FOREACH(edge_descriptor ed, edges(sm)){
-    if(is_border(ed,sm)){
-      continue;
-    }
     halfedge_descriptor hd = halfedge(ed,sm);
     halfedge_descriptor hop = opposite(hd,sm);
+    put(himap, hd, -1);
+    put(himap,hop, -1);
+    if(is_border(ed,sm)){
+      put(ecmap, ed, false);
+      continue;
+    }
     if (get(ccmap,face(hd,sm)) != get(ccmap,face(hop,sm))) {
       partition_edges.push_back(ed);
-      ecmap[ed] = true;
-      himap[hd] = 0;
-      himap[hop] = 1;
+      put(ecmap, ed, true);
+      put(himap, hd, 0);
+      put(himap, hop, 1);
       if(dump){
-        out << int(source(ed,sm)) << " " << int(target(ed,sm)) <<  " ";
+        //out << int(source(ed,sm)) << " " << int(target(ed,sm)) <<  " ";
       }
     }
   }
@@ -476,11 +488,11 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
   if(increase){
     // Increase the buffer by one more layer
     BOOST_FOREACH(edge_descriptor ed, edges(sm)){
-      ecmap[ed]=0;
+      put(ecmap, ed, 0);
     }
     
     BOOST_FOREACH(edge_descriptor ed, partition_edges){
-      ecmap[ed]=1;
+      put(ecmap,ed,1);
     }
     expand_edge_selection(partition_edges,
                           sm,
@@ -531,8 +543,8 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
                             );
   }
 
-  sm.remove_property_map(ecmap);
-  sm.remove_property_map(himap);
+  CGAL::internal::remove_property(ecmap,sm);
+  CGAL::internal::remove_property(himap, sm);
   if(verbose){
     std::cerr << "sequential edge collapse on buffer in " << t.time() << " sec." << std::endl;
   }

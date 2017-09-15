@@ -84,5 +84,5 @@ if(METIS_FOUND)
   target_link_libraries( parallel_edge_collapse ${METIS_LIBRARIES} )
 
 create_single_source_cgal_program( "parallel_edge_collapse_Polyhedron.cpp" )
-  target_link_libraries( parallel_edge_collapse_Polyhedron ${METIS_LIBRARIES} )
+#  target_link_libraries( parallel_edge_collapse_Polyhedron ${METIS_LIBRARIES} )
 endif()
