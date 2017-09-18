@@ -1241,6 +1241,12 @@ namespace internal
         &poa = mesh.point(va, soa),
         &pob = mesh.point(vb, sob);
 
+      if (std::isnan(pea.z()) ||
+          std::isnan(peb.z()) ||
+          std::isnan(poa.z()) ||
+          std::isnan(pob.z()))
+        continue;
+
       if (pea == poa || peb == pob)
         continue;
 
@@ -1319,7 +1325,6 @@ namespace internal
 #endif
     }
 
-
     for (std::size_t i = 0; i < edges_to_cut.size(); ++ i)
     {
       typename SMCDT::Vertex_handle va = CGAL::cpp11::get<0>(edges_to_cut[i]);
@@ -1335,7 +1340,6 @@ namespace internal
       mesh.insert_constraint (va, vh);
       mesh.insert_constraint (vh, vb);
     }
-
     
   }
 
@@ -1917,7 +1921,7 @@ namespace internal
       for (std::size_t i = 0; i < mesh.number_of_mesh_vertices (it); ++ i)
       {
         const typename GeomTraits::Point_3& p = mesh.point (it, i);
-        if (p.z() == p.z())
+        if (!std::isnan(p.z()))
           f1 << p << std::endl;
       }
 #endif
@@ -1945,7 +1949,7 @@ namespace internal
         if (todo[i])
         {
           const typename GeomTraits::Point_3& p = mesh.point (it, i);
-          if (p.z() == p.z())
+          if (!std::isnan(p.z()))
             f2 << p << std::endl;
         }
       }
@@ -1974,7 +1978,7 @@ namespace internal
         if (todo[i])
         {
           typename GeomTraits::Point_3& p = mesh.point (it, i);
-          if (p.z() != p.z())
+          if (std::isnan(p.z()))
           {
             mesh.remove (mesh.mesh_vertex(it, i));
             todo.erase(todo.begin() + i);

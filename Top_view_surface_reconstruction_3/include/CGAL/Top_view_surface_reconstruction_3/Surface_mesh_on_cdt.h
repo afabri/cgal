@@ -192,13 +192,13 @@ public:
   bool has_defined_height (Vertex_index vi) const
   {
     const Point_3& p = point(vi);
-    return (p.z() == p.z()); // NaN test
+    return !std::isnan(p.z());
   }
 
   bool is_valid (Vertex_handle vh) const
   {
     for (std::size_t i = 0; i < vh->info().size(); ++ i)
-      if (point (vh, i).z() != point (vh, i).z())
+      if (std::isnan(point (vh, i).z()))
         return false;
     return true;
   }
@@ -1231,7 +1231,7 @@ public:
          it != m_mesh.vertices().end(); ++ it)
     {
       const Point_3& p = m_mesh.point(*it);
-      if (p.z() != p.z())
+      if (std::isnan(p.z()))
         m_mesh.point(*it) = Point_3 (p.x(), p.y(), 0);
     }
       
@@ -1247,7 +1247,7 @@ public:
          it != m_mesh.vertices().end(); ++ it)
     {
       const Point_3& p = m_mesh.point(*it);
-      if (p.z() != p.z())
+      if (std::isnan(p.z()))
         m_mesh.point(*it) = Point_3 (p.x(), p.y(), 0);
     }
       
