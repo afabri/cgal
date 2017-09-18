@@ -10,11 +10,13 @@
 #include "Scene_polygon_soup_item.h"
 #include "Scene_polyhedron_item.h"
 #include "Scene_surface_mesh_item.h"
+#include "Scene_polylines_item.h"
 #include "Scene_points_with_normal_item.h"
 #include "Polyhedron_type.h"
 #include "SMesh_type.h"
 #include <CGAL/Three/Polyhedron_demo_plugin_helper.h>
 #include <CGAL/Three/Polyhedron_demo_plugin_interface.h>
+#include <CGAL/Three/Scene_group_item.h>
 
 #include <CGAL/array.h>
 #include <CGAL/centroid.h>
@@ -1532,20 +1534,33 @@ void Polyhedron_demo_surface_reconstruction_plugin::top_view_reconstruction
     
       std::cerr << "Adding mesh to scene" << std::endl;
       SMesh* smesh = new SMesh(smcdt.mesh());
-      
+
       // if (points->has_colors())
       //   propagate_point_set_colors_to_sm (*points, *smesh, dialog.color_facades());
       Scene_surface_mesh_item* sm_item = new Scene_surface_mesh_item(smesh);
-      sm_item->setName(tr("%1 (top view reconstruction)").arg(item->name()));
+      sm_item->setName(tr("Triangle Mesh"));
       sm_item->setRenderingMode(Flat);
       sm_item->setVisible(true);
 
-
+      Scene_polylines_item* edges = new Scene_polylines_item();
+      smcdt.get_edges (edges->polylines);
+      edges->setName(tr("Edges"));
+      edges->setColor(Qt::black);
+      edges->setVisible(true);
     
       // Updates scene
       sm_item->invalidateOpenGLBuffers();
+
+      Scene_group_item* group = new Scene_group_item();
+      group->setName(tr("%1 (top view reconstruction)").arg(item->name()));
+
+      scene->addItem(group);
       
       scene->addItem(sm_item);
+      scene->changeGroup (sm_item, group);
+      scene->addItem(edges);
+      scene->changeGroup (edges, group);
+      
       scene->itemChanged(index);
 
       //    delete horizontal_points;

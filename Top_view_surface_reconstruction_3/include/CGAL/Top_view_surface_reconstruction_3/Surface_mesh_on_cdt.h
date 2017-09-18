@@ -1069,6 +1069,49 @@ public:
                                     it->vertex(2)->point()));
       }
   }
+
+  template <typename PolylineRange>
+  void get_edges (PolylineRange& polylines)
+  {
+    Vector_3 vertical (0., 0., 1.);
+    
+    BOOST_FOREACH (Edge_index ei, m_mesh.edges())
+    {
+      Vertex_index v0 = m_mesh.vertex(ei, 0);
+      Vertex_index v1 = m_mesh.vertex(ei, 1);
+      const Point_3& p0 = point(v0);
+      const Point_3& p1 = point(v1);
+
+      Vertex_handle vh0 = cdt_vertex (v0);
+      Vertex_handle vh1 = cdt_vertex (v1);
+
+      CGAL_assertion (vh0 != Vertex_handle() && vh1 != Vertex_handle());
+
+      bool edge = false;
+      
+      Face_handle fh;
+      int idx;
+      if (vh0 == vh1)
+        edge = true;
+      else if (is_edge(vh0, vh1, fh, idx)
+               && is_constrained (std::make_pair(fh, idx)))
+      {
+        Face_index f0 = m_mesh.face (m_mesh.halfedge(ei, 0));
+        Face_index f1 = m_mesh.face (m_mesh.halfedge(ei, 1));
+
+        if (f0 != Face_index() && f1 != Face_index() &&
+            (has_cdt_face(f0) || has_cdt_face(f1)))
+          edge = true;
+      }
+      
+      if (edge)
+      {
+        polylines.push_back (typename PolylineRange::value_type());
+        polylines.back().push_back (p0);
+        polylines.back().push_back (p1);
+      }
+    }
+  }
   
 
   void check_structure_integrity()
@@ -1430,43 +1473,14 @@ public:
 
   void DEBUG_dump_edges()
   {
-    Vector_3 vertical (0., 0., 1.);
-    
+    std::list<std::vector<Point_3> > poly;
+    get_edges (poly);
+
     std::ofstream f("edges.polylines.txt");
     f.precision(18);
-
-    BOOST_FOREACH (Edge_index ei, m_mesh.edges())
-    {
-      Vertex_index v0 = m_mesh.vertex(ei, 0);
-      Vertex_index v1 = m_mesh.vertex(ei, 1);
-      const Point_3& p0 = point(v0);
-      const Point_3& p1 = point(v1);
-
-      Vertex_handle vh0 = cdt_vertex (v0);
-      Vertex_handle vh1 = cdt_vertex (v1);
-
-      CGAL_assertion (vh0 != Vertex_handle() && vh1 != Vertex_handle());
-
-      bool edge = false;
-      
-      Face_handle fh;
-      int idx;
-      if (vh0 == vh1)
-        edge = true;
-      else if (is_edge(vh0, vh1, fh, idx)
-               && is_constrained (std::make_pair(fh, idx)))
-      {
-        Face_index f0 = m_mesh.face (m_mesh.halfedge(ei, 0));
-        Face_index f1 = m_mesh.face (m_mesh.halfedge(ei, 1));
-
-        if (f0 != Face_index() && f1 != Face_index() &&
-            (has_cdt_face(f0) || has_cdt_face(f1)))
-          edge = true;
-      }
-      
-      if (edge)
-        f << "2 " << p0 << " " << p1 << std::endl;
-    }
+    BOOST_FOREACH (const std::vector<Point_3>& p, poly)
+        f << "2 " << p[0] << " " << p[1] << std::endl;      
+    Vector_3 vertical (0., 0., 1.);
   }
 
   void DEBUG_dump_planes_inter()
