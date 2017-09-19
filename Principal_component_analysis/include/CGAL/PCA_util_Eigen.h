@@ -84,15 +84,15 @@ assemble_covariance_matrix_3(InputIterator first,
     // Find the 2nd order moment for the triangle wrt to the origin by an affine transformation.
     
     // Transform the standard 2nd order moment using the transformation matrix
-    transformation = 2 * area * transformation * moment * transformation.transpose();
+    transformation = /*2 * area * */ transformation * moment * transformation.transpose();
     
     // and add to covariance matrix
-    covariance[0] += transformation(0,0);
-    covariance[1] += transformation(1,0);
-    covariance[2] += transformation(2,0);
-    covariance[3] += transformation(1,1);
-    covariance[4] += transformation(2,1);
-    covariance[5] += transformation(2,2);
+	covariance[0] += 2 * area * transformation(0, 0);
+	covariance[1] += 2 * area * transformation(1, 0);
+	covariance[2] += 2 * area * transformation(2, 0);
+	covariance[3] += 2 * area * transformation(1, 1);
+	covariance[4] += 2 * area * transformation(2, 1);
+	covariance[5] += 2 * area * transformation(2, 2);
 
     mass += area;
   }

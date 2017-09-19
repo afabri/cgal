@@ -28,6 +28,7 @@ int main (int argc, char** argv)
     (points.begin(), points.end(), points.point_map(), mesh,
      CGAL::Top_view_surface_reconstruction_3::Parameters (1.0, 0.9));
 
-
+  std::ofstream out("out.off");
+  out << mesh.mesh();
   return EXIT_SUCCESS;
 }
