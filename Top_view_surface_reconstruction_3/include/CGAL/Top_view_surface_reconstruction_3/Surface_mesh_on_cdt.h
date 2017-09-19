@@ -117,7 +117,7 @@ public:
       double max = 0.;
       std::size_t nb_neigh = 0;
       
-      for (std::size_t i = 0; i < 3; ++ i)
+      for (int i = 0; i < 3; ++ i)
       {
         Face_handle fn = fh->neighbor(i);
         if (mesh->has_mesh_face(fn))
@@ -926,7 +926,7 @@ public:
       typename GeomTraits::Point_3* inter;
       if (result && (inter = boost::get<typename GeomTraits::Point_3>(&*result)))
       {
-        out = CGAL::barycenter (*inter, 1, out, nb);
+        out = CGAL::barycenter (*inter, 1.0, out, double(nb));
         ++ nb;
       }
       else
@@ -1019,7 +1019,7 @@ public:
 
   std::size_t segment_into_superfacets()
   {
-    std::size_t current_index = 0;
+    int current_index = 0;
     
     for (Finite_faces_iterator it = m_cdt.finite_faces_begin();
          it != m_cdt.finite_faces_end(); ++ it)
@@ -1040,7 +1040,7 @@ public:
 
         current->info().index = Face_index(current_index);
 
-        for (std::size_t i = 0; i < 3; ++ i)
+        for (int i = 0; i < 3; ++ i)
         {
           if (!is_constrained (std::make_pair (current, i))
               && is_default(current->neighbor(i))

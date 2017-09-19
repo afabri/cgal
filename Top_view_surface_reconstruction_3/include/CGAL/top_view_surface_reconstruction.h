@@ -85,7 +85,7 @@ namespace internal
                                         typename Surface_mesh_on_cdt<GeomTraits>::Face_handle f,
                                         double epsilon)
   {
-    for (std::size_t i = 0; i < 3; ++ i)
+    for (int i = 0; i < 3; ++ i)
     {
       const typename GeomTraits::Point_3& a = mesh.point(f->vertex(i));
       const typename GeomTraits::Point_3& b = mesh.point(f->vertex((i+1)%3));
@@ -116,7 +116,7 @@ namespace internal
     double min = std::numeric_limits<double>::max();
     double max = -std::numeric_limits<double>::max();
     for (std::size_t i = 0; i < faces.size(); ++ i)
-      for (std::size_t j = 0; j < 3; ++ j)
+      for (int j = 0; j < 3; ++ j)
         {
           typename GeomTraits::Vector_2 v (centroid, faces[i]->vertex(j)->point());
           double coord = v * ref;
@@ -346,7 +346,7 @@ namespace internal
     {
       mesh.make_ignored (circ);
         
-      std::size_t indinf = circ->index(vinf);
+      int indinf = circ->index(vinf);
       typename GeomTraits::Segment_2 seg (circ->vertex((indinf + 1)%3)->point(),
                                           circ->vertex((indinf + 2)%3)->point());
 
@@ -365,7 +365,7 @@ namespace internal
           continue;
 
         bool skip = false;
-        for (std::size_t k = 0; k < 3; ++ k)
+        for (int k = 0; k < 3; ++ k)
           if (CGAL::squared_distance (f->vertex(k)->point(), seg) < epsilon * epsilon
               || CGAL::squared_distance (f->vertex((k+1)%3)->point(),
                                          f->vertex((k+2)%3)->point()) > 100. * epsilon * epsilon)
@@ -377,7 +377,7 @@ namespace internal
         if (skip)
         {
           typename SMCDT::Vertex_handle next = f->vertex(f->index(edge.first));
-          std::size_t ind = f->index(next);
+          int ind = f->index(next);
           mesh.make_ignored (f);
           todo.push (std::make_pair (f, (ind+1)%3));
           todo.push (std::make_pair (f, (ind+2)%3));
@@ -515,7 +515,7 @@ namespace internal
         current->info().index = typename SMCDT::Face_index(0);
 
         done.push_back (current);
-        for (std::size_t i = 0; i < 3; ++ i)
+        for (int i = 0; i < 3; ++ i)
         {
           if (mesh.is_infinite (current->neighbor (i))
               || !mesh.is_default (current->neighbor(i)))
@@ -680,7 +680,7 @@ namespace internal
         bool has_ridge = false;
         bool has_wall = false;
 
-        for (std::size_t j = 0; j < 3; ++ j)
+        for (int j = 0; j < 3; ++ j)
           if (ridge_border.find (it->vertex(j)) != ridge_border.end())
             has_ridge = true;
           else if (wall_border.find (it->vertex(j)) != wall_border.end())
@@ -1350,7 +1350,7 @@ namespace internal
     {
       typename SMCDT::Vertex_index v[3];
       bool okay = true;
-      for (std::size_t i = 0; i < 3; ++ i)
+      for (int i = 0; i < 3; ++ i)
       {
         if (mesh.has_unique_mesh_vertex(it->vertex(i)))
           v[i] = mesh.mesh_vertex (it->vertex(i));
@@ -1429,7 +1429,7 @@ namespace internal
 
       fcurrent->info().plane_index = fref->info().plane_index;
 
-      for (std::size_t i = 0; i < 3; ++ i)
+      for (int i = 0; i < 3; ++ i)
       {
         typename SMCDT::Face_handle neigh = fcurrent->neighbor(i);
 
@@ -1473,7 +1473,7 @@ namespace internal
           break;
         }
 
-        for (std::size_t i = 0; i < 3; ++ i)
+        for (int i = 0; i < 3; ++ i)
           if (!mesh.is_constrained (std::make_pair (current, i))
               && done.insert (current->neighbor(i)).second)
             todo.push (current->neighbor(i));
@@ -1558,7 +1558,7 @@ namespace internal
         for (std::size_t k = 0; k < index_container_former_ring.size(); k++)
         {
           typename SMCDT::Face_handle current = index_container_former_ring[k];
-          for (std::size_t i = 0; i < 3; ++ i)
+          for (int i = 0; i < 3; ++ i)
           {
             typename SMCDT::Face_handle neighbor = current->neighbor(i);
             if (!mesh.is_pending (neighbor)
@@ -1571,7 +1571,7 @@ namespace internal
               typename GeomTraits::Triangle_3 candidate = mesh.triangle_3 (neighbor);
               bool okay = true;
               
-              for (std::size_t j = 0; j < 3; ++ j)
+              for (int j = 0; j < 3; ++ j)
                 if (CGAL::squared_distance (optimal_plane, candidate[j]) > epsilon * epsilon)
                 {
                   okay = false;
@@ -1694,7 +1694,7 @@ namespace internal
 
         region.push_back (current);
 
-        for (std::size_t i = 0; i < 3; ++ i)
+        for (int i = 0; i < 3; ++ i)
         {
           if (!mesh.is_buffer(current->neighbor(i)) &&
               current->info().plane_index == current->neighbor(i)->info().plane_index)

@@ -449,7 +449,7 @@ public:
 
     
     std::set<Face_to_grow_on> todo;
-    for (std::size_t i = 0; i < 3; ++ i)
+    for (int i = 0; i < 3; ++ i)
       if (m_mesh.is_buffer (fh->neighbor(i)))
         todo.insert (Face_to_grow_on (0., fh->neighbor(i), fh, (todo.size() == 0)));
       
@@ -501,7 +501,7 @@ public:
         continue;
 
       if (deg == 2) // Standard case
-        for (std::size_t i = 0; i < 3; ++ i)
+        for (int i = 0; i < 3; ++ i)
         {
           if (m_mesh.is_buffer (current->neighbor(i)) && current->neighbor(i) != previous)
           {
@@ -513,7 +513,7 @@ public:
       {
         int first_buffer = -1;
         int chosen = -1;
-        for (std::size_t i = 0; i < 3; ++ i)
+        for (int i = 0; i < 3; ++ i)
         {
           if (m_mesh.is_buffer (current->neighbor(i)) && current->neighbor(i) != previous)
           {
@@ -566,7 +566,7 @@ public:
     faces.push_back (fh);
     
     std::queue<Face_to_grow_on> todo;
-    for (std::size_t i = 0; i < 3; ++ i)
+    for (int i = 0; i < 3; ++ i)
       if (m_mesh.is_ridge_buffer (fh->neighbor(i)))
         todo.push (Face_to_grow_on (0., fh->neighbor(i), fh, (todo.size() == 0)));
       
@@ -601,7 +601,7 @@ public:
       std::size_t deg = degree (current);
 
       if (deg == 2)
-        for (std::size_t i = 0; i < 3; ++ i)
+        for (int i = 0; i < 3; ++ i)
         {
           if (m_mesh.is_buffer (current->neighbor(i)) && current->neighbor(i) != previous)
             todo.push (Face_to_grow_on (0., current->neighbor(i), current, push_back));
@@ -628,7 +628,7 @@ public:
         {
           Line& line = m_lines[incident_lines[0]];
         
-          for (std::size_t i = 0; i < 3; ++ i)
+          for (int i = 0; i < 3; ++ i)
             if (m_mesh.is_buffer (fh->neighbor(i)))
             {
               std::vector<std::size_t>& il2 = fh->neighbor(i)->info().incident_lines;
@@ -673,7 +673,7 @@ public:
       std::size_t deg = degree (fh);
       if (deg == 3 && incident_lines.size() < 3)
       {
-        for (std::size_t i = 0; i < 3; ++ i)
+        for (int i = 0; i < 3; ++ i)
         {
           Face_handle neighbor = fh->neighbor(i);            
           bool is_incident = false;
@@ -1057,14 +1057,14 @@ public:
   Vector_2 support_vector (Face_handle fh)
   {
     int first_buffer = -1;
-    for (std::size_t i = 0; i < 3; ++ i)
+    for (int i = 0; i < 3; ++ i)
       if (!m_mesh.is_buffer(fh->neighbor(i)))
       {
         if (first_buffer == -1)
-          first_buffer = int(i);
+          first_buffer = i;
         else // If face of degree 1, use vector from common vertex to midpoint of opposite edge
         {
-          const Point_2& p = fh->vertex(3 - (std::size_t(first_buffer) + i))->point();
+          const Point_2& p = fh->vertex(3 - (first_buffer + i))->point();
           const Point_2& p0 = fh->vertex(first_buffer)->point();
           const Point_2& p1 = fh->vertex(i)->point();
 
@@ -1080,7 +1080,7 @@ public:
   std::size_t degree (Face_handle fh)
   {
     std::size_t out = 0;
-    for (std::size_t i = 0; i < 3; ++ i)
+    for (int i = 0; i < 3; ++ i)
       if (m_mesh.is_buffer(fh->neighbor(i)))
         ++ out;
     return out;
@@ -1089,7 +1089,7 @@ public:
   std::size_t degree_ridge (Face_handle fh)
   {
     std::size_t out = 0;
-    for (std::size_t i = 0; i < 3; ++ i)
+    for (int i = 0; i < 3; ++ i)
       if (m_mesh.is_ridge_buffer(fh->neighbor(i)))
         ++ out;
     return out;
@@ -1098,7 +1098,7 @@ public:
   double width (const Face_handle& fh) const
   {
     int first_buffer = -1;
-    for (std::size_t i = 0; i < 3; ++ i)
+    for (int i = 0; i < 3; ++ i)
       if (!m_mesh.is_buffer(fh->neighbor(i)))
       {
         if (first_buffer == -1)
@@ -1146,7 +1146,7 @@ public:
       *(output ++) = fh;
 
       Face_handle next = Face_handle();
-      for (std::size_t i = 0; i < 3; ++ i)
+      for (int i = 0; i < 3; ++ i)
         if (m_mesh.is_buffer (fh->neighbor(i))
             && fh->neighbor(i) != previous)
         {
@@ -1171,7 +1171,7 @@ public:
     bool first_found = false;
     bool second_found = false;
     
-    for (std::size_t i = 0; i < 3; ++ i)
+    for (int i = 0; i < 3; ++ i)
     {
       Face_circulator circ = m_mesh.incident_faces(fh->vertex(i));
       Face_circulator start = circ;

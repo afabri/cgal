@@ -171,7 +171,7 @@ public:
 
       if (length < epsilon)
         for (std::size_t j = 0; j < visited.size() - 1; ++ j)
-          remove_edge (visited[j], visited[j+1], *this);
+          boost::remove_edge (visited[j], visited[j+1], *(dynamic_cast<Graph*>(this)));
     }
     
 
