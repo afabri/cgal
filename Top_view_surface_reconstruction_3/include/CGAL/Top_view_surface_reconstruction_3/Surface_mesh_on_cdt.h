@@ -330,6 +330,27 @@ public:
       return (std::numeric_limits<double>::max)();
     return max * (4 - nb_neigh);
   }
+
+  void reserve (std::size_t nb_pts)
+  {
+    m_mesh.reserve (nb_pts, 0, 0);
+  }
+  
+  template <typename PointWithInfoIterator>
+  void insert (PointWithInfoIterator begin,
+               PointWithInfoIterator end)
+  {
+    m_cdt.insert (begin, end);
+    
+    for (Finite_vertices_iterator it = m_cdt.finite_vertices_begin();
+         it != m_cdt.finite_vertices_end(); ++ it)
+      m_v2v_map[it->info()[0].second] = it;
+  }
+  
+  Vertex_index insert_in_mesh (const Point_3& point)
+  {
+    return m_mesh.add_vertex (point);
+  }
   
   Vertex_handle insert (const Point_2& point)
   {

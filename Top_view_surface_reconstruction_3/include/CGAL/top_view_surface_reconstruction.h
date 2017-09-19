@@ -57,6 +57,8 @@ namespace internal
                                double quantile)
   {
     typedef typename GeomTraits::Point_3 Point_3;
+    typedef Surface_mesh_on_cdt<GeomTraits> SMCDT;
+
     typedef std::map<std::pair<int, int>, std::vector<Point_3> > Grid;
     Grid grid;
 
@@ -71,13 +73,28 @@ namespace internal
       else
         found->second.push_back (get (point_map, *it));
     }
+
+    std::vector<std::pair<typename GeomTraits::Point_2,
+                          std::vector<std::pair<typename GeomTraits::Direction_2,
+                                                typename SMCDT::Vertex_index> > > > to_insert;
+    to_insert.reserve (grid.size());
+    output_mesh.reserve (grid.size());
     
     for (typename Grid::iterator it = grid.begin(); it != grid.end(); ++ it)
     {
       std::vector<Point_3>& cell_pts = it->second;
       std::sort (cell_pts.begin(), cell_pts.end(), Sort_by_z<Point_3>());
-      output_mesh.insert (cell_pts[std::min (cell_pts.size() - 1, std::size_t(cell_pts.size() * quantile))]);
+      const Point_3& pt = cell_pts[std::min (cell_pts.size() - 1, std::size_t(cell_pts.size() * quantile))];
+
+      typename SMCDT::Vertex_index vi = output_mesh.insert_in_mesh (pt);
+      
+      to_insert.push_back (std::make_pair (typename GeomTraits::Point_2 (pt.x(), pt.y()),
+                                           std::vector<std::pair<typename GeomTraits::Direction_2,
+                                                       typename SMCDT::Vertex_index> >
+                                           (1,std::make_pair (typename GeomTraits::Direction_2(0,0), vi))));
     }
+
+    output_mesh.insert (to_insert.begin(), to_insert.end());
   }
 
   template <typename GeomTraits>
