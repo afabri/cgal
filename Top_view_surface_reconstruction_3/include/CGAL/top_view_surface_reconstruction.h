@@ -1094,7 +1094,7 @@ namespace internal
       plane_scores[std::size_t(fhint->info().index)].push_back (it->info().plane_index);
     }
 
-    std::vector<std::size_t> chosen_plane(nb_superfacets);
+    std::vector<std::size_t> chosen_plane(nb_superfacets, std::size_t(-1));
     for (std::size_t i = 0; i < plane_scores.size(); ++ i)
     {
       std::sort (plane_scores[i].begin(), plane_scores[i].end());
@@ -1200,12 +1200,19 @@ namespace internal
     std::ofstream file2 ("inter.xyz");
     file2.precision(18);
 #endif
-    
+
     std::queue<typename SMCDT::Edge> todo;
     for (typename SMCDT::Finite_edges_iterator it = mesh.finite_edges_begin();
          it != mesh.finite_edges_end(); ++ it)
       if (mesh.is_constrained(*it))
-        todo.push (*it);
+      {
+        typename SMCDT::Face_handle
+          fe = it->first,
+          fo = fe->neighbor (it->second);
+
+        if (fe->info().has_plane() && fo->info().has_plane())
+          todo.push (*it);
+      }
 
     std::vector<typename SMCDT::Edge> incident;
 
@@ -1217,6 +1224,9 @@ namespace internal
         fo = fe->neighbor (idx);
 
       todo.pop();
+
+      if (!fe->info().has_plane() || !fo->info().has_plane())
+        continue;
 
       typename GeomTraits::Point_2
         re = mesh.midpoint(fe),
@@ -1268,8 +1278,6 @@ namespace internal
 
       if (CGAL::squared_distance (p2, chosen->point()) < epsilon * epsilon)
       {
-        CGAL_assertion (fe->info().has_plane() && fo->info().has_plane());
-        
         double we = mesh.plane_weights()[fe->info().plane_index];
         double wo = mesh.plane_weights()[fo->info().plane_index];
         double ze, zo;

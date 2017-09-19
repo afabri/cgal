@@ -333,8 +333,8 @@ public:
     for (int i = 0; i < 3; ++ i)
     {
       Face_handle fn = fh->neighbor(i);
-//      if (is_pending(fn) && has_unique_mesh_vertex (fn->vertex(fn->index(fh))))
-      if (has_mesh_face(fn))
+      if (is_pending(fn) && has_unique_mesh_vertex (fn->vertex(fn->index(fh))))
+//      if (has_mesh_face(fn))
       {
         nb_neigh ++;
         Point_3 p = point (fn->vertex(fn->index(fh)));
@@ -1059,11 +1059,12 @@ public:
   void apply_planes_and_reset_superfacets (const std::vector<std::size_t>& indices)
   {
     m_plane_weights.resize (m_planes.size(), 0.);
-    
+
     for (Finite_faces_iterator it = m_cdt.finite_faces_begin();
          it != m_cdt.finite_faces_end(); ++ it)
       if (!is_default(it))
       {
+
         it->info().plane_index = indices[std::size_t(it->info().index)];
         it->info().index = Face_index();
         m_plane_weights[it->info().plane_index]
@@ -1071,6 +1072,7 @@ public:
                                     it->vertex(1)->point(),
                                     it->vertex(2)->point()));
       }
+
   }
 
   template <typename PolylineRange>
