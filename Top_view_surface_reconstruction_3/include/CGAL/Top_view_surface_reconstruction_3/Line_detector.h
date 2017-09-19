@@ -9,6 +9,7 @@
 #include <CGAL/linear_least_squares_fitting_2.h>
 
 #include <boost/iterator/iterator_facade.hpp>
+#include <boost/unordered_map.hpp>
 
 namespace CGAL
 {
@@ -37,14 +38,17 @@ public:
   typedef typename SMCDT::Face_circulator Face_circulator;
   typedef typename SMCDT::Line_face_circulator Line_face_circulator;
 
+  typedef boost::unordered_map<Face_handle, double> Scores;
+  //typedef std::map<Face_handle, double> Scores;
+  
   struct Sort_by_map
   {
-    std::map<Face_handle, double>& scores;
-    Sort_by_map (std::map<Face_handle, double>& scores) : scores (scores) { }
+    Scores& scores;
+    Sort_by_map (Scores& scores) : scores (scores) { }
 
     bool operator() (const Face_handle& a, const Face_handle& b) const
     {
-      typename std::map<Face_handle, double>::iterator it_a, it_b;
+      typename Scores::iterator it_a, it_b;
       it_a = scores.find(a);
       it_b = scores.find(b);
 
@@ -201,7 +205,7 @@ public:
 
   void sort_candidates_with_graph (Graph& graph)
   {
-    std::map<Face_handle, double> scores;
+    Scores scores;
     
     Face_handle fbegin = Face_handle ();
     Face_handle fend = Face_handle ();
