@@ -39,6 +39,8 @@
 #include <CGAL/Advancing_front_surface_reconstruction.h>
 #include <CGAL/Shape_detection_3.h>
 #include <CGAL/structure_point_set.h>
+
+#define TOP_VIEW_DEBUG
 #include <CGAL/top_view_surface_reconstruction.h>
 
 #include "ui_Surface_reconstruction_plugin.h"
