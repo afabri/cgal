@@ -614,6 +614,78 @@ assemble_covariance_matrix_3(InputIterator first,
 
 }
 
+// assemble covariance matrix from a triangle set 
+template < typename InputIterator,
+           typename K >
+void
+assemble_covariance_matrix_2(InputIterator first,
+                             InputIterator beyond,
+			     typename Eigen_diagonalize_traits<typename K::FT, 2>::Covariance_matrix& covariance, // covariance matrix
+                             const typename K::Point_2& c, // centroid
+                             const K&,                    // kernel
+                             const typename K::Triangle_2*,// used for indirection
+                             const CGAL::Dimension_tag<2>&,
+			     const Eigen_diagonalize_traits<typename K::FT, 2>&)
+{
+  typedef typename K::FT          FT;
+  typedef typename K::Triangle_2  Triangle;
+  typedef typename Eigen::Matrix<FT, 2, 2> Matrix;
+
+  // assemble covariance matrix as a semi-definite matrix. 
+  // Matrix numbering:
+  // 0 1
+  //   2
+  //Final combined covariance matrix for all triangles and their combined mass
+  FT mass = 0.0;
+
+  // assemble 2nd order moment about the origin.  
+  Matrix moment;
+  moment << 1.0/12.0, 1.0/24.0,
+            1.0/24.0, 1.0/12.0;
+
+  for(InputIterator it = first;
+      it != beyond;
+      it++)
+  {
+    // Now for each triangle, construct the 2nd order moment about the origin.
+    // assemble the transformation matrix.
+    const Triangle& t = *it;
+
+    // defined for convenience.
+    Matrix transformation;
+    transformation << t[1].x() - t[0].x(), t[2].x() - t[0].x(),
+                      t[1].y() - t[0].y(), t[2].y() - t[0].y();
+    
+    // Translate the 2nd order moment to (x0,y0).
+    FT xav0 = (transformation(0,0) + transformation(0,1)) / 3.0;
+    FT yav0 = (transformation(1,0) + transformation(1,1)) / 3.0;
+      
+    FT area = 0.5 * std::abs(transformation.determinant());
+
+		// skip zero measure primitives
+    if(area == (FT)0.0)
+			continue;
+
+    // Find the 2nd order moment for the triangle wrt to the origin by an affine transformation.
+    
+    // Transform the standard 2nd order moment using the transformation matrix
+    transformation = 2 * area * transformation * moment * transformation.transpose();
+    
+    // and add to covariance matrix
+    covariance[0] += transformation(0,0) + area * (t[0].x() * xav0 * 2 + t[0].x() * t[0].x());
+    covariance[1] += transformation(1,0) + area * (t[0].x() * yav0 + xav0 * t[0].y() + t[0].x() * t[0].y());
+    covariance[2] += transformation(1,1) + area * (t[0].y() * yav0 * 2 + t[0].y() * t[0].y());
+
+    mass += area;
+  }
+
+  // Translate the 2nd order moment calculated about the origin to
+  // the center of mass to get the covariance.
+  covariance[0] += mass * (-1.0 * c.x() * c.x());
+  covariance[1] += mass * (-1.0 * c.x() * c.y());
+  covariance[2] += mass * (-1.0 * c.y() * c.y());
+}
+
 // Variants using default
 template < typename InputIterator,
            typename K >
@@ -726,6 +798,22 @@ assemble_covariance_matrix_3(InputIterator first,
 {
   assemble_covariance_matrix_3 (first, beyond, covariance, c, k, s, tag,
                                 Eigen_diagonalize_traits<typename K::FT, 3>());
+}
+
+template < typename InputIterator,
+           typename K >
+void
+assemble_covariance_matrix_2(InputIterator first,
+                             InputIterator beyond, 
+			     typename Default_diagonalize_traits<typename K::FT, 2>::Covariance_matrix& covariance, // covariance matrix
+                             const typename K::Point_2& c, // centroid
+                             const K& k,                    // kernel
+                             const typename K::Triangle_2* s,// used for indirection
+                             const CGAL::Dimension_tag<2>& tag,
+			     const Default_diagonalize_traits<typename K::FT, 2>&)
+{
+  assemble_covariance_matrix_2 (first, beyond, covariance, c, k, s, tag,
+                                Eigen_diagonalize_traits<typename K::FT, 2>());
 }
 
   
