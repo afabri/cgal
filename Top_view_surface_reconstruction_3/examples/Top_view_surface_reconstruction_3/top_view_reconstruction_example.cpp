@@ -25,7 +25,8 @@ int main (int argc, char** argv)
   Mesh_on_cdt mesh;
 
   CGAL::top_view_surface_reconstruction<Kernel>
-    (points.begin(), points.end(), points.point_map(), mesh, 0.30);
+    (points.begin(), points.end(), points.point_map(), mesh,
+     CGAL::Top_view_surface_reconstruction_3::Parameters (1.0, 0.9));
 
 
   return EXIT_SUCCESS;
