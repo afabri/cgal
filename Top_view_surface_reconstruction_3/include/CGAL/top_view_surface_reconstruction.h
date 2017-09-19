@@ -3,7 +3,7 @@
 
 //#define TOP_VIEW_FIX_DUPLICATE_VERTICES
 
-#define TOP_VIEW_DEBUG
+//#define TOP_VIEW_DEBUG
 //#define TOP_VIEW_LOG
 //#define TOP_VIEW_CHECK_STRUCTURE
 
@@ -671,10 +671,7 @@ namespace internal
 
     // Remove vertices and tag remaining faces
     BOOST_FOREACH (typename SMCDT::Vertex_handle vh, to_remove)
-    {
-      typename GeomTraits::Point_2 point = vh->point();
       mesh.remove (vh);
-    }
 
     for (typename SMCDT::Finite_faces_iterator it = mesh.finite_faces_begin();
          it != mesh.finite_faces_end(); ++ it)
@@ -2598,7 +2595,6 @@ void top_view_surface_reconstruction (PointInputIterator begin,
   CGAL_assertion (parameters.epsilon > 0.);
   
   double threshold_factor = 2.;
-  double meshing_factor = std::sqrt(2.);
 
   CGAL::Real_timer t;
   CGAL::Real_timer ttot;

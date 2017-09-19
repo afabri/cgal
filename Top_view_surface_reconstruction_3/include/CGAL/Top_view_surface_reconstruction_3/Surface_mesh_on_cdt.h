@@ -19,6 +19,8 @@
 
 #include <CGAL/unordered.h>
 
+#include <CGAL/Eigen_svd.h>
+
 #include <fstream>
 #include <queue>
 
