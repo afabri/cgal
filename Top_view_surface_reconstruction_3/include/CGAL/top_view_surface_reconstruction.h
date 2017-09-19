@@ -1505,14 +1505,20 @@ namespace internal
     std::vector<typename GeomTraits::Plane_3>& planes = mesh.planes();
 
     std::vector<typename SMCDT::Face_handle> faces;
+
+    std::map<typename SMCDT::Face_handle, double> deviations;
     
     for (typename SMCDT::Finite_faces_iterator it = mesh.finite_faces_begin();
          it != mesh.finite_faces_end(); ++ it)
       if (mesh.is_pending(it) && !it->info().has_plane())
+      {
         faces.push_back (it);
+        deviations.insert (std::make_pair (it, mesh.deviation_from_plane(it)));
+      }
+        
 
     if (nb_min != 1)
-      std::sort (faces.begin(), faces.end(), typename SMCDT::Sort_faces_by_planarity(&mesh));
+      std::sort (faces.begin(), faces.end(), typename SMCDT::Sort_faces_by_planarity(deviations));
 
     std::size_t nb_failed_trials = 0;
 

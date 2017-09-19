@@ -95,46 +95,19 @@ public:
 
   struct Sort_faces_by_planarity
   {
-    Self* mesh;
+    std::map<Face_handle, double>& deviations;
 
-    Sort_faces_by_planarity (Self* mesh) : mesh (mesh) { }
+    Sort_faces_by_planarity (std::map<Face_handle, double>& deviations)
+      : deviations (deviations) { }
 
     bool operator() (const Face_handle& a, const Face_handle& b) const
     {
-      double dev_a = deviation_from_plane (a);
-      double dev_b = deviation_from_plane (b);
+      double dev_a = deviations[a];
+      double dev_b = deviations[b];
       if (dev_a == dev_b)
         return a < b;
-      return deviation_from_plane (a) < deviation_from_plane (b);
+      return dev_a < dev_b;
     }
-
-    double deviation_from_plane (const Face_handle& fh) const
-    {
-      Vector_3 normal_seed = mesh->normal_vector (fh);
-      Point_3 pt_seed = mesh->midpoint_3(fh);
-      Plane_3 optimal_plane (pt_seed, normal_seed);
-
-      double max = 0.;
-      std::size_t nb_neigh = 0;
-      
-      for (int i = 0; i < 3; ++ i)
-      {
-        Face_handle fn = fh->neighbor(i);
-        if (mesh->has_mesh_face(fn))
-        {
-          nb_neigh ++;
-          Point_3 point = mesh->point (fn->vertex(fn->index(fh)));
-          double dist = CGAL::squared_distance (point, optimal_plane);
-          if (dist > max)
-            max = dist;
-        }
-      }
-
-      if (nb_neigh == 0)
-        return (std::numeric_limits<double>::max)();
-      return max * (4 - nb_neigh);
-    }
-
   };
     
 
@@ -346,6 +319,34 @@ public:
                                             point (fh->vertex(2)));
     out = out / std::sqrt (out*out);
     return out;
+  }
+
+  double deviation_from_plane (const Face_handle& fh)
+  {
+    Vector_3 normal_seed = normal_vector (fh);
+    Point_3 pt_seed = midpoint_3(fh);
+    Plane_3 optimal_plane (pt_seed, normal_seed);
+
+    double max = 0.;
+    std::size_t nb_neigh = 0;
+      
+    for (int i = 0; i < 3; ++ i)
+    {
+      Face_handle fn = fh->neighbor(i);
+//      if (is_pending(fn) && has_unique_mesh_vertex (fn->vertex(fn->index(fh))))
+      if (has_mesh_face(fn))
+      {
+        nb_neigh ++;
+        Point_3 p = point (fn->vertex(fn->index(fh)));
+        double dist = CGAL::squared_distance (p, optimal_plane);
+        if (dist > max)
+          max = dist;
+      }
+    }
+
+    if (nb_neigh == 0)
+      return (std::numeric_limits<double>::max)();
+    return max * (4 - nb_neigh);
   }
   
   Vertex_handle insert (const Point_2& point)
