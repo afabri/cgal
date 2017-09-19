@@ -93,24 +93,6 @@ public:
   typedef typename Mesh::template Property_map<Vertex_index, Vertex_index> NVN_map; // Mesh vertex to next vertical mesh vertex
   typedef typename Mesh::template Property_map<Face_index, Face_handle> F2F_map; // Mesh face to CDT face
 
-  struct Sort_faces_by_planarity
-  {
-    std::map<Face_handle, double>& deviations;
-
-    Sort_faces_by_planarity (std::map<Face_handle, double>& deviations)
-      : deviations (deviations) { }
-
-    bool operator() (const Face_handle& a, const Face_handle& b) const
-    {
-      double dev_a = deviations[a];
-      double dev_b = deviations[b];
-      if (dev_a == dev_b)
-        return a < b;
-      return dev_a < dev_b;
-    }
-  };
-    
-
 private:
 
   struct Vertex_handle_to_point : public std::unary_function<Vertex_handle, Point_3>

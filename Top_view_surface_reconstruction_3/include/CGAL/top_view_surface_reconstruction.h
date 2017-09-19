@@ -1512,21 +1512,15 @@ namespace internal
     
     std::vector<typename GeomTraits::Plane_3>& planes = mesh.planes();
 
-    std::vector<typename SMCDT::Face_handle> faces;
+    std::vector<std::pair<double, typename SMCDT::Face_handle> > faces;
 
-    std::map<typename SMCDT::Face_handle, double> deviations;
-    
     for (typename SMCDT::Finite_faces_iterator it = mesh.finite_faces_begin();
          it != mesh.finite_faces_end(); ++ it)
       if (mesh.is_pending(it) && !it->info().has_plane())
-      {
-        faces.push_back (it);
-        deviations.insert (std::make_pair (it, mesh.deviation_from_plane(it)));
-      }
-        
+        faces.push_back (std::make_pair (mesh.deviation_from_plane(it), it));
 
     if (nb_min != 1)
-      std::sort (faces.begin(), faces.end(), typename SMCDT::Sort_faces_by_planarity(deviations));
+      std::sort (faces.begin(), faces.end());
 
     std::size_t nb_failed_trials = 0;
 
@@ -1537,24 +1531,25 @@ namespace internal
 
     for (std::size_t fi = 0; fi < faces.size(); ++ fi)
     {
-      if (faces[fi]->info().has_plane())
+      typename SMCDT::Face_handle face = faces[fi].second;
+      if (face->info().has_plane())
         continue;
 
-      faces[fi]->info().plane_index = planes.size();
+      face->info().plane_index = planes.size();
       
       //characteristics of the seed
-      typename GeomTraits::Vector_3 normal_seed = mesh.normal_vector (faces[fi]);
+      typename GeomTraits::Vector_3 normal_seed = mesh.normal_vector (face);
       if (nb_min == 1)
         normal_seed = typename GeomTraits::Vector_3(0., 0., 1.);
       
-      typename GeomTraits::Point_3 pt_seed = mesh.midpoint_3(faces[fi]);
+      typename GeomTraits::Point_3 pt_seed = mesh.midpoint_3(face);
       typename GeomTraits::Plane_3 optimal_plane (pt_seed, normal_seed);
 
       //initialization containers
       index_container.clear();
-      index_container.push_back (faces[fi]);
+      index_container.push_back (face);
       index_container_former_ring.clear();
-      index_container_former_ring.push_back(faces[fi]);
+      index_container_former_ring.push_back(face);
       index_container_current_ring.clear();
 
       cpp11::unordered_set<typename SMCDT::Face_handle> current_overlaps;
@@ -1562,7 +1557,7 @@ namespace internal
       std::size_t size_latest_pca = 1;
     
       support.clear();
-      support.push_back (mesh.triangle_3(faces[fi]));
+      support.push_back (mesh.triangle_3(face));
       //propagation
       bool propagation = true;
       do{
@@ -1629,7 +1624,7 @@ namespace internal
       //Test the number of inliers -> reject if inferior to Nmin
       if (index_container.size() < nb_min)
       {
-        faces[fi]->info().erase_plane();
+        face->info().erase_plane();
         
         for (std::size_t k = 0; k < index_container.size(); k++)
           index_container[k]->info().erase_plane();
