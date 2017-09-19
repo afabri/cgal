@@ -113,8 +113,8 @@ namespace internal
     typename GeomTraits::Vector_2 ref = line.to_vector().perpendicular(CGAL::POSITIVE);
     ref = ref / std::sqrt (ref*ref);
 
-    double min = std::numeric_limits<double>::max();
-    double max = -std::numeric_limits<double>::max();
+    double min = (std::numeric_limits<double>::max)();
+    double max = -(std::numeric_limits<double>::max)();
     for (std::size_t i = 0; i < faces.size(); ++ i)
       for (int j = 0; j < 3; ++ j)
         {
@@ -1719,7 +1719,7 @@ namespace internal
 
     region_growing_one_pass<GeomTraits> (mesh, epsilon, nb_min, angle_max);
     region_growing_fill_voids<GeomTraits> (mesh);
-    region_growing_one_pass<GeomTraits> (mesh, std::numeric_limits<double>::max(), 1, 0.);
+    region_growing_one_pass<GeomTraits> (mesh, (std::numeric_limits<double>::max)(), 1, 0.);
 
 #ifdef TOP_VIEW_LOG
     mesh.DEBUG_dump_ply("debug0.ply");
@@ -2724,7 +2724,7 @@ void top_view_surface_reconstruction (PointInputIterator begin,
   TOP_VIEW_CERR << "Generating vertical walls" << std::endl;
   t.start();
   Top_view_surface_reconstruction_3::internal::generate_vertical_walls<GeomTraits>
-    (output_mesh, std::numeric_limits<double>::max());
+    (output_mesh, (std::numeric_limits<double>::max)());
   t.stop();
 
   TOP_VIEW_CERR << "-- done in " << t.time() << " second(s)" << std::endl;

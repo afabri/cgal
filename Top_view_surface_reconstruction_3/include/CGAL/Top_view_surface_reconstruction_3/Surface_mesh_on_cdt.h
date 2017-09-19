@@ -131,7 +131,7 @@ public:
       }
 
       if (nb_neigh == 0)
-        return std::numeric_limits<double>::max();
+        return (std::numeric_limits<double>::max)();
       return max * (4 - nb_neigh);
     }
 
@@ -683,7 +683,7 @@ public:
     if (result && (inter = boost::get<Point_3>(&*result)))
       return inter->z();
     
-    return std::numeric_limits<double>::max();
+    return (std::numeric_limits<double>::max)();
   }
 
   void estimate_missing_heights (Vertex_handle vh, double epsilon, bool allow_border_propagation = false)
@@ -710,7 +710,7 @@ public:
                       std::numeric_limits<double>::quiet_NaN(),
                       std::numeric_limits<double>::quiet_NaN());
       
-      double dist_min = std::numeric_limits<double>::max();
+      double dist_min = (std::numeric_limits<double>::max)();
 
       for (std::size_t j = 0; j < neighborhood.size(); ++ j)
       {
@@ -764,7 +764,7 @@ public:
       for (std::size_t j = 0; j < incident_planes[i].size(); ++ j)
       {
         double d = estimate_height_with_plane(vh, incident_planes[i][j]);
-        CGAL_assertion (d != std::numeric_limits<double>::max());
+        CGAL_assertion (d != (std::numeric_limits<double>::max)());
         z += d;
       }
       z /= incident_planes[i].size();
@@ -801,7 +801,7 @@ public:
     if (result && (inter = boost::get<Point_3>(&*result)))
       return inter->z();
     
-    return std::numeric_limits<double>::max();
+    return (std::numeric_limits<double>::max)();
   }
   
   double estimate_height_with_plane (Vertex_handle vh, std::size_t plane_index)
@@ -1532,8 +1532,8 @@ public:
         Vector_3 vec = inter->to_vector();
         vec /= std::sqrt (vec*vec);
 
-        double min = std::numeric_limits<double>::max();
-        double max = -std::numeric_limits<double>::max();
+        double min = (std::numeric_limits<double>::max)();
+        double max = -(std::numeric_limits<double>::max)();
         
         for (std::size_t i = 0; i < it->second.size(); ++ i)
         {
@@ -1550,8 +1550,8 @@ public:
           }
         }
 
-        if (min != std::numeric_limits<double>::max() &&
-            max != -std::numeric_limits<double>::max())
+        if (min != (std::numeric_limits<double>::max)() &&
+            max != -(std::numeric_limits<double>::max)())
           f << "2 " << orig + min * vec << " " << orig + max * vec << std::endl;          
       }
     }

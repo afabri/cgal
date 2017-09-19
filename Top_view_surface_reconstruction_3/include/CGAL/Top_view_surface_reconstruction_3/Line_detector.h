@@ -48,8 +48,8 @@ public:
       it_a = scores.find(a);
       it_b = scores.find(b);
 
-      double score_a = std::numeric_limits<double>::max();
-      double score_b = std::numeric_limits<double>::max();
+      double score_a = (std::numeric_limits<double>::max)();
+      double score_b = (std::numeric_limits<double>::max)();
 
       if (it_a == scores.end() && it_b == scores.end())
         return a < b;
@@ -219,9 +219,9 @@ public:
         fend = m_mesh.locate (q, fbegin);
 
         if (m_mesh.is_buffer (fbegin))
-          scores.insert (std::make_pair (fbegin, std::numeric_limits<double>::max()));
+          scores.insert (std::make_pair (fbegin, (std::numeric_limits<double>::max)()));
         if (m_mesh.is_buffer (fend))
-          scores.insert (std::make_pair (fend, std::numeric_limits<double>::max()));
+          scores.insert (std::make_pair (fend, (std::numeric_limits<double>::max)()));
         
         Line_face_circulator it = m_mesh.line_walk(p, q, fbegin);
         ++ it;
@@ -333,7 +333,7 @@ public:
       Line line;
 
       grow_region (fh, line.buffer, line.support,
-                   std::numeric_limits<double>::max());
+                   (std::numeric_limits<double>::max)());
 
       if (line.buffer.size() < 2)
         continue;
