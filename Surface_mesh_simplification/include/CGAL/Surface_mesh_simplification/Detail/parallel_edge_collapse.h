@@ -461,11 +461,11 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
     t.start();
   }
 
-#if 0
+#if 1
   // Simplify the partition in parallel
   CGAL_MUTEX removal_mutex;
   tbb::task_group tasks;
-  for(std::size_t i = 0; i < ncc; i++){
+  for(int i = 0; i < ncc; i++){
     tasks.run(internal::Simplify<TriangleMesh,Placement,Cost,Stop,HIMap,ECMap,UECMap,CCMap>(sm, himap, ecmap, uecmap, ccmap, placement, cost, stop, buffer_size, results, cc_edges[i], i, layers, dump, verbose, increase,  &removal_mutex));
   }
 
