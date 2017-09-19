@@ -247,7 +247,6 @@ struct Simplify {
         put(himap,hop,i); ++i;
       }
     }
-
     std::size_t buffer_edges_count = buffer_edges.size();
 
     std::vector<edge_descriptor> V;
@@ -408,8 +407,8 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
     halfedge_descriptor hop = opposite(hd,sm);
     put(himap, hd, -1);
     put(himap,hop, -1);
+    put(ecmap, ed, false);
     if(is_border(ed,sm)){
-      put(ecmap, ed, false);
       continue;
     }
     if (get(ccmap,face(hd,sm)) != get(ccmap,face(hop,sm))) {
@@ -472,7 +471,7 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
 
   tasks.wait();
 #else
-  for(std::size_t i = 0; i < ncc; i++){
+  for(int i = 0; i < ncc; i++){
     tbb::task_group tasks;
     tasks.run(internal::Simplify<TriangleMesh,Placement,Cost,Stop,HIMap,ECMap,UECMap,CCMap>(sm, himap, ecmap, uecmap, ccmap, placement, cost, stop, buffer_size, results, cc_edges[i], i, layers, dump, verbose, increase, NULL));
     tasks.wait();
@@ -534,6 +533,15 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
   
   stop.second_pass(static_cast<size_type>(num_constrained_edges), static_cast<size_type>(num_edges(sm)));  
 
+  {
+    int index = 0;
+    typedef typename boost::property_map<TriangleMesh,halfedge_index_t>::type HIMap;
+    HIMap him = get(halfedge_index,sm);
+    BOOST_FOREACH( halfedge_descriptor hd, halfedges(sm)){
+      put(him,hd,index++);
+    }
+  }
+ 
   if(increase){
     Constrained_placement <Placement, OrMap> constrained_placement (ormap, placement);
     result += edge_collapse(sm,

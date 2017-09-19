@@ -129,7 +129,7 @@ namespace Surface_mesh_simplification
 
   std::set<halfedge_descriptor> zero_length_edges;
 
-  edge_iterator eb, ee ;
+  edge_iterator eb, ee;
   for ( boost::tie(eb,ee) = edges(mSurface); eb!=ee; ++eb, id+=2 )
   {
     halfedge_descriptor lEdge = halfedge(*eb,mSurface) ;

@@ -1,8 +1,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <sstream>
-#include <string>
 
 #include <boost/lexical_cast.hpp>
 
@@ -47,15 +45,13 @@ int main(int argc, char** argv )
   }
 
   Surface_mesh sm;
-  //in >> sm;
-  {  
-    std::ifstream in(argv[1], std::ios_base::binary);
-    
-    std::vector<Point_3> points;
-    std::vector<Polygon_3> polygons;
-    CGAL::read_PLY(in, points, polygons);
-    CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh (points, polygons, sm);
-  }
+  
+  std::ifstream in(argv[1], std::ios_base::binary);
+  
+  std::vector<Point_3> points;
+  std::vector<Polygon_3> polygons;
+  CGAL::read_PLY(in, points, polygons);
+  CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh (points, polygons, sm);
 
   std::cerr << "Input: #V = "<< num_vertices(sm)  << " #E = "<< num_edges(sm) 
             << " #F = " << num_faces(sm)  <<  " read in " << t.time() << " sec." << std::endl;
@@ -112,7 +108,6 @@ int main(int argc, char** argv )
   std::ofstream out("out.ply", std::ios_base::binary);
   CGAL::set_binary_mode(out);
   CGAL::write_PLY(out, sm);
-  //out << sm << std::endl;
   out.close();
   std::cerr << "Writing result in " << t.time() << " sec." << std::endl;
 
