@@ -93,7 +93,7 @@ void partition(const PolygonMesh& m,
   idx_t options[METIS_NOPTIONS];
   options[METIS_OPTION_CTYPE] = METIS_CTYPE_SHEM;
   options[METIS_OPTION_CONTIG] = 0;
-  options[METIS_OPTION_DBGLVL] = METIS_DBG_INFO;
+  options[METIS_OPTION_DBGLVL] = 0; // METIS_DBG_INFO;
 //  options[METIS_OPTION_IPTYPE] = METIS_IPTYPE_RANDOM;
   options[METIS_OPTION_MINCONN] = 0;
   options[METIS_OPTION_NCUTS] = 3;
@@ -105,8 +105,8 @@ void partition(const PolygonMesh& m,
   options[METIS_OPTION_SEED] = 12343;
   options[METIS_OPTION_UFACTOR] = 1;
 
-  idx_t nn = num_vertices(m);
-  idx_t ne = num_faces(m);
+  idx_t nn = static_cast<idx_t>(num_vertices(m));
+  idx_t ne = static_cast<idx_t>(num_faces(m));
   idx_t d = 3; // number of nodes per element
   idx_t* eptr = new idx_t[ne + 1];
   idx_t* eind = new idx_t[d * ne];
@@ -127,7 +127,7 @@ void partition(const PolygonMesh& m,
     {
       vertex_descriptor v = target(h, m);
       assert(j < d * ne);
-      eind[j++] = get(indices, v);
+      eind[j++] = static_cast<idx_t>(get(indices, v));
       h = next(h, m);
     } while (h != done);
 
