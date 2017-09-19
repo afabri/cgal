@@ -89,7 +89,7 @@ namespace internal
     {
       const typename GeomTraits::Point_3& a = mesh.point(f->vertex(i));
       const typename GeomTraits::Point_3& b = mesh.point(f->vertex((i+1)%3));
-      if (std::fabs (a.z() - b.z()) > epsilon)
+      if (CGAL::abs (a.z() - b.z()) > epsilon)
         return true;
 
     }
@@ -1580,7 +1580,7 @@ namespace internal
               continue;
 
             typename GeomTraits::Vector_3 normal = mesh.normal_vector (neighbor);
-            if (std::fabs(normal * optimal_plane.orthogonal_vector()) > angle_max)
+            if (CGAL::abs(normal * optimal_plane.orthogonal_vector()) > angle_max)
             {
               typename GeomTraits::Triangle_3 candidate = mesh.triangle_3 (neighbor);
               bool okay = true;

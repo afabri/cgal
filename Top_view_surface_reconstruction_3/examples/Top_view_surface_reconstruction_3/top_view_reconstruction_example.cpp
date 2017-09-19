@@ -18,7 +18,7 @@ int main (int argc, char** argv)
   if (argc != 2)
     return EXIT_FAILURE;
   
-  std::ifstream stream(argv[1]);
+  std::ifstream stream(argv[1], std::ios::binary);
   Point_set points;
   stream >> points;
 
