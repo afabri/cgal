@@ -1037,6 +1037,21 @@ namespace internal
       }
     }
     
+    // Remove constraints on border
+    for (typename SMCDT::Finite_edges_iterator it = output.finite_edges_begin();
+         it != output.finite_edges_end(); ++ it)
+    {
+      if (output.is_constrained (*it))
+      {
+        typename SMCDT::Face_handle f0 = it->first;
+        typename SMCDT::Face_handle f1 = it->first->neighbor(it->second);
+
+        if (output.is_infinite(f0) || output.is_infinite(f1))
+          output.remove_constraint (*it);
+      }
+    }
+
+      
 #ifdef TOP_VIEW_LOG
     output.DEBUG_dump_poly();
 #endif
