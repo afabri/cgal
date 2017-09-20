@@ -424,9 +424,9 @@ public:
       BOOST_FOREACH (Face_index fi, faces_around_target (halfedge (vh->info()[0].second, m_mesh), m_mesh))
       {
         if (!faces)
-          std::cerr << "Remove vertex " << vh->info()[0].second << std::endl;
+          std::cerr << "Remove vertex " << vh->info()[0].second << "\n";
         faces = true;
-        std::cerr << " * " << fi << std::endl;
+        std::cerr << " * " << fi << "\n";
       }
       if (faces)
         exit(0);
@@ -565,15 +565,15 @@ public:
             f1.precision(18);
             f1 << "3 " << (vh->point() + vh->info()[i].first.to_vector()) << " 0 "
                << vh->point() << " 0 "
-               << (vh->point() + vh->info()[(i+1)%(vh->info().size())].first.to_vector()) << " 0 " << std::endl;
+               << (vh->point() + vh->info()[(i+1)%(vh->info().size())].first.to_vector()) << " 0\n" ;
             std::ofstream f2("section.xyz");
             f2.precision(18);
-            f2 << point << " 0" << std::endl;
+            f2 << point << " 0\n";
           }
         }
         return i;
       }
-    std::cerr << "Warning section" << std::endl;
+    std::cerr << "Warning section\n";
     return 0;
   }
 
@@ -1007,7 +1007,7 @@ public:
       if (result && (inter = boost::get<Point_3>(&*result)))
       {
         point = CGAL::barycenter (*inter, 1, point, idx);
-        std::cerr << point << std::endl;
+        std::cerr << point << "\n";
       }
       else
         CGAL_assertion (false);
@@ -1127,7 +1127,7 @@ public:
 #ifdef TOP_VIEW_CHECK_STRUCTURE
     static int nb = 0;
     ++ nb;
-    std::cerr << "INTEGRITY CHECK " << nb << " BEGIN" << std::endl;
+    std::cerr << "INTEGRITY CHECK " << nb << " BEGIN\n";
     std::cerr.precision(18);
 
     m_mesh.is_valid (true);
@@ -1138,7 +1138,7 @@ public:
       Vertex_handle vh = it;
       for (std::size_t i = 0; i < vh->info().size(); ++ i)
         if (m_v2v_map[vh->info()[i].second] != vh)
-          std::cerr << "  [Bad structure] Mesh vertex not connected to correct CDT vertex" << std::endl;
+          std::cerr << "  [Bad structure] Mesh vertex not connected to correct CDT vertex\n";
     }
 
     BOOST_FOREACH (Vertex_index vi, m_mesh.vertices())
@@ -1146,7 +1146,7 @@ public:
       Vertex_handle vh = m_v2v_map[vi];
       if (vh == Vertex_handle())
       {
-        std::cerr << "  [Bad structure] Mesh vertex not connected to any CDT vertex" << std::endl;
+        std::cerr << "  [Bad structure] Mesh vertex not connected to any CDT vertex\n";
         continue;
       }
       
@@ -1163,7 +1163,7 @@ public:
           std::ofstream file ("struct.xyz");
           file.precision(18);
           BOOST_FOREACH (Vertex_index vi, seen)
-            file << point(vi) << std::endl;
+            file << point(vi) << "\n";
           abort();
           break;
         }
@@ -1190,7 +1190,7 @@ public:
       {
 //        std::cerr << "  [Bad structure] Uninitialized face" << std::endl;
         for (std::size_t i = 0; i < 3; ++ i)
-          uf << it->vertex(i)->point() << " 0" << std::endl;
+          uf << it->vertex(i)->point() << " 0\n";
         continue;
       }
 
@@ -1281,7 +1281,7 @@ public:
     std::size_t idx = 0;
     for (Finite_vertices_iterator it = m_cdt.finite_vertices_begin(); it != m_cdt.finite_vertices_end(); ++ it)
     {
-      f << it->point() << " 0" << std::endl;
+      f << it->point() << " 0\n";
       map[it] = idx ++;
     }
 
@@ -1290,8 +1290,8 @@ public:
       {
         f << "3";
         for (std::size_t i = 0; i < 3; ++ i)
-          f << " " << map[it->vertex(i)] << std::endl;
-        f << std::endl;
+          f << " " << map[it->vertex(i)] << "\n";
+        f << "\n";
       }
   }
 
@@ -1311,7 +1311,7 @@ public:
     std::size_t idx = 0;
     for (Finite_vertices_iterator it = m_cdt.finite_vertices_begin(); it != m_cdt.finite_vertices_end(); ++ it)
     {
-      f << it->point() << " 0" << std::endl;
+      f << it->point() << " 0\n";
       map[it] = idx ++;
     }
 
@@ -1320,8 +1320,8 @@ public:
       {
         f << "3";
         for (std::size_t i = 0; i < 3; ++ i)
-          f << " " << map[it->vertex(i)] << std::endl;
-        f << std::endl;
+          f << " " << map[it->vertex(i)] << "\n";
+        f << "\n";
       }
   }
 
@@ -1348,7 +1348,7 @@ public:
     std::size_t idx = 0;
     for (Finite_vertices_iterator it = m_cdt.finite_vertices_begin(); it != m_cdt.finite_vertices_end(); ++ it)
     {
-      f << it->point() << " 0" << std::endl;
+      f << it->point() << " 0\n";
       map[it] = idx ++;
     }
 
@@ -1362,7 +1362,7 @@ public:
       f << "3";
       for (std::size_t i = 0; i < 3; ++ i)
         f << " " << map[it->vertex(i)];
-      f << " " << red << " " << green << " " << blue << std::endl;
+      f << " " << red << " " << green << " " << blue << "\n";
     }
   }
 
@@ -1382,7 +1382,7 @@ public:
     std::size_t idx = 0;
     for (Finite_vertices_iterator it = m_cdt.finite_vertices_begin(); it != m_cdt.finite_vertices_end(); ++ it)
     {
-      f << it->point() << " 0" << std::endl;
+      f << it->point() << " 0\n";
       map[it] = idx ++;
     }
 
@@ -1392,8 +1392,8 @@ public:
       {
         f << "3";
         for (std::size_t i = 0; i < 3; ++ i)
-          f << " " << map[it->vertex(i)] << std::endl;
-        f << std::endl;
+          f << " " << map[it->vertex(i)] << "\n";
+        f << "\n";
       }
     }
   }
@@ -1420,7 +1420,7 @@ public:
     std::size_t idx = 0;
     for (Finite_vertices_iterator it = m_cdt.finite_vertices_begin(); it != m_cdt.finite_vertices_end(); ++ it)
     {
-      f << it->point() << " 0" << std::endl;
+      f << it->point() << " 0\n";
       map[it] = idx ++;
     }
     
@@ -1463,7 +1463,7 @@ public:
       f << "3";
       for (std::size_t i = 0; i < 3; ++ i)
         f << " " << map[it->vertex(i)];
-      f << " " << red << " " << green << " " << blue << std::endl;
+      f << " " << red << " " << green << " " << blue << "\n";
     }
   }
 
@@ -1476,7 +1476,7 @@ public:
       if (m_cdt.is_constrained (*it))
         f << "2 "
           << it->first->vertex ((it->second + 1)%3)->point() << " 0 "
-          << it->first->vertex ((it->second + 2)%3)->point() << " 0" << std::endl;
+          << it->first->vertex ((it->second + 2)%3)->point() << " 0\n";
    }
 
   void DEBUG_dump_edges()
@@ -1487,7 +1487,7 @@ public:
     std::ofstream f("edges.polylines.txt");
     f.precision(18);
     BOOST_FOREACH (const std::vector<Point_3>& p, poly)
-        f << "2 " << p[0] << " " << p[1] << std::endl;      
+        f << "2 " << p[0] << " " << p[1] << "\n";      
     Vector_3 vertical (0., 0., 1.);
   }
 
@@ -1558,7 +1558,7 @@ public:
 
         if (min != (std::numeric_limits<double>::max)() &&
             max != -(std::numeric_limits<double>::max)())
-          f << "2 " << orig + min * vec << " " << orig + max * vec << std::endl;          
+          f << "2 " << orig + min * vec << " " << orig + max * vec << "\n";          
       }
     }
     
