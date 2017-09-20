@@ -29,6 +29,7 @@ int main (int argc, char** argv)
      CGAL::Top_view_surface_reconstruction_3::Parameters (1.0, 0.9));
 
   std::ofstream out("out.off");
+  out.precision(18);
   out << mesh.mesh();
   return EXIT_SUCCESS;
 }
