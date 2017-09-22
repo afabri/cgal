@@ -13,9 +13,7 @@
 
 #include <CGAL/Surface_mesh_simplification/edge_collapse.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Count_ratio_stop_predicate.h>
-#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_length_stop_predicate.h>
-#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_length_cost.h>
-#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Midpoint_placement.h>
+#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Bounded_normal_change_placement.h>
 
 
 typedef CGAL::Simple_cartesian<double> Kernel;
@@ -85,7 +83,7 @@ int main(int argc, char** argv )
     t.reset();
   }
 #if 1
-  SMS::LindstromTurk_placement<Surface_mesh> placement;
+  SMS::Bounded_normal_change_placement<SMS::LindstromTurk_placement<Surface_mesh> > placement;
   SMS::LindstromTurk_cost<Surface_mesh> cost;
   SMS::Count_ratio_stop_predicate<Surface_mesh> stop(ratio);
 

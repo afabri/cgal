@@ -53,7 +53,6 @@ namespace Surface_mesh_simplification
   ,Visitor            (aVisitor)
   ,m_has_border       (false)
 {
-  std::cerr <<  "current_num_edges = "<< current_num_edges << std::endl;
   const FT cMaxDihedralAngleCos = std::cos( 1.0 * CGAL_PI / 180.0 ) ;
   
   mcMaxDihedralAngleCos2 = cMaxDihedralAngleCos * cMaxDihedralAngleCos ;
