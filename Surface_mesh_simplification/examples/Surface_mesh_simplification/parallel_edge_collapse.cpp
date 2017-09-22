@@ -28,6 +28,8 @@ namespace SMS = CGAL::Surface_mesh_simplification;
 namespace PMP = CGAL::Polygon_mesh_processing;
 
 
+// Usage: ./parallel_edge_collapse input_mesh.ply keep_ratio (default:0.25) number_of_tasks (default: 8)
+
 int main(int argc, char** argv ) 
 {
   typedef boost::graph_traits<Surface_mesh>::edge_descriptor edge_descriptor;
@@ -36,24 +38,15 @@ int main(int argc, char** argv )
   CGAL::Real_timer t;
   t.start();
 
-  if(argc < 2)
-  {
-    std::cerr << "Usage: ./parallel_edge_collapse input_mesh keep_ratio (default:0.25) number_of_tasks (default: 8)" << std::endl;
-    return EXIT_FAILURE;
-  }
-
   Surface_mesh sm;
-  /*
-  std::ifstream in(argv[1], std::ios_base::binary);
+
+  std::ifstream in((argc>1)?argv[1]: "data/elephant.ply", std::ios_base::binary);
   
   std::vector<Point_3> points;
   std::vector<Polygon_3> polygons;
   CGAL::read_PLY(in, points, polygons);
   CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh (points, polygons, sm);
-  */
-  std::ifstream in(argv[1]);
-  in >> sm;
-  
+
   std::cerr << "Input: #V = "<< num_vertices(sm)  << " #E = "<< num_edges(sm) 
             << " #F = " << num_faces(sm)  <<  " read in " << t.time() << " sec." << std::endl;
   t.reset();
@@ -102,15 +95,11 @@ int main(int argc, char** argv )
 
   t.reset();
 
-  /*
   std::ofstream out("out.ply", std::ios_base::binary);
   CGAL::set_binary_mode(out);
   CGAL::write_PLY(out, sm);
   out.close();
   std::cerr << "Writing result in " << t.time() << " sec." << std::endl;
-  */
-  std::ofstream out("out.off");
-  out << sm;
   
   return EXIT_SUCCESS;
 }

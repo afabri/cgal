@@ -10,6 +10,9 @@
 #include <CGAL/Polyhedron_items_with_id_3.h>
 #include <CGAL/Polygon_mesh_processing/partition.h>
 #include <CGAL/Real_timer.h>
+#include <CGAL/IO/PLY_reader.h>
+#include <CGAL/IO/PLY_writer.h>
+#include <CGAL/Polygon_mesh_processing/polygon_soup_to_polygon_mesh.h>
 
 #include <CGAL/Surface_mesh_simplification/edge_collapse.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Count_ratio_stop_predicate.h>
@@ -26,6 +29,7 @@ typedef std::vector<boost::graph_traits<Surface_mesh>::vertices_size_type> Polyg
 namespace SMS = CGAL::Surface_mesh_simplification;
 namespace PMP = CGAL::Polygon_mesh_processing;
 
+// Usage: ./parallel_edge_collapse input_mesh keep_ratio (default:0.25) number_of_tasks (default: 8)
 
 int main(int argc, char** argv ) 
 {
@@ -37,17 +41,16 @@ int main(int argc, char** argv )
   CGAL::Real_timer t;
   t.start();
 
-  if(argc < 2)
-  {
-    std::cerr << "Usage: ./parallel_edge_collapse input_mesh keep_ratio (default:0.25) number_of_tasks (default: 8)" << std::endl;
-    return EXIT_FAILURE;
-  }
-
   Surface_mesh sm;
 
-  std::ifstream in(argv[1]);
-  in >> sm;
-  int index = 0 ;
+  std::ifstream in((argc>1)?argv[1]: "data/elephant.ply", std::ios_base::binary);
+  
+  std::vector<Point_3> points;
+  std::vector<Polygon_3> polygons;
+  CGAL::read_PLY(in, points, polygons);
+  CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh (points, polygons, sm);
+  
+  int index = 0;
   
   BOOST_FOREACH( halfedge_descriptor hd, halfedges(sm)){
     hd->id() = index++;
@@ -82,14 +85,10 @@ int main(int argc, char** argv )
     std::cerr << "Partition in " << t.time() << " sec."<< std::endl;
     t.reset();
   }
-#if 1
+
   SMS::Bounded_normal_change_placement<SMS::LindstromTurk_placement<Surface_mesh> > placement;
   SMS::LindstromTurk_cost<Surface_mesh> cost;
   SMS::Count_ratio_stop_predicate<Surface_mesh> stop(ratio);
-
-  //SMS::Midpoint_placement<Surface_mesh> placement;
-  //SMS::Edge_length_cost<Surface_mesh> cost;
-  //SMS::Edge_length_stop_predicate<double> stop(0.01);
 
   if(ncc > 1){
     SMS::parallel_edge_collapse(sm, stop, ccpmap, ncc
@@ -113,11 +112,12 @@ int main(int argc, char** argv )
 
   t.reset();
 
-  std::ofstream out("outP.off");
- 
-  out << sm << std::endl;
+  std::ofstream out("outP.ply", std::ios_base::binary);
+  CGAL::set_binary_mode(out);
+  CGAL::write_PLY(out, sm);
+  out.close();
 
   std::cerr << "Writing result in " << t.time() << " sec." << std::endl;
-#endif
+
   return EXIT_SUCCESS;
 }
