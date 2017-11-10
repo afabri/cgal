@@ -52,18 +52,18 @@ int main(int argc, char** argv )
   t.reset();
   double ratio = (argc>2)?boost::lexical_cast<double>(argv[2]):0.25;
 
-  Surface_mesh::Property_map<face_descriptor,std::size_t> ccmap 
-    = sm.add_property_map<face_descriptor,std::size_t>("f:cc").first;
+  Surface_mesh::Property_map<face_descriptor,std::size_t> fpmap 
+    = sm.add_property_map<face_descriptor,std::size_t>("f:partition").first;
 
   Surface_mesh::Property_map<edge_descriptor,bool> ecmap 
     = sm.add_property_map<edge_descriptor,bool>("e:ec", false).first;
 
   ecmap[*(edges(sm).first)] = true;
 
-  int ncc = (argc>3)?boost::lexical_cast<int>(argv[3]):8;
+  int partition_size = (argc>3)?boost::lexical_cast<int>(argv[3]):8;
 
-  if(ncc > 1){
-    PMP::partition(sm, ccmap, ncc);
+  if(partition_size > 1){
+    PMP::partition(sm, fpmap, partition_size);
     
     std::cerr << "Partition in " << t.time() << " sec."<< std::endl;
     t.reset();
@@ -72,8 +72,8 @@ int main(int argc, char** argv )
   SMS::LindstromTurk_cost<Surface_mesh> cost;
   SMS::Count_ratio_stop_predicate<Surface_mesh> stop(ratio);
 
-  if(ncc > 1){
-    SMS::parallel_edge_collapse(sm, stop, ccmap, ncc
+  if(partition_size > 1){
+    SMS::parallel_edge_collapse(sm, stop, fpmap, partition_size
                                 ,CGAL::parameters::get_placement(placement)
                                 .edge_is_constrained_map(ecmap)
                                 .get_cost(cost)
