@@ -390,6 +390,9 @@ rejects this placement by returning `boost::none`.
 
 \subsection Surface_mesh_simplificationExamplewithedges Example for the Parallel Mesh Simplification
 
+In the following example we create a partition using the function `partition()` which is a wrapper
+of the METIS library.
+
 \cgalExample{Surface_mesh_simplification/parallel_edge_collapse.cpp}
 
 */ 
