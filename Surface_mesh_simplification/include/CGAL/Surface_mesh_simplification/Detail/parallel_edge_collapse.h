@@ -231,7 +231,7 @@ struct Simplify {
       removal_mutex(removal_mutex)
   { }
 
-  void operator()()
+  void operator()() const
   {
     typedef Selection_is_constraint_map<HIMap, TriangleMesh> SICM;
     typedef Component_graph<TriangleMesh,SICM>  Component_graph;
@@ -252,7 +252,6 @@ struct Simplify {
       }
     }
     std::size_t buffer_edges_count = buffer_edges.size();
-    std::size_t partition_edges_count = buffer_edges_count;
     
     std::vector<edge_descriptor> V;
     int number_of_puts = 0;
@@ -473,13 +472,13 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
   // Simplify the partition in parallel
   CGAL_MUTEX removal_mutex;
   tbb::task_group tasks;
-  for(int i = 0; i < ncc; i++){
+  for(std::size_t i = 0; i < ncc; i++){
     tasks.run(internal::Simplify<TriangleMesh,Placement,Cost,Stop,HIMap,ECMap,UECMap,CCMap>(sm, himap, ecmap, uecmap, ccmap, placement, cost, stop, buffer_size, removed, cc_edges[i], i, layers, dump, verbose, increase,  &removal_mutex));
   }
 
   tasks.wait();
 #else
-  for(int i = 0; i < ncc; i++){
+  for(std::size_t i = 0; i < ncc; i++){
     tbb::task_group tasks;
     tasks.run(internal::Simplify<TriangleMesh,Placement,Cost,Stop,HIMap,ECMap,UECMap,CCMap>(sm, himap, ecmap, uecmap, ccmap, placement, cost, stop, buffer_size, removed, cc_edges[i], i, layers, dump, verbose, increase, NULL));
     tasks.wait();

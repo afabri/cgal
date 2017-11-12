@@ -80,12 +80,12 @@ public:
     return vd;
   }
 
-  friend value_type get(const SM_index_pmap<K,VEF>& sm, const key_type& k)
+  friend value_type get(const SM_index_pmap<K,VEF>& /*sm*/, const key_type& k)
   {
     return k;
   }
 
-  friend void put(SM_index_pmap<K,VEF>& sm, const key_type&, const value_type&)
+  friend void put(SM_index_pmap<K,VEF>& /*sm*/, const key_type&, const value_type&)
   {}
   
 };
