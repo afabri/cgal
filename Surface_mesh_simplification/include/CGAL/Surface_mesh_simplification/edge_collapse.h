@@ -275,8 +275,7 @@ int parallel_edge_collapse ( ECM& aSurface
                              , ShouldStop const& aShould_stop
                              , FacePartionMap fpm
                              , int partition_size
-                             , cgal_bgl_named_params<P,T,R> const& aParams 
-                  ) 
+                             , cgal_bgl_named_params<P,T,R> const& aParams )
 {
   using boost::choose_param ;
   using boost::get_param ;

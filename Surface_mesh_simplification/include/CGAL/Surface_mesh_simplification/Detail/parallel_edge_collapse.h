@@ -56,25 +56,25 @@ struct Or_map
   typedef bool                                               value_type;
   typedef bool                                               reference;
   typedef typename boost::property_traits<ECMap_1>::key_type key_type;
-  
+
   ECMap_1 ecm1;
   ECMap_2 ecm2;
-  
+
   Or_map(const ECMap_1& ecm1, const ECMap_2& ecm2)
     : ecm1(ecm1), ecm2(ecm2)
-  {} 
+  {}
 
   friend bool get(const Or_map& orm, key_type ed)
   {
     return get(orm.ecm1, ed) || get(orm.ecm2, ed);
- }
+  }
 };
 
-  
+
 // Adaptor which interprets 0 and 1 as true, and any other index as false
 template <typename ZOMap, typename G>
 struct Selection_is_constraint_map
-{  
+{
   typedef boost::readable_property_map_tag                 category;
   typedef bool                                             value_type;
   typedef bool                                             reference;
@@ -94,7 +94,7 @@ struct Selection_is_constraint_map
   }
 };
 
-  
+
 // Adapter which interprets char as bool to avoid "performance warning" with VC++
 template <typename Char_map>
 struct Bool_map
@@ -112,7 +112,7 @@ struct Bool_map
   }
 };
 
-  
+
 template <typename ECMap>
 struct Inverted_edge_constraint_map
 {
@@ -133,10 +133,10 @@ struct Inverted_edge_constraint_map
   }
 };
 
-  
+
 template <typename ECMap, typename CCMap, typename G>
 struct In_same_component_map
-{  
+{
   typedef boost::read_write_property_map_tag                 category;
   typedef typename boost::property_traits<ECMap>::value_type value_type;
   typedef value_type                                         reference;
@@ -156,13 +156,17 @@ struct In_same_component_map
   {
     return get(iscm.ecmap,ed);
   }
-  
-  
+
+
   friend void put(const In_same_component_map& iscm, key_type ed, value_type v)
   {
-    if(! get(iscm.ecmap, ed)){
-      if( (! is_border(halfedge(ed,iscm.g),iscm.g) && iscm.ccmap[face(halfedge(ed,iscm.g),iscm.g)] == iscm.cc)||
-          (! is_border(opposite(halfedge(ed,iscm.g),iscm.g),iscm.g) && iscm.ccmap[face(opposite(halfedge(ed,iscm.g),iscm.g),iscm.g)]== iscm.cc) ){
+    if(! get(iscm.ecmap, ed))
+    {
+      if((! is_border(halfedge(ed,iscm.g),iscm.g) &&
+          iscm.ccmap[face(halfedge(ed,iscm.g),iscm.g)] == iscm.cc)||
+         (! is_border(opposite(halfedge(ed,iscm.g),iscm.g),iscm.g) &&
+          iscm.ccmap[face(opposite(halfedge(ed,iscm.g),iscm.g),iscm.g)] == iscm.cc))
+      {
         put(iscm.ecmap, ed, v);
         ++(iscm.count);
       }
@@ -170,9 +174,10 @@ struct In_same_component_map
   }
 };
 
-  
+
 // The parallel task
-template <typename TriangleMesh, typename Placement, typename Cost, typename Stop, typename HIMap, typename ECMap, typename UECMap, typename CCMap> 
+template <typename TriangleMesh, typename Placement, typename Cost, typename Stop,
+          typename HIMap, typename ECMap, typename UECMap, typename CCMap>
 struct Simplify {
 
   typedef typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
@@ -234,25 +239,29 @@ struct Simplify {
   void operator()() const
   {
     typedef Selection_is_constraint_map<HIMap, TriangleMesh> SICM;
-    typedef Component_graph<TriangleMesh,SICM>  Component_graph;
+    typedef Component_graph<TriangleMesh,SICM>               Component_graph;
     SICM sicm(himap,sm);
-    Component_graph cg(sm, sicm, cc_edges); 
+    Component_graph cg(sm, sicm, cc_edges);
 
     std::vector<edge_descriptor> buffer_edges;
     int i = 2;
-    BOOST_FOREACH(edge_descriptor ed, cc_edges){
+    BOOST_FOREACH(edge_descriptor ed, cc_edges)
+    {
       halfedge_descriptor hd, hop;
       hd = halfedge(ed,sm);
       hop = opposite(hd,sm);
-      if(get(sicm,ed)){
+      if(get(sicm,ed))
+      {
         buffer_edges.push_back(ed);
-      }else{
+      }
+      else
+      {
         put(himap,hd,i); ++i;
         put(himap,hop,i); ++i;
       }
     }
+
     std::size_t buffer_edges_count = buffer_edges.size();
-    
     std::vector<edge_descriptor> V;
     int number_of_puts = 0;
     In_same_component_map<ECMap,CCMap,TriangleMesh> iscmap(ecmap,ccmap,sm,ccindex, number_of_puts);
@@ -262,30 +271,36 @@ struct Simplify {
                           layers,
                           iscmap,
                           std::back_inserter(V)); // V might contain edges from an adjacent patch
-    
+
     buffer_edges_count += number_of_puts;
     buffer_size[ccindex] = number_of_puts;
 
     // A clumsy solution: The thread must constrain also in the neighbor patch as
     // otherwise when we circle around a vertex on the border between two patches
     // may be not constrained, and then have an illegal index
-    BOOST_FOREACH(edge_descriptor ed, V){
+    BOOST_FOREACH(edge_descriptor ed, V)
+    {
       put(ecmap, ed, true);
     }
 
-    if(dump){
+    if(dump)
+    {
       std::ostringstream filename;
       filename << "constraints-" << ccindex << ".selection.txt" << std::ends;
       std::ofstream out(filename.str().c_str());
       out << std::endl << std::endl;
-      BOOST_FOREACH(edge_descriptor ed, V){
-        if(get(iscmap,ed)){
-          //out << int(source(ed,sm)) << " " << int(target(ed,sm)) <<  " ";
+      BOOST_FOREACH(edge_descriptor ed, V)
+      {
+        if(get(iscmap,ed))
+        {
+          //out << int(source(ed,sm)) << " " << int(target(ed,sm)) << " ";
         }
       }
       out << std::endl;
     }
-    if(verbose){
+
+    if(verbose)
+    {
       std::ostringstream oss;
       oss << "["<< ccindex << "]\t# constrained edges in the partition = "
           << buffer_edges_count << "\n" << std::ends;
@@ -299,14 +314,15 @@ struct Simplify {
     //
 
     std::size_t num_unconstrained_edges = cc_edges.size() - buffer_edges_count;
- 
+
     typedef internal::Or_map<ECMap,UECMap> OrMap;
     OrMap ormap(ecmap, uecmap);
 
 #if 1
-    if(increase){
+    if(increase)
+    {
       Constrained_placement <Placement, OrMap> constrained_placement(ormap,placement);
-      results[ccindex] 
+      results[ccindex]
         = edge_collapse(cg
                         ,stop
                         ,Parallel_tag()
@@ -318,8 +334,10 @@ struct Simplify {
                         .get_cost(cost)
                         .edge_is_constrained_map(ormap)
                         .vertex_point_map(get(CGAL::vertex_point,sm)));
-    } else {
-      results[ccindex] 
+    }
+    else
+    {
+      results[ccindex]
         = edge_collapse(cg
                         ,stop
                         ,Parallel_tag()
@@ -333,7 +351,9 @@ struct Simplify {
                         .vertex_point_map(get(CGAL::vertex_point,sm)));
     }
 #endif
-    if(verbose){
+
+    if(verbose)
+    {
       std::ostringstream oss;
       oss << "["<< ccindex << "]\tratio = "<< stop.mRatio << std::endl
           << "\tRemoved " << results[ccindex] << std::endl
@@ -363,27 +383,32 @@ struct Collect_edges
     : cc_edges(cc_edges), ncc(ncc), ecmap(ecmap), ccmap(ccmap), sm(sm)
   {}
 
-  void operator()( const tbb::blocked_range<std::size_t>& r ) const
+  void operator()(const tbb::blocked_range<std::size_t>& r) const
+  {
+    for(std::size_t i = r.begin(); i != r.end(); ++i)
     {
-      for( std::size_t i = r.begin() ;  i != r.end() ; ++i)
-        { 
-          face_descriptor fd; // AF FIX (static_cast<typename boost::graph_traits<TriangleMesh>::faces_size_type>(i));
-          std::size_t cc = ccmap[fd];  // this is the partition
-          BOOST_FOREACH(halfedge_descriptor hd, halfedges_around_face(halfedge(fd,sm),sm)){
-            halfedge_descriptor hop = opposite(hd,sm);
-            if(is_border(hop,sm) || get(ecmap,edge(hd,sm)) || (fd < face(hop ,sm))){
-              cc_edges[cc].push_back(edge((hd<hop)?hd:hop, sm));
-            }
-          }
+      face_descriptor fd; // AF FIX (static_cast<typename boost::graph_traits<TriangleMesh>::faces_size_type>(i));
+      std::size_t cc = ccmap[fd]; // this is the partition
+      BOOST_FOREACH(halfedge_descriptor hd, halfedges_around_face(halfedge(fd,sm),sm))
+      {
+        halfedge_descriptor hop = opposite(hd,sm);
+        if(is_border(hop,sm) || get(ecmap,edge(hd,sm)) || (fd < face(hop ,sm)))
+        {
+          cc_edges[cc].push_back(edge((hd<hop)?hd:hop, sm));
         }
+      }
     }
-  
+  }
+
   };
 } // namespace internal
 
-  
-template <typename TriangleMesh, typename Placement, typename CCMap, typename UECMap, typename Stop, typename Cost>
-int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placement placement, Stop stop, Cost cost, std::size_t ncc, unsigned int layers = 1, bool dump = false, bool verbose = false, bool increase = true)
+
+template <typename TriangleMesh, typename Placement, typename CCMap,
+          typename UECMap, typename Stop, typename Cost>
+int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placement placement,
+                           Stop stop, Cost cost, std::size_t ncc, unsigned int layers = 1,
+                           bool dump = false, bool verbose = false, bool increase = true)
 {
   typedef typename boost::graph_traits<TriangleMesh>::edge_descriptor edge_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::face_descriptor face_descriptor;
@@ -395,74 +420,84 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
   typedef CGAL::internal::halfedge_property_t<int> Halfedge_property_tag;
   typedef typename CGAL::internal::dynamic_property_map<TriangleMesh, Halfedge_property_tag >::type HIMap;
   HIMap himap = CGAL::internal::add_property(Halfedge_property_tag("h:internal::index_in_cc"), sm);
-  
+
   typedef CGAL::internal::edge_property_t<char> Edge_property_tag;
   typedef typename CGAL::internal::dynamic_property_map<TriangleMesh, Edge_property_tag >::type ECMap;
   ECMap ecmap = CGAL::internal::add_property(Edge_property_tag("e:internal::constrained"), sm);
 
   std::vector<edge_descriptor> partition_edges;
- 
+
   std::ofstream out;
-  if(dump){
+  if(dump)
+  {
     out.open("partition.selection.txt");
     out << std::endl << std::endl;
   }
+
   // now we have to find the constrained edges
-  BOOST_FOREACH(edge_descriptor ed, edges(sm)){
+  BOOST_FOREACH(edge_descriptor ed, edges(sm))
+  {
     halfedge_descriptor hd = halfedge(ed,sm);
     halfedge_descriptor hop = opposite(hd,sm);
     put(himap, hd, -1);
     put(himap,hop, -1);
     put(ecmap, ed, false);
-    if(is_border(ed,sm)){
+    if(is_border(ed,sm))
       continue;
-    }
-    if (get(ccmap,face(hd,sm)) != get(ccmap,face(hop,sm))) {
+
+    if(get(ccmap,face(hd,sm)) != get(ccmap,face(hop,sm)))
+    {
       partition_edges.push_back(ed);
       put(ecmap, ed, true);
       put(himap, hd, 0);
       put(himap, hop, 1);
-      if(dump){
-        //out << int(source(ed,sm)) << " " << int(target(ed,sm)) <<  " ";
+      if(dump)
+      {
+        //out << int(source(ed,sm)) << " " << int(target(ed,sm)) << " ";
       }
     }
   }
-  if(dump){
-    out << std::endl;
-  }
 
-  if(verbose){
+  if(dump)
+    out << std::endl;
+
+  if(verbose)
+  {
     std::cerr << t.time() << " sec.\n";
     t.reset();
   }
 
   std::vector<tbb::concurrent_vector<edge_descriptor> > cc_edges(ncc);
 #if 1
-  BOOST_FOREACH(face_descriptor fd, faces(sm)){
-    std::size_t cc = ccmap[fd];  // this is the partition
-    BOOST_FOREACH(halfedge_descriptor hd, halfedges_around_face(halfedge(fd,sm),sm)){
+  BOOST_FOREACH(face_descriptor fd, faces(sm))
+  {
+    std::size_t cc = ccmap[fd]; // this is the partition
+    BOOST_FOREACH(halfedge_descriptor hd, halfedges_around_face(halfedge(fd,sm),sm))
+    {
       halfedge_descriptor hop = opposite(hd,sm);
-      if(is_border(hop,sm) || get(ecmap,edge(hd,sm)) || (fd < face(hop ,sm))){
+      if(is_border(hop,sm) || get(ecmap,edge(hd,sm)) || (fd < face(hop ,sm)))
+      {
         cc_edges[cc].push_back(edge((hd<hop)?hd:hop, sm));
       }
     }
   }
-#else  
+#else
   // This only works for a vector lik container of faces like in Surface_mesh
-  tbb::parallel_for(tbb::blocked_range<size_t>( 0, num_faces(sm)),
+  tbb::parallel_for(tbb::blocked_range<size_t>(0, num_faces(sm)),
                     internal::Collect_edges<TriangleMesh,ECMap,CCMap>(cc_edges, ncc, ecmap, ccmap, sm));
 #endif
-  
-  if(verbose){
-    for(std::size_t i=0; i < ncc; i++){
+
+  if(verbose)
+  {
+    for(std::size_t i=0; i < ncc; i++)
       std::cout << "#edges in component "<< i << ": " << cc_edges[i].size() << std::endl;
-    }
   }
- 
+
   std::vector<int> buffer_size(ncc); // the number of constrained edges inside each component
-  std::vector<int> removed(ncc); // the number of collapsed edges in each thread 
-  if(verbose){
-    std::cerr << "#CC = " << ncc << "  in " << t.time() << " sec." << std::endl;
+  std::vector<int> removed(ncc); // the number of collapsed edges in each thread
+  if(verbose)
+  {
+    std::cerr << "#CC = " << ncc << " in " << t.time() << " sec." << std::endl;
     t.reset();
     t.start();
   }
@@ -472,31 +507,37 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
   // Simplify the partition in parallel
   CGAL_MUTEX removal_mutex;
   tbb::task_group tasks;
-  for(std::size_t i = 0; i < ncc; i++){
-    tasks.run(internal::Simplify<TriangleMesh,Placement,Cost,Stop,HIMap,ECMap,UECMap,CCMap>(sm, himap, ecmap, uecmap, ccmap, placement, cost, stop, buffer_size, removed, cc_edges[i], i, layers, dump, verbose, increase,  &removal_mutex));
+  for(std::size_t i = 0; i < ncc; i++)
+  {
+    tasks.run(internal::Simplify<TriangleMesh,Placement,Cost,Stop,HIMap,ECMap,UECMap,CCMap>(
+            sm, himap, ecmap, uecmap, ccmap, placement, cost, stop, buffer_size, removed,
+            cc_edges[i], i, layers, dump, verbose, increase,  &removal_mutex));
   }
 
   tasks.wait();
 #else
-  for(std::size_t i = 0; i < ncc; i++){
+  for(std::size_t i = 0; i < ncc; i++)
+  {
     tbb::task_group tasks;
-    tasks.run(internal::Simplify<TriangleMesh,Placement,Cost,Stop,HIMap,ECMap,UECMap,CCMap>(sm, himap, ecmap, uecmap, ccmap, placement, cost, stop, buffer_size, removed, cc_edges[i], i, layers, dump, verbose, increase, NULL));
+    tasks.run(internal::Simplify<TriangleMesh,Placement,Cost,Stop,HIMap,ECMap,UECMap,CCMap>(
+            sm, himap, ecmap, uecmap, ccmap, placement, cost, stop, buffer_size, removed,
+            cc_edges[i], i, layers, dump, verbose, increase, NULL));
     tasks.wait();
   }
 #endif
 
   int result = 0;
-  for(std::size_t i =0; i < removed.size(); i++){
+  for(std::size_t i =0; i < removed.size(); i++)
     result += removed[i];
-  }
 
-  if(verbose){
+  if(verbose)
+  {
     std::cerr << "parallel edge collapse in " << t.time() << " sec." << std::endl;
     t.reset();
   }
 
-
-  if(dump){
+  if(dump)
+  {
     TriangleMesh sm2;
     copy_face_graph(sm,sm2);
     std::ofstream outi("out-intermediary.off");
@@ -506,15 +547,19 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
   // After the parallel edge_collapse make the same for the buffer
   std::size_t num_unconstrained_edges = 0;
   std::size_t overlapping_unconstrained_edges = 0;
-  if(increase){
+  if(increase)
+  {
     // Increase the buffer by one more layer
-    BOOST_FOREACH(edge_descriptor ed, edges(sm)){
+    BOOST_FOREACH(edge_descriptor ed, edges(sm))
+    {
       put(ecmap, ed, 0);
     }
-    
-    BOOST_FOREACH(edge_descriptor ed, partition_edges){
+
+    BOOST_FOREACH(edge_descriptor ed, partition_edges)
+    {
       put(ecmap,ed,1);
     }
+
     expand_edge_selection(partition_edges,
                           sm,
                           layers+1,
@@ -523,17 +568,20 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
     num_unconstrained_edges += partition_edges.size();
 
     overlapping_unconstrained_edges = num_unconstrained_edges - partition_edges.size();
-    for(std::size_t i =0; i < buffer_size.size(); i++){
+    for(std::size_t i =0; i < buffer_size.size(); i++)
       overlapping_unconstrained_edges -= buffer_size[i];
-    }
-    
-  }else{
+  }
+  else
+  {
     num_unconstrained_edges = partition_edges.size();
-    for(std::size_t i =0; i < buffer_size.size(); i++){
-      if(verbose){
-        std::cout << "# partition edges = "<<   partition_edges.size()
+    for(std::size_t i =0; i < buffer_size.size(); i++)
+    {
+      if(verbose)
+      {
+        std::cout << "# partition edges = "<< partition_edges.size()
                   <<   " " << buffer_size[i] << std::endl;
       }
+
       num_unconstrained_edges += buffer_size[i];
     }
   }
@@ -544,28 +592,32 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
   OrMap ormap(iecmap, uecmap);
 
   // AF: At this point num_edges(sm) is not the same for a Surface_mesh and a Polyhedron.
-  
+
   size_type current_num_edges = initial_num_edges - result;
   stop.second_pass(static_cast<size_type>(current_num_edges), static_cast<size_type>(initial_num_edges));
   {
     int index = 0;
     typedef typename boost::property_map<TriangleMesh,halfedge_index_t>::type HIMap;
     HIMap him = get(halfedge_index,sm);
-    BOOST_FOREACH( halfedge_descriptor hd, halfedges(sm)){
+    BOOST_FOREACH(halfedge_descriptor hd, halfedges(sm))
+    {
       put(him,hd,index++);
     }
 
     index = 0;
     typedef typename boost::property_map<TriangleMesh,boost::vertex_index_t>::type VIMap;
     VIMap vim = get(boost::vertex_index,sm);
-    BOOST_FOREACH(typename boost::graph_traits<TriangleMesh>::vertex_descriptor vd, vertices(sm)){
+    BOOST_FOREACH(typename boost::graph_traits<TriangleMesh>::vertex_descriptor vd, vertices(sm))
+    {
       put(vim,vd,index++);
     }
   }
-  if(verbose){
+
+  if(verbose)
     std::cerr << "#removed edges = " << result << std::endl;
-  }
-  if(increase){
+
+  if(increase)
+  {
     Constrained_placement <Placement, OrMap> constrained_placement (ormap, placement);
     result += edge_collapse(sm,
                             stop,
@@ -575,9 +627,10 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
                             .current_num_edges(current_num_edges)
                             .get_placement(constrained_placement)
                             .get_cost(cost)
-                            .edge_is_constrained_map(ormap)
-                            );
-  }else{
+                            .edge_is_constrained_map(ormap));
+  }
+  else
+  {
     result += edge_collapse(sm,
                             stop,
                             Sequential_tag(),
@@ -586,13 +639,13 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
                             .current_num_edges(current_num_edges)
                             .get_placement(placement)
                             .get_cost(cost)
-                            .edge_is_constrained_map(ormap)
-                            );
+                            .edge_is_constrained_map(ormap));
   }
 
   CGAL::internal::remove_property(ecmap,sm);
   CGAL::internal::remove_property(himap, sm);
-  if(verbose){
+  if(verbose)
+  {
     std::cerr << "sequential edge collapse on buffer in " << t.time() << " sec." << std::endl;
     std::cerr << "After sequential pass"<< std::endl;
     std::cerr << "#removed edges = " << result << std::endl;
@@ -602,8 +655,6 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
 }
 
 } // namespace Surface_mesh_simplification
-
-}//  namespace CGAL
-
+} // namespace CGAL
 
 #endif // CGAL_SURFACE_MESH_SIMPLIFICATION_DETAIL_PARALLEL_EDGE_COLLAPSE_H
