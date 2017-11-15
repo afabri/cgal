@@ -19,8 +19,8 @@ edges are constrained.
 \tparam TriangleMesh must be a model of the concept `EdgeCollapsableSurfaceMesh`
 
 \tparam FacePartionMap must be a model of `ReadablePropertyMap` with the key type
-`boost::graph_traits<EdgeCollapsableSurfaceMesh>::face_descriptor` 
-and the value type `boost::graph_traits<EdgeCollapsableSurfaceMesh>::faces_size_type`.
+`boost::graph_traits<EdgeCollapsableSurfaceMesh>::%face_descriptor` 
+and the value type `boost::graph_traits<EdgeCollapsableSurfaceMesh>::%faces_size_type`.
 
 
 \param tmesh  is the mesh to simplify. 

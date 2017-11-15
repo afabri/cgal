@@ -4,7 +4,7 @@
 \cgalConcept
 
 The concept `ParallelEdgeCollapseSimplificationVisitor` describes the requirements for the <I>visitor object</I> which is used to track the parallel edge collapse simplification algorithm. 
-\a
+
 \cgalRefines `EdgeCollapseSimplificationVisitor`
 
 \attention Note that operations such as `EdgeCollapseSimplificationVisitor::On_started()`, are called in each parallel thread.
