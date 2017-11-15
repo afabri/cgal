@@ -29,6 +29,7 @@
 - `GetCost`
 - `GetPlacement`
 - `EdgeCollapseSimplificationVisitor`
+- `ParallelEdgeCollapseSimplificationVisitor`
 
 ## Functions ##
 - `CGAL::Surface_mesh_simplification::edge_collapse()`

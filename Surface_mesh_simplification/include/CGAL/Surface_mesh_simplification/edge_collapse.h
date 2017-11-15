@@ -186,9 +186,13 @@ int edge_collapse ( ECM&                       aSurface
   return algorithm.run(removal_mutex);
 }                 
 
+template <typename G>
 struct Dummy_visitor
 {
-  template<class ECM>                                 void OnStarted( ECM& ) const {} 
+  typedef typename boost::graph_traits<G>::edges_size_type   size_type;
+  
+  template<class ECM>                                 void OnStarted( ECM& ) const {}
+  template<class ECM, class Stop, class Size_type>    void OnParallelPassFinished(ECM&, Stop&, Size_type, Size_type) const {}
   template<class ECM>                                 void OnFinished ( ECM& ) const {} 
   template<class Profile>                             void OnStopConditionReached( Profile const& ) const {} 
   template<class Profile, class OFT>                  void OnCollected( Profile const&, OFT const& ) const {}                
@@ -224,7 +228,7 @@ int edge_collapse ( ECM& aSurface
                        ,choose_param     (get_param(aParams,internal_np::edge_is_constrained),No_constrained_edge_map<ECM>())
                        ,choose_param     (get_param(aParams,internal_np::get_cost_policy), LindstromTurk_cost<ECM>())
                        ,choose_param     (get_param(aParams,internal_np::get_placement_policy), LindstromTurk_placement<ECM>())
-                      ,choose_param     (get_param(aParams,vis), Dummy_visitor())
+                        ,choose_param     (get_param(aParams,vis), Dummy_visitor<ECM>())
                       );
 }
 
@@ -256,7 +260,7 @@ int edge_collapse ( ECM& aSurface
                        ,choose_param     (get_param(aParams,internal_np::edge_is_constrained),No_constrained_edge_map<ECM>())
                        ,choose_param     (get_param(aParams,internal_np::get_cost_policy), LindstromTurk_cost<ECM>())
                        ,choose_param     (get_param(aParams,internal_np::get_placement_policy), LindstromTurk_placement<ECM>())
-                      ,choose_param     (get_param(aParams,vis), Dummy_visitor())
+                        ,choose_param     (get_param(aParams,vis), Dummy_visitor<ECM>())
                       );
 }
 
@@ -290,22 +294,21 @@ int parallel_edge_collapse ( ECM& aSurface
     return edge_collapse(aSurface, aShould_stop, Sequential_tag(), NULL, aParams);
   } else {
 #ifdef CGAL_LINKED_WITH_TBB
-  
+    internal_np::graph_visitor_t vis = internal_np::graph_visitor_t() ;
     return parallel_edge_collapse(aSurface
                                   ,fpm // ,choose_param(get_param(aParams,internal_np::face_partition), Zero_face_partition_map<ECM>())
                                   ,choose_param(get_param(aParams,internal_np::edge_is_constrained),No_constrained_edge_map<ECM>())
                                   ,choose_param(get_param(aParams,internal_np::get_placement_policy), LindstromTurk_placement<ECM>())
                                   ,aShould_stop
                                   ,choose_param(get_param(aParams,internal_np::get_cost_policy), LindstromTurk_cost<ECM>())
-                                  , partition_size // ,choose_param(get_param(aParams,internal_np::partition_size),1)
-
+                                  ,partition_size // ,choose_param(get_param(aParams,internal_np::partition_size),1)
+                                  ,choose_param(get_param(aParams,vis), Dummy_visitor<ECM>())
                                   );
-  
-    return 0;
+
 #endif
   }
-
 }
+
 
 
 
@@ -332,7 +335,7 @@ int edge_collapse ( ECM& aSurface
                       ,choose_param     (get_param(aParams,internal_np::edge_is_constrained),No_constrained_edge_map<ECM>())
                       ,choose_param     (get_param(aParams,internal_np::get_cost_policy), LindstromTurk_cost<ECM>())
                       ,choose_param     (get_param(aParams,internal_np::get_placement_policy), LindstromTurk_placement<ECM>())
-                      ,choose_param     (get_param(aParams,vis), Dummy_visitor())
+                       ,choose_param     (get_param(aParams,vis), Dummy_visitor<ECM>())
                       );
 
 }

@@ -48,6 +48,9 @@ struct Edge_collapse_visitor_base
   typedef typename Kernel::FT                     FT ;
   
   void OnStarted( ECM& ) {}
+
+  template <typename StopPredicate>
+  void OnParallelPassFinished(ECM&, StopPredicate&, size_type /* initial */ , size_type /* current */) {}
   
   void OnFinished ( ECM& ) {}
   
@@ -55,13 +58,14 @@ struct Edge_collapse_visitor_base
   
   void OnCollected( Profile const&, boost::optional<FT> const& ) {}
   
-  void OnSelected( Profile const&, boost::optional<FT> const&, size_type, size_type ) {}
+  void OnSelected( Profile const&, boost::optional<FT> const&, size_type /* initial */, size_type /* current */) {}
   
   void OnCollapsing(Profile const&, boost::optional<Point> const& ) {}
   
   void OnCollapsed( Profile const&, vertex_descriptor const& ) {}
 
-   void OnNonCollapsable(Profile const& ) {}                
+  void OnNonCollapsable(Profile const& ) {}
+
 } ;
 
 } // namespace Surface_mesh_simplification

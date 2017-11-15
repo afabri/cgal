@@ -24,6 +24,7 @@
 
 
 #include <CGAL/Surface_mesh_simplification/Detail/Common.h>
+#include <CGAL/Surface_mesh_simplification/Edge_collapse_visitor_base.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_profile.h>
 
 namespace CGAL {
@@ -38,11 +39,47 @@ namespace Surface_mesh_simplification
 // The arguments are (current_cost,vertex,vertex,is_edge,initial_pair_count,current_pair_count,surface) and the result is bool
 //
 //*******************************************************************************************************************
+template<class ECM_>
+class Count_ratio_stop_predicate;
 
+  template<class ECM_, class VisitorBase>
+class  Parallel_stop_predicate_visitor
+  : public VisitorBase
+{
+public:
+
+  typedef typename VisitorBase::size_type size_type;
+  
+  Parallel_stop_predicate_visitor(const VisitorBase& base)
+    : VisitorBase(base)
+  { }
+  
+  template<class Stop_predicate>
+  void OnParallelPassFinished(ECM_& ecm,
+                              Stop_predicate& pred,
+                              size_type initial_num_edges,
+                              size_type num_current_edges) const
+  {
+    VisitorBase::OnParallelPassFinished(ecm, pred, initial_num_edges, num_current_edges);
+  }
+
+  
+  void OnParallelPassFinished(ECM_& ecm,
+                              Count_ratio_stop_predicate<ECM_>& pred,
+                              size_type initial_num_edges,
+                              size_type num_current_edges) const
+  {
+    VisitorBase::OnParallelPassFinished(ecm, pred, initial_num_edges, num_current_edges);
+    
+    pred.set_ratio((std::min)(1.0, pred.ratio() * ((double)initial_num_edges / (double)num_current_edges)));
+  }  
+};
+
+  
 // 
 // Stops when the ratio of initial to current vertex pairs is below some value.
 //
-  template<class ECM_>    
+template<class ECM_>    
 class Count_ratio_stop_predicate
 {
 public:
@@ -55,15 +92,9 @@ public:
   typedef typename boost::graph_traits<ECM>::edges_size_type size_type ;
 
   Count_ratio_stop_predicate( double aRatio ) 
-    : mRatio(aRatio), first_pass(true)
+    : mRatio(aRatio)
   {}
 
-
-  void second_pass(size_type num_current_edges, size_type initial_num_edges)
-  {
-    mRatio = std::min(1.0, mRatio * ((double)initial_num_edges / (double)num_current_edges));
-  }
-  
    
   template <typename F, typename Profile_> 
   bool operator()( F const&       // aCurrentCost
@@ -74,12 +105,19 @@ public:
   {
     return ( static_cast<double>(aCurrentCount) / static_cast<double>(aInitialCount) ) < mRatio ;
   }
+
+  double ratio() const
+  {
+    return mRatio;
+  }
   
+  void set_ratio(const double d)
+  {
+    mRatio = d;
+  }
   
-  //private:
-  size_type a, b;
-  double mRatio ;
-  bool first_pass;
+private:
+  double mRatio;
 };
 
 } // namespace Surface_mesh_simplification
