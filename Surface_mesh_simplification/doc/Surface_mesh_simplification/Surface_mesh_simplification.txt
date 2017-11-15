@@ -388,12 +388,20 @@ rejects this placement by returning `boost::none`.
 
 \cgalExample{Surface_mesh_simplification/edge_collapse_bounded_normal_change.cpp}
 
-\subsection Surface_mesh_simplificationExamplewithedges Example for the Parallel Mesh Simplification
+\subsection Surface_mesh_simplificationExampleParallel Example for the Parallel Mesh Simplification
 
 In the following example we create a partition using the function `partition()` which is a wrapper
 of the METIS library.
 
 \cgalExample{Surface_mesh_simplification/parallel_edge_collapse.cpp}
+
+
+\section Surface_mesh_simplification_history Design and Implementation History
+
+The initial version of this package was developed by Fernado Cacciola as a
+free lance developer for GeometryFactory.
+The parallel version has been added by Andreas Fabri and Mael Rouxel-Labbé.
+
 
 */ 
 } /* namespace CGAL */
