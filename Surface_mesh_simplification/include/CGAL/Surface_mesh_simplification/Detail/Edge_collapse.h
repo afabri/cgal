@@ -339,8 +339,9 @@ private:
   /// Functions to ensure the backward compatibility before addition of the constrained edge map
   template<class AEdgeIsConstrainedMap>
   vertex_descriptor
-  halfedge_collapse_bk_compatibility(
-                                     halfedge_descriptor const& pq, AEdgeIsConstrainedMap aEdge_is_constrained_map, CGAL_MUTEX* removal_mutex)
+  halfedge_collapse_bk_compatibility(halfedge_descriptor const& pq,
+                                     AEdgeIsConstrainedMap aEdge_is_constrained_map,
+                                     CGAL_MUTEX* removal_mutex)
   {
     return CGAL::Euler::collapse_edge(edge(pq,mSurface), mSurface, aEdge_is_constrained_map, removal_mutex);
   }
@@ -348,11 +349,11 @@ private:
 
   template<class ECM>
   vertex_descriptor
-  halfedge_collapse_bk_compatibility(
-                                     halfedge_descriptor const& pq, No_constrained_edge_map<ECM>, CGAL_MUTEX* removal_mutex )
+  halfedge_collapse_bk_compatibility(halfedge_descriptor const& pq,
+                                     No_constrained_edge_map<ECM> aEdge_is_constrained_map,
+                                     CGAL_MUTEX* removal_mutex )
   {
-    vertex_descriptor vd = CGAL::Euler::collapse_edge(edge(pq,mSurface), mSurface, removal_mutex);
-    return vd;
+    return CGAL::Euler::collapse_edge(edge(pq,mSurface), mSurface, aEdge_is_constrained_map, removal_mutex);
   }
 
 
