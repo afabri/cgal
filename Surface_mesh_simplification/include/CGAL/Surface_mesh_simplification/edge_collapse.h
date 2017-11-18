@@ -264,6 +264,15 @@ int edge_collapse ( ECM& aSurface
                       );
 }
 
+template<class ECM, class ShouldStop, class P, class T, class R>
+int edge_collapse ( ECM& aSurface
+                  , ShouldStop const& aShould_stop
+                  , Sequential_tag tag
+                  , cgal_bgl_named_params<P,T,R> const& aParams
+                  )
+{
+  return edge_collapse(aSurface, aShould_stop, tag, NULL, aParams);
+}
 
 template<class ECM, class ShouldStop, class P, class T, class R>
 int edge_collapse ( ECM& aSurface
