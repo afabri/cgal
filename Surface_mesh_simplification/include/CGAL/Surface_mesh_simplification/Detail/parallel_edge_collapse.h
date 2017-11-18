@@ -22,6 +22,7 @@
 #include <CGAL/license/Surface_mesh_simplification.h>
 
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Constrained_placement.h>
+#include <CGAL/Surface_mesh_simplification/Parallel_stop_predicate_visitor.h>
 
 #include <CGAL/boost/graph/Component_graph.h>
 #include <CGAL/boost/graph/copy_face_graph.h>
