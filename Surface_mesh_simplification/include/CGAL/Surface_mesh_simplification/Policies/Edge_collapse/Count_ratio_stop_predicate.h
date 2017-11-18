@@ -29,7 +29,7 @@
 
 namespace CGAL {
 
-namespace Surface_mesh_simplification 
+namespace Surface_mesh_simplification
 {
 
 //*******************************************************************************************************************
@@ -43,29 +43,29 @@ namespace Surface_mesh_simplification
 //
 // Stops when the ratio of initial to current vertex pairs is below some value.
 //
-template<class ECM_>    
+template<class ECM_>
 class Count_ratio_stop_predicate
 {
 public:
 
   typedef ECM_ ECM ;
-  
+
   typedef Edge_profile<ECM> Profile ;
 
   typedef typename boost::graph_traits<ECM>::edge_descriptor edge_descriptor ;
   typedef typename boost::graph_traits<ECM>::edges_size_type size_type ;
 
-  Count_ratio_stop_predicate( double aRatio ) 
+  Count_ratio_stop_predicate( double aRatio )
     : mRatio(aRatio)
   {}
 
-   
-  template <typename F, typename Profile_> 
+
+  template <typename F, typename Profile_>
   bool operator()( F const&       // aCurrentCost
                  , Profile_ const& // aEdgeProfile
                  , size_type         aInitialCount
                  , size_type         aCurrentCount
-                 ) const 
+                 ) const
   {
     return ( static_cast<double>(aCurrentCount) / static_cast<double>(aInitialCount) ) < mRatio ;
   }
@@ -74,12 +74,12 @@ public:
   {
     return mRatio;
   }
-  
+
   void set_ratio(const double d)
   {
     mRatio = d;
   }
-  
+
 private:
   double mRatio;
 };
@@ -90,4 +90,4 @@ private:
 
 #endif // CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_COUNT_RATIO_STOP_PREDICATE_H //
 // EOF //
- 
+

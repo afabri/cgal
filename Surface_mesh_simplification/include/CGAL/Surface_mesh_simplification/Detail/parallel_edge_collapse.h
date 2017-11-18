@@ -405,7 +405,7 @@ struct Collect_edges
 } // namespace internal
 
 
-  
+
   template <typename TriangleMesh, typename Placement, typename CCMap, typename UECMap, typename Stop, typename Cost, typename Visitor>
 int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placement placement,
                            Stop stop, Cost cost, std::size_t ncc, Visitor pvis, unsigned int layers = 1,
@@ -418,8 +418,8 @@ int parallel_edge_collapse(TriangleMesh& sm, CCMap ccmap, UECMap uecmap, Placeme
 
   Real_timer t;
 
-  Parallel_stop_predicate_visitor<TriangleMesh, Visitor> vis(pvis);  
-  
+  Parallel_stop_predicate_visitor<TriangleMesh, Visitor> vis(pvis);
+
   typedef CGAL::internal::halfedge_property_t<int> Halfedge_property_tag;
   typedef typename CGAL::internal::dynamic_property_map<TriangleMesh, Halfedge_property_tag >::type HIMap;
   HIMap himap = CGAL::internal::add_property(Halfedge_property_tag("h:internal::index_in_cc"), sm);
