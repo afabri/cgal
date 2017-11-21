@@ -302,11 +302,16 @@ may be larger than the number of cores, but note that the more components
 the partition has, the longer is the boundary zone that will be simplified
 sequentially once the components have been simplified in parallel.
 
+The parallel algorithm does what is needed for the stop predicates provided by this
+package. For example for the `Surface_mesh_simplification::Count_ratio_stop_predicate` that stops based on
+a ratio of edges to be collapsed the parallel algorithm determines the appropriate
+ratio for each component of the partition.
+
 \subsection Surface_mesh_simplificationSampleCall Sample Call
 
 The parallel version looks almost identical to the sequential version.
 It has two additional parameters, namely a property map for the partition
-of the faces, and the number of different values in the face_partition_map.
+of the faces, and the number of different values in the `face_partition_map`.
 
 \code{.cpp}
 
