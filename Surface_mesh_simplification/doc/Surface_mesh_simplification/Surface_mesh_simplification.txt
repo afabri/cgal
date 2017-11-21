@@ -277,6 +277,14 @@ in a parallel task with the edges between the components getting constrained.
 In a sequential pass the faces close to these constrained edges get simplified
 with the edges being no longer constrained.
 
+
+\cgalFigureBegin{SMS-parallel-simplification, parallel_simplification.png}
+<B>Left:</B> The partitioned mesh with the constrained edges incident to the boundaries of the partition.
+<B>Middle:</B> The mesh after the simplification of the different components.
+<B>Right:</B> The final mesh.
+\cgalFigureEnd
+
+
 The gain in performance as well as the overall quality of the simplified mesh 
 will depend on the quality of the partition, and on the input mesh. Take for
 example a terrain model with a flat zone and a zone with mountains. If the two zones
