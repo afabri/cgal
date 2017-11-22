@@ -4,7 +4,7 @@ namespace Surface_mesh_simplification {
 /*!
 \ingroup PkgSurfaceMeshSimplification
 
-Simplifies `surface_mesh` in-place by collapsing edges, and returns
+Simplifies `tm` in-place by collapsing edges, and returns
 the number of edges effectively removed.
 
 The function `parallel_edge_collapse()` simplifies in-place a triangulated surface mesh.
@@ -12,7 +12,7 @@ A property map that associates a number between `0` and `partition_size-1` to ea
 defines a partition of the faces in components. Each component is simplified 
 with the sequential algorithm with a layer of edges incident to the boundary
 of the components being constrained. The simplification of components is done
-in parallel tasks. Once finished 4 layers of edges incident to the boundary
+in parallel tasks. Once finished 2 layers of edges incident to the boundary
 of the components are simplified with the sequential algorithm, while all other
 edges are constrained. 
 
@@ -23,7 +23,7 @@ edges are constrained.
 and the value type `boost::graph_traits<EdgeCollapsableSurfaceMesh>::%faces_size_type`.
 
 
-\param tmesh  is the mesh to simplify. 
+\param tm  is the mesh to simplify. 
 
 \param should_stop is the stop-condition policy. 
 It must be a model of the `StopPredicate` concept. 
@@ -45,7 +45,7 @@ The parameters are the same as for `edge_collapse()`.
 */
 
 template<class TriangleMesh, class StopPredicate, class FacePartionMap, class P, class T, class R>
-int parallel_edge_collapse ( TriangleMesh& tmesh
+int parallel_edge_collapse ( TriangleMesh& tm
                              , StopPredicate const& should_stop
                              , FacePartionMap fpm
                              , int partition_size
