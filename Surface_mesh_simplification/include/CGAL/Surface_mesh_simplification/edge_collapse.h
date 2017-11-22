@@ -57,7 +57,8 @@ int edge_collapse ( ECM&                       aSurface
                   , ShouldStop           const& aShould_stop
                   , ConcurrencyTag aConcurrency_tag
                   , CGAL_MUTEX* removal_mutex
-                  // optional mesh information policies 
+                  // optional mesh information policies
+                    , std::size_t current_num_edges
                   , VertexIndexMap       const& aVertex_index_map     // defaults to get(vertex_index,aSurface)
                   , VertexPointMap       const& aVertex_point_map     // defaults to get(vertex_point,aSurface)
                   , EdgeIndexMap         const& aEdge_index_map       // defaults to get(edge_index,aSurface)
@@ -87,6 +88,7 @@ int edge_collapse ( ECM&                       aSurface
                   , Sequential_tag
                   , CGAL_MUTEX* removal_mutex
                   // optional mesh information policies 
+                  , std::size_t current_num_edges
                   , VertexIndexMap       const& aVertex_index_map     // defaults to get(vertex_index,aSurface)
                   , VertexPointMap       const& aVertex_point_map     // defaults to get(vertex_point,aSurface)
                   , EdgeIndexMap         const& aEdge_index_map       // defaults to get(edge_index,aSurface)
@@ -113,6 +115,7 @@ int edge_collapse ( ECM&                       aSurface
                       Algorithm;
                       
   Algorithm algorithm( aSurface
+                     , current_num_edges
                      , aShould_stop
                      , aVertex_index_map
                      , aVertex_point_map
@@ -142,6 +145,7 @@ int edge_collapse ( ECM&                       aSurface
                   , Parallel_tag
                   , CGAL_MUTEX* removal_mutex
                   // optional mesh information policies 
+                  , std::size_t current_num_edges
                   , VertexIndexMap       const& aVertex_index_map     // defaults to get(vertex_index,aSurface)
                   , VertexPointMap       const& aVertex_point_map     // defaults to get(vertex_point,aSurface)
                   , EdgeIndexMap         const& aEdge_index_map       // defaults to get(edge_index,aSurface)
@@ -168,6 +172,7 @@ int edge_collapse ( ECM&                       aSurface
                       Algorithm;
                       
   Algorithm algorithm( aSurface
+                     , current_num_edges
                      , aShould_stop
                      , aVertex_index_map
                      , aVertex_point_map
@@ -197,7 +202,7 @@ template<class ECM, class ShouldStop, class P, class T, class R>
 int edge_collapse ( ECM& aSurface
                     , ShouldStop const& aShould_stop
                     , Sequential_tag
-                  , CGAL_MUTEX* removal_mutex
+                    , CGAL_MUTEX* removal_mutex
                     , cgal_bgl_named_params<P,T,R> const& aParams 
                                ) 
 {
@@ -212,6 +217,7 @@ int edge_collapse ( ECM& aSurface
                       ,aShould_stop
                       , Sequential_tag()
                       , removal_mutex
+                      ,choose_param     (get_param(aParams,internal_np::current_num_edges), num_edges(aSurface))
                       ,choose_const_pmap(get_param(aParams,internal_np::vertex_index),aSurface,boost::vertex_index)
                       ,choose_pmap(get_param(aParams,internal_np::vertex_point),aSurface,boost::vertex_point)
                       ,choose_const_pmap(get_param(aParams,internal_np::halfedge_index),aSurface,boost::halfedge_index)
@@ -243,6 +249,7 @@ int edge_collapse ( ECM& aSurface
                       ,aShould_stop
                       , Parallel_tag()
                       , removal_mutex
+                      ,choose_param     (get_param(aParams,internal_np::current_num_edges), num_edges(aSurface))
                       ,choose_const_pmap(get_param(aParams,internal_np::vertex_index),aSurface,boost::vertex_index)
                       ,choose_pmap(get_param(aParams,internal_np::vertex_point),aSurface,boost::vertex_point)
                       ,choose_const_pmap(get_param(aParams,internal_np::halfedge_index),aSurface,boost::halfedge_index)
@@ -319,6 +326,7 @@ int edge_collapse ( ECM& aSurface
     
   return edge_collapse(aSurface
                       ,aShould_stop
+                      ,choose_param     (get_param(aParams,internal_np::current_num_edges), num_edges(aSurface))
                       ,choose_const_pmap(get_param(aParams,internal_np::vertex_index),aSurface,boost::vertex_index)
                       ,choose_const_pmap(get_param(aParams,internal_np::vertex_point),aSurface,boost::vertex_point)
                       ,choose_const_pmap(get_param(aParams,internal_np::halfedge_index),aSurface,boost::halfedge_index)

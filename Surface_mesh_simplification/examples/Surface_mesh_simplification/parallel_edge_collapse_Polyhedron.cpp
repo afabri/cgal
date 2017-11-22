@@ -115,7 +115,7 @@ int main(int argc, char** argv )
 
   t.reset();
 
-  std::ofstream out("out.off");
+  std::ofstream out("outP.off");
  
   out << sm << std::endl;
 

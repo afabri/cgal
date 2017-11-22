@@ -1238,6 +1238,9 @@ collapse_edge(typename boost::graph_traits<Graph>::edge_descriptor v0v1,
               , EdgeIsConstrainedMap Edge_is_constrained_map
               , CGAL_MUTEX* removal_mutex = NULL)
 {
+  //  CGAL_SCOPED_LOCK(*removal_mutex2);
+  //  CGAL_MUTEX* removal_mutex = NULL;
+  
   typedef boost::graph_traits< Graph > Traits;
   typedef typename Traits::vertex_descriptor          vertex_descriptor;
   typedef typename Traits::halfedge_descriptor            halfedge_descriptor;

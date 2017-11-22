@@ -29,7 +29,8 @@ namespace Surface_mesh_simplification
 {
 
   template<class M, class SP, class VIM, class VPM,class EIM, class ECTM, class CF, class PF, class V, class P>
-  EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::EdgeCollapse( ECM&                         aSurface
+  EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::EdgeCollapse( ECM&                aSurface
+                                                    , std::size_t                  current_num_edges
                                                     , ShouldStop            const& aShould_stop
                                                     , VertexIndexMap        const& aVertex_index_map
                                                     , VertexPointMap        const& aVertex_point_map
@@ -41,6 +42,7 @@ namespace Surface_mesh_simplification
                                                     )
   : 
    mSurface           (aSurface)
+   ,current_num_edges  (static_cast<size_type>(current_num_edges)) 
   ,Should_stop        (aShould_stop) 
   ,Vertex_index_map   (aVertex_index_map)
   ,Vertex_point_map   (aVertex_point_map)
@@ -51,6 +53,7 @@ namespace Surface_mesh_simplification
   ,Visitor            (aVisitor)
   ,m_has_border       (false)
 {
+  std::cerr <<  "current_num_edges = "<< current_num_edges << std::endl;
   const FT cMaxDihedralAngleCos = std::cos( 1.0 * CGAL_PI / 180.0 ) ;
   
   mcMaxDihedralAngleCos2 = cMaxDihedralAngleCos * cMaxDihedralAngleCos ;
@@ -114,13 +117,13 @@ namespace Surface_mesh_simplification
   
   Equal_3 equal_points = Traits().equal_3_object();
     
-  size_type lSize = num_edges(mSurface);
+  size_type lSize = (std::max)(num_edges(mSurface), current_num_edges);
   
-  mInitialEdgeCount = mCurrentEdgeCount = lSize;
+  mInitialEdgeCount = mCurrentEdgeCount = current_num_edges;
   
   mEdgeDataArray.reset( new Edge_data[lSize] ) ;
   
-  mPQ.reset( new PQ (lSize, Compare_cost(this), edge_id(this) ) ) ;
+  mPQ.reset( new PQ (lSize, Compare_cost(this), edge_id(this) ) ) ; // AF: can lsize be changed to current_num_edges
   
   std::size_t id = 0 ;
   

@@ -173,6 +173,7 @@ public:
 public:
 
   EdgeCollapse( ECM&                        aSurface
+                , std::size_t               current_num_edges
               , ShouldStop           const& aShouldStop
               , VertexIndexMap       const& aVertex_index_map
               , VertexPointMap       const& aVertex_point_map
@@ -375,8 +376,8 @@ private:
 
 private:
 
-  ECM&                   mSurface ;
-  
+  ECM&                        mSurface ;
+  size_type                   current_num_edges;
   ShouldStop           const& Should_stop ;
   VertexIndexMap       const& Vertex_index_map ;
   VertexPointMap       const& Vertex_point_map ;

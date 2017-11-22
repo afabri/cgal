@@ -57,13 +57,22 @@ public:
   Count_ratio_stop_predicate( double aRatio ) 
     : mRatio(aRatio), first_pass(true)
   {}
-  
-  void second_pass(size_type a, size_type b)
-  { 
+
+  void second_pass(size_type num_current_edges, size_type initial_num_edges)
+  { /*
+    // a is the number of contrained edges
+    // b is the number of edges 
     double uc_ratio = 0.3;
     double cc_ratio = double(a)/double(b);
     mRatio = uc_ratio + (1.0 - uc_ratio)*cc_ratio;
     first_pass = false;
+    */
+   
+    mRatio = std::min(1.0, mRatio * ((double)initial_num_edges / (double)num_current_edges));
+
+    std::cerr << "initial = " << initial_num_edges << std::endl;
+        std::cerr << "current = " << num_current_edges << std::endl;
+            std::cerr << "ratio = " << mRatio << std::endl;
   }
 
   template <typename F, typename Profile_> 
@@ -77,7 +86,7 @@ public:
   }
   
   
-private:
+  //private:
   size_type a, b;
   double mRatio ;
   bool first_pass;
