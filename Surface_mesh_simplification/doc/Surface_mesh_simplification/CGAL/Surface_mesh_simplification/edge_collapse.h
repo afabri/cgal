@@ -4,22 +4,21 @@ namespace Surface_mesh_simplification {
 /*!
 \ingroup PkgSurfaceMeshSimplification
 
-Simplifies `surface_mesh` in-place by collapsing edges, and returns
-the number of edges effectively removed.
+simplifies the triangulated surface mesh `tm` in-place by iteratively collapsing edges and returns the number of edges effectively removed.
 
-The function `Surface_mesh_simplification::edge_collapse` simplifies in-place a triangulated surface mesh by iteratively collapsing edges. 
+\tparam TriangleMesh must be a model of the concept `EdgeCollapsableSurfaceMesh`
+
+\tParam Stop must be a model of the concept `StopPredicate`
 
 \cgalHeading{Non-Named Parameters}
 
-`surface_mesh` is the surface mesh to simplify. 
-It must be a model of the `EdgeCollapsableSurfaceMesh` concept. 
+\param tm is the surface mesh to simplify
 
-`should_stop` is the stop-condition policy. 
-It must be a model of the `StopPredicate` concept. 
+\param should_stop is the stop-condition policy
 
 \cgalHeading{Named Parameters}
 
-`named_parameters` holds the list of all the additional parameters 
+`np` holds the list of all the additional parameters 
 used by the `edge_collapse` function (including default parameters). 
 
 The named parameters list is a composition of function calls separated by a dot (\f$ .\f$) where 
@@ -48,30 +47,30 @@ Maps each vertex in the surface mesh into a 3D \cgal point.
 `VertexPointMap` must be a model of
 `ReadWritePropertyMap` 
 with key type
-`boost::graph_traits<EdgeCollapsableSurfaceMesh const>::%vertex_descriptor` 
+`boost::graph_traits<TriangleMesh const>::%vertex_descriptor` 
 and with any model of `Kernel::Point_3` as value type.
 
-<B>%Default</B>: the property map obtained by calling `get(CGAL::vertex_point,surface_mesh)`, 
+<B>%Default</B>: the property map obtained by calling `get(CGAL::vertex_point,tm)`, 
  
 
 \cgalHeading{halfedge_index_map(HalfedgeIndexMap eim)}
 
 Maps each halfedge in the surface mesh into an unsigned integer number 
-in the range `[0,num_halfedges(surface_mesh))`. 
+in the range `[0,num_halfedges(tm))`. 
 
 `HalfedgeIndexMap` must be a model of
 `ReadablePropertyMap` with key type
-`boost::graph_traits<EdgeCollapsableSurfaceMesh const>::%halfedge_descriptor` 
+`boost::graph_traits<TriangleMesh const>::%halfedge_descriptor` 
 and with value type 
-`boost::graph_traits<EdgeCollapsableSurfaceMesh>::%size_type` 
+`boost::graph_traits<TriangleMesh>::%size_type` 
 
-<B>%Default</B>: the property map obtained by calling `get(CGAL::halfedge_index,surface_mesh)`, 
+<B>%Default</B>: the property map obtained by calling `get(CGAL::halfedge_index,tm)`, 
 which requires the surface mesh edges to have an `id()` member properly initialized to the 
 require value. 
 
 If the edges don't have such an `id()`, you must pass some property map explicitly. 
 An external property map can be easily obtained by calling 
-`get(CGAL::halfedge_external_index,surface_mesh)`. This constructs on the fly, and returns, 
+`get(CGAL::halfedge_external_index,tm)`. This constructs on the fly, and returns, 
 a property map which non-intrusively associates a proper id with each edge. 
 
 
@@ -81,10 +80,10 @@ Maps each edge in the surface mesh into a Boolean value
 which indicates if the edge is constrained.
 `EdgeIsConstrainedMap` must be a model
 `ReadablePropertyMap` with key type
-`boost::graph_traits<EdgeCollapsableSurfaceMesh const>::%edge_descriptor`
+`boost::graph_traits<TriangleMesh const>::%edge_descriptor`
 and with value type `bool`.
 
-\attention If this parameter is provided, `surface_mesh` must be a model of the
+\attention If this parameter is provided, `tm` must be a model of the
 `EdgeCollapsableSurfaceMeshWithConstraints` concept.
 
 <B>%Default</B>: A property map always returning `false`, that is no edge is constrained.
@@ -96,7 +95,7 @@ The policy which returns the collapse cost for an edge.
 The type of `gc` must be a model of the `GetCost` concept. 
 
 <B>%Default</B>: 
-`CGAL::Surface_mesh_simplification::LindstromTurk_cost<EdgeCollapsableSurfaceMesh>`. 
+`CGAL::Surface_mesh_simplification::LindstromTurk_cost<TriangleMesh>`. 
 
 \cgalHeading{get_placement(GetPlacement gp)}
 
@@ -106,7 +105,7 @@ for an edge.
 The type of `gp` must be a model of the `GetPlacement` concept. 
 
 <B>%Default</B>: 
-`CGAL::Surface_mesh_simplification::LindstromTurk_placement<EdgeCollapsableSurfaceMesh>` 
+`CGAL::Surface_mesh_simplification::LindstromTurk_placement<TriangleMesh>` 
 
 \cgalHeading{visitor(EdgeCollapseSimplificationVisitor v)}
 
@@ -118,7 +117,7 @@ The type of `v` must be a model of the `EdgeCollapseSimplificationVisitor` conce
 <B>%Default: an implementation-defined dummy visitor</B>. 
 
 If you wish to provide your own visitor, you can derive from: 
-`CGAL::Surface_mesh_simplification::Edge_collapse_visitor_base<EdgeCollapsableSurfaceMesh>` 
+`CGAL::Surface_mesh_simplification::Edge_collapse_visitor_base<TriangleMesh>` 
 and override only the callbacks you are interested in. 
 
 All these functions naming parameters are defined in 
@@ -133,21 +132,21 @@ named parameter with `CGAL::`, as shown in the examples in the user manual.
 This parameter is only used by debug functions and is usually not needed for users.
 
 Maps each vertex in the surface mesh into an unsigned integer number 
-in the range `[0,num_vertices(surface_mesh))`. 
+in the range `[0,num_vertices(tm))`. 
 
 `VertexIndexMap` must be a model of
 `ReadablePropertyMap` 
 with key type 
-`boost::graph_traits<EdgeCollapsableSurfaceMesh const>::%vertex_descriptor` 
-and with value type `boost::graph_traits<EdgeCollapsableSurfaceMesh>::%size_type`, 
+`boost::graph_traits<TriangleMesh const>::%vertex_descriptor` 
+and with value type `boost::graph_traits<TriangleMesh>::%size_type`, 
 
-<B>%Default</B>: the property map obtained by calling `get(CGAL::vertex_index,surface_mesh)`, 
+<B>%Default</B>: the property map obtained by calling `get(CGAL::vertex_index,tm)`, 
 which requires the surface mesh vertices to have an `id()` member properly initialized to the 
 required value. 
 
 If the vertices don't have such an `id()`, you must pass some property map explicitly. 
 An external property map can be easily obtained by calling 
-`get(CGAL::vertex_external_index,surface_mesh)`. This constructs on the fly, and returns, 
+`get(CGAL::vertex_external_index,tm)`. This constructs on the fly, and returns, 
 a property map which non-intrusively associates a proper id with each vertex. 
 \cgalDebugEnd
 
@@ -166,17 +165,20 @@ are called at certain points in the simplification code.
 
 */
 
-template<class EdgeCollapsableSurfaceMesh,class StopPredicate, class P, class T, class R>
-int edge_collapse ( EdgeCollapsableSurfaceMesh& surface_mesh
-, StopPredicate const& should_stop
-, sms_named_params<P,T,R> const& named_parameters
+template<class TriangleMesh,class Stop, class P, class T, class R>
+int edge_collapse (TriangleMesh& tm
+, Stop const& should_stop
+, sms_named_params<P,T,R> const& np
 ) ;
 
-  
-Simplifies `tm` in-place by collapsing edges, and returns
-the number of edges effectively removed.
 
-The function `parallel_edge_collapse()` simplifies in-place a triangulated surface mesh.
+  
+/*!
+\ingroup PkgSurfaceMeshSimplification
+
+simplifies the triangulated surface mesh `tm` in-place by iteratively collapsing edges in parallel 
+and returns the number of edges effectively removed.
+
 A property map that associates a number between `0` and `partition_size-1` to each face
 defines a partition of the faces in components. Each component is simplified 
 with the sequential algorithm with a layer of edges incident to the boundary
@@ -187,35 +189,28 @@ edges are constrained.
 
 \tparam TriangleMesh must be a model of the concept `EdgeCollapsableSurfaceMesh`
 
+\tParam Stop must be a model of the concept `StopPredicate`
+
 \tparam FacePartionMap must be a model of `ReadablePropertyMap` with the key type
 `boost::graph_traits<EdgeCollapsableSurfaceMesh>::%face_descriptor` 
-and the value type `boost::graph_traits<EdgeCollapsableSurfaceMesh>::%faces_size_type`.
+and the value type `boost::graph_traits<EdgeCollapsableSurfaceMesh>::%faces_size_type`
 
 
-\param tm  is the mesh to simplify. 
+\param tm  is the mesh to simplify
 
-\param should_stop is the stop-condition policy. 
-It must be a model of the `StopPredicate` concept. 
+\param should_stop is the stop-condition policy
 
-\param fpm is the property map that associates to each face the component it is in.
+\param fpm is the property map that associates to each face the component it is in
 
-\param partition_size must be the number of different values in `fpm`.
+\param partition_size must be the number of different values in `fpm`
 
-\param np optional sequence of Named Parameters among the ones listed below
-
-\cgalHeading{Named Parameters}
-
-`np` holds the list of all the additional parameters 
-used by the `parallel_edge_collapse()` function (including default parameters). 
-
-The parameters are the same as for `edge_collapse()`.
-
+\param np optional sequence of named parameters. The parameters are the same as for `edge_collapse()`
 
 */
 
-template<class TriangleMesh, class StopPredicate, class FacePartionMap, class P, class T, class R>
+template<class TriangleMesh, class Stop, class FacePartionMap, class P, class T, class R>
 int parallel_edge_collapse ( TriangleMesh& tm
-                             , StopPredicate const& should_stop
+                             , Stop const& should_stop
                              , FacePartionMap fpm
                              , int partition_size
                              , sms_named_params<P,T,R> const& np
