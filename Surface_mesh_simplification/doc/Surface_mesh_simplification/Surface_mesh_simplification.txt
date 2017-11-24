@@ -247,21 +247,21 @@ When you use named parameters, the ordering is irrelevant, so this: `f(name(n).a
 \code{.cpp}
 
 /*
-surface_mesh             : the surface_mesh to simplify
-stop_predicate           : policy indicating when the simplification must finish 
-vertex_index_map(vimap)  : property-map giving each vertex a unique integer index 
-edge_index_map(eimap)    : property-map giving each edge a unique integer index 
-edge_is_border_map(ebmap): property-map specifying whether an edge is a border edge or not 
-get_cost(cf)             : function object computing the cost of a collapse 
-get_placement(pf)        : function object computing the placement for the remaining vertex 
-visitor(vis)             : function object tracking the simplification process 
+surface_mesh                  : the surface_mesh to simplify
+stop_predicate                : policy indicating when the simplification must finish
+vertex_index_map(vimap)       : property-map giving each vertex a unique integer index
+edge_index_map(eimap)         : property-map giving each edge a unique integer index
+edge_is_constrained_map(ecmap): property-map specifying whether an edge is a constained edge or not
+get_cost(cf)                  : function object computing the cost of a collapse
+get_placement(pf)             : function object computing the placement for the remaining vertex
+visitor(vis)                  : function object tracking the simplification process
 */
 
 int r = edge_collapse(surface_mesh
                      ,stop_predicate
                      ,vertex_index_map(vimap)
                      .edge_index_map(eimap)
-                     .edge_is_border_map(ebmap)
+                     .edge_is_constrained_map(ecmap)
                      .get_cost(cf)
                      .get_placement(pf)
                      .visitor(vis)
@@ -322,16 +322,16 @@ of the faces, and the number of different values in the `face_partition_map`.
 \code{.cpp}
 
 /*
-surface_mesh             : the surface_mesh to simplify
-stop_predicate           : policy indicating when the simplification must finish
-face_partition_map       : property-map giving each face the index of the partition of faces
-partition_size           : the number of different values in the face_partition_map
-vertex_index_map(vimap)  : property-map giving each vertex a unique integer index 
-edge_index_map(eimap)    : property-map giving each edge a unique integer index 
-edge_is_border_map(ebmap): property-map specifying whether an edge is a border edge or not 
-get_cost(cf)             : function object computing the cost of a collapse 
-get_placement(pf)        : function object computing the placement for the remaining vertex 
-visitor(vis)             : function object tracking the simplification process 
+surface_mesh                  : the surface_mesh to simplify
+stop_predicate                : policy indicating when the simplification must finish
+face_partition_map            : property-map giving each face the index of the partition of faces
+partition_size                : the number of different values in the face_partition_map
+vertex_index_map(vimap)       : property-map giving each vertex a unique integer index
+edge_index_map(eimap)         : property-map giving each edge a unique integer index
+edge_is_constrained_map(ecmap): property-map specifying whether an edge is constrained or not
+get_cost(cf)                  : function object computing the cost of a collapse
+get_placement(pf)             : function object computing the placement for the remaining vertex
+visitor(vis)                  : function object tracking the simplification process
 */
 
 int r = parallel_edge_collapse(surface_mesh
@@ -340,11 +340,11 @@ int r = parallel_edge_collapse(surface_mesh
                                ,partition_size
                                ,vertex_index_map(vimap)
                                .edge_index_map(eimap)
-                               .edge_is_border_map(ebmap)
+                               .edge_is_constrained_map(ecmap)
                                .get_cost(cf)
                                .get_placement(pf)
                                .visitor(vis)
-                     );
+                               );
 
 \endcode
 
