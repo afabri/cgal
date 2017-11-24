@@ -202,12 +202,12 @@ struct Dummy_visitor
   template<class Profile>                             void OnNonCollapsable(Profile const& ) const {}
 } ;
 
-template<class ECM, class ShouldStop, class P, class T, class R>
+template<class ECM, class ShouldStop, class NamedParameters>
 int edge_collapse ( ECM& aSurface
                     , ShouldStop const& aShould_stop
                     , Sequential_tag
                     , CGAL_MUTEX* removal_mutex
-                    , cgal_bgl_named_params<P,T,R> const& aParams
+                    , NamedParameters const& aParams
                                )
 {
   using boost::choose_param ;
@@ -234,12 +234,12 @@ int edge_collapse ( ECM& aSurface
 
 
 
-template<class ECM, class ShouldStop, class P, class T, class R>
+template<class ECM, class ShouldStop, class NamedParameters>
 int edge_collapse ( ECM& aSurface
                     , ShouldStop const& aShould_stop
                     , Parallel_tag
                     , CGAL_MUTEX* removal_mutex
-                    , cgal_bgl_named_params<P,T,R> const& aParams
+                    , NamedParameters const& aParams
                                )
 {
   using boost::choose_param ;
@@ -264,31 +264,31 @@ int edge_collapse ( ECM& aSurface
                       );
 }
 
-template<class ECM, class ShouldStop, class P, class T, class R>
+template<class ECM, class ShouldStop, class NamedParameters>
 int edge_collapse ( ECM& aSurface
                   , ShouldStop const& aShould_stop
                   , Sequential_tag tag
-                  , cgal_bgl_named_params<P,T,R> const& aParams
+                  , NamedParameters const& aParams
                   )
 {
   return edge_collapse(aSurface, aShould_stop, tag, NULL, aParams);
 }
 
-template<class ECM, class ShouldStop, class P, class T, class R>
+template<class ECM, class ShouldStop, class NamedParameters>
 int edge_collapse ( ECM& aSurface
                   , ShouldStop const& aShould_stop
-                  , cgal_bgl_named_params<P,T,R> const& aParams
+                  , NamedParameters const& aParams
                   )
 {
   return edge_collapse(aSurface, aShould_stop, Sequential_tag(), NULL, aParams);
 }
 
-template<class ECM, class ShouldStop, class FacePartionMap, class P, class T, class R>
+template<class ECM, class ShouldStop, class FacePartionMap, class NamedParameters>
 int parallel_edge_collapse ( ECM& aSurface
                              , ShouldStop const& aShould_stop
                              , FacePartionMap fpm
                              , int partition_size
-                             , cgal_bgl_named_params<P,T,R> const& aParams )
+                             , NamedParameters const& aParams )
 {
   using boost::choose_param ;
   using boost::get_param ;
@@ -321,10 +321,10 @@ int parallel_edge_collapse ( ECM& aSurface
 
 
 
-template<class ECM, class ShouldStop, class GT, class P, class T, class R>
+template<class ECM, class ShouldStop, class GT, class NamedParameters>
 int edge_collapse ( ECM& aSurface
                   , ShouldStop const& aShould_stop
-                  , cgal_bgl_named_params<P,T,R> const& aParams
+                  , NamedParameters const& aParams
                   )
 {
   using boost::choose_param ;
