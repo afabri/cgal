@@ -319,11 +319,12 @@ public :
     
     //mBefore = create_edge_link(aProfile);
   }
-  
-  virtual void OnCollapsed( Profile const& aProfile, Vertex_handle const& aV ) const 
+
+  virtual void OnCollapsed( Profile const& /*aProfile*/, Vertex_handle const& /*aV*/ ) const
   {
     // Some collapse can result in self-intersections in any case, so we can't mark it as a failure
-    if ( false && Is_self_intersecting( aProfile.surface() ) )
+/*
+    if ( Is_self_intersecting( aProfile.surface() ) )
     {
       SurfaceSP lAfter = create_vertex_link(aProfile, aV);
       
@@ -331,8 +332,9 @@ public :
       write(lAfter , str( format( "%1%.step-%2%-after.off" )  % mTestCase % mStep ) ) ;
       
       REPORT_ERROR( str( format("Resulting surface self-intersects after step %1% (%2% edges left)") % mStep % ( aProfile.surface().size_of_halfedges() / 2 ) ) ) ;
-    }  
-    
+    }
+*/
+
     ++ mStep ;
   }
 

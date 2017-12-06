@@ -247,29 +247,109 @@ When you use named parameters, the ordering is irrelevant, so this: `f(name(n).a
 \code{.cpp}
 
 /*
-surface_mesh             : the surface_mesh to simplify
-stop_predicate           : policy indicating when the simplification must finish 
-vertex_index_map(vimap)  : property-map giving each vertex a unique integer index 
-edge_index_map(eimap)    : property-map giving each edge a unique integer index 
-edge_is_border_map(ebmap): property-map specifying whether an edge is a border edge or not 
-get_cost(cf)             : function object computing the cost of a collapse 
-get_placement(pf)        : function object computing the placement for the remaining vertex 
-visitor(vis)             : function object tracking the simplification process 
+surface_mesh                  : the surface_mesh to simplify
+stop_predicate                : policy indicating when the simplification must finish
+vertex_index_map(vimap)       : property-map giving each vertex a unique integer index
+edge_index_map(eimap)         : property-map giving each edge a unique integer index
+edge_is_constrained_map(ecmap): property-map specifying whether an edge is a constained edge or not
+get_cost(cf)                  : function object computing the cost of a collapse
+get_placement(pf)             : function object computing the placement for the remaining vertex
+visitor(vis)                  : function object tracking the simplification process
 */
 
 int r = edge_collapse(surface_mesh
                      ,stop_predicate
                      ,vertex_index_map(vimap)
-                       .edge_index_map(eimap)
-                       .edge_is_border_map(ebmap)
-                       .get_cost(cf)
-                       .get_placement(pf)
-                       .visitor(vis)
+                     .edge_index_map(eimap)
+                     .edge_is_constrained_map(ecmap)
+                     .get_cost(cf)
+                     .get_placement(pf)
+                     .visitor(vis)
                      );
 
 \endcode
 
-\subsection Surface_mesh_simplificationExamples Examples
+\section Surface_mesh_simplificationParallel Parallel Surface Mesh Simplification
+
+This package also offers a rather naive parallel mesh simplification algorithm. 
+It requires a partition of the faces. Each component of the partition is simplified
+in a parallel task with the edges between the components getting constrained. 
+In a sequential pass the faces close to these constrained edges get simplified
+with the edges being no longer constrained.
+
+
+\cgalFigureBegin{SMS-parallel-simplification, parallel_simplification.png}
+<B>Left:</B> The partitioned mesh with the constrained edges incident to the boundaries of the partition.
+<B>Middle:</B> The mesh after the simplification of the different components.
+<B>Right:</B> The final mesh.
+\cgalFigureEnd
+
+
+The gain in performance as well as the overall quality of the simplified mesh 
+will depend on the quality of the partition, and on the input mesh. Take for
+example a terrain model with a flat zone and a zone with mountains. If the two zones
+are simplified by two parallel tasks it may be that the task on the flat zone has
+to do all the work.
+
+Note that the sequential algorithm collapses the edges in the order of the cost
+their collapse has. The parallel algorithm does not have a global priority 
+queue for the edges to collapse, but as many priority queues as there are
+components.
+
+The number of components of the partition may be the number of cores, if you 
+expect that for all components the work to do is more or less the same. It
+may be larger than the number of cores, but note that the more components
+the partition has, the longer is the boundary zone that will be simplified
+sequentially once the components have been simplified in parallel.
+
+The parallel algorithm does what is needed for the stop predicates provided by this
+package. For example for the `Surface_mesh_simplification::Count_ratio_stop_predicate` that stops based on
+a ratio of edges to be collapsed the parallel algorithm determines the appropriate
+ratio for each component of the partition.
+
+
+The simplification of a mesh with 1.6 mio triangles to a mesh with 0.4 mio triangles
+takes 53 seconds sequentially, and it takes 2.2 seconds for computing a partition
+and 15 seconds in parallel on a 4 core CPU.
+
+
+\subsection Surface_mesh_simplificationSampleCall Sample Call
+
+The parallel version looks almost identical to the sequential version.
+It has two additional parameters, namely a property map for the partition
+of the faces, and the number of different values in the `face_partition_map`.
+
+\code{.cpp}
+
+/*
+surface_mesh                  : the surface_mesh to simplify
+stop_predicate                : policy indicating when the simplification must finish
+face_partition_map            : property-map giving each face the index of the partition of faces
+partition_size                : the number of different values in the face_partition_map
+vertex_index_map(vimap)       : property-map giving each vertex a unique integer index
+edge_index_map(eimap)         : property-map giving each edge a unique integer index
+edge_is_constrained_map(ecmap): property-map specifying whether an edge is constrained or not
+get_cost(cf)                  : function object computing the cost of a collapse
+get_placement(pf)             : function object computing the placement for the remaining vertex
+visitor(vis)                  : function object tracking the simplification process
+*/
+
+int r = parallel_edge_collapse(surface_mesh
+                               ,stop_predicate
+                               ,face_partition_map
+                               ,partition_size
+                               ,vertex_index_map(vimap)
+                               .edge_index_map(eimap)
+                               .edge_is_constrained_map(ecmap)
+                               .get_cost(cf)
+                               .get_placement(pf)
+                               .visitor(vis)
+                               );
+
+\endcode
+
+
+\section Surface_mesh_simplificationExamples Examples
 
 \subsection Surface_mesh_simplificationExampleUsinga Example Using a Default Polyhedron
 
@@ -326,6 +406,20 @@ two vertices of an edge that is candidate for an edge collapse.  It then
 rejects this placement by returning `boost::none`.
 
 \cgalExample{Surface_mesh_simplification/edge_collapse_bounded_normal_change.cpp}
+
+\subsection Surface_mesh_simplificationExampleParallel Example for the Parallel Mesh Simplification
+
+In the following example we create a partition using the function `partition()` which is a wrapper
+of the METIS library.
+
+\cgalExample{Surface_mesh_simplification/parallel_edge_collapse.cpp}
+
+
+\section Surface_mesh_simplification_history Design and Implementation History
+
+The initial version of this package was developed by Fernado Cacciola as a
+free lance developer for GeometryFactory.
+The parallel version has been added by Andreas Fabri and Mael Rouxel-Labbé.
 
 
 */ 

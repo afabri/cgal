@@ -48,6 +48,14 @@ else()
   message(STATUS "Examples that use OpenMesh will not be compiled.")
 endif()
 
+find_package(METIS)
+
+if(METIS_FOUND)
+  include_directories (${METIS_INCLUDE_DIRS})
+else()
+  message(STATUS "Examples that use the metis library will not be compiled.")
+endif()
+
 # include for local directory
 
 # include for local package
@@ -123,5 +131,8 @@ create_single_source_cgal_program( "triangulate_faces_example_OM.cpp")
 target_link_libraries( triangulate_faces_example_OM PRIVATE ${OPENMESH_LIBRARIES} )
 endif(OpenMesh_FOUND)
 
-
+if(METIS_FOUND)
+  create_single_source_cgal_program( "partition_example.cpp" )
+  target_link_libraries( partition_example ${METIS_LIBRARIES} )
+endif()
 

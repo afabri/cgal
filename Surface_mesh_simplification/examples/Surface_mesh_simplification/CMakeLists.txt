@@ -21,6 +21,11 @@ endif()
 # include helper file
 include( ${CGAL_USE_FILE} )
 
+find_package( TBB )
+    if( TBB_FOUND )
+      include(${TBB_USE_FILE})
+      list(APPEND CGAL_3RD_PARTY_LIBRARIES ${TBB_LIBRARIES})
+    endif()
 
 # Boost and its components
 find_package( Boost )
@@ -42,10 +47,13 @@ else()
   message(STATUS "Examples that use OpenMesh will not be compiled.")
 endif()
 
-# include for local directory
+find_package(METIS)
 
-# include for local package
-include_directories( BEFORE ../../include )
+if(METIS_FOUND)
+  include_directories (${METIS_INCLUDE_DIRS})
+else()
+  message(STATUS "Examples that use the metis library will not be compiled.")
+endif()
 
 
 
@@ -69,4 +77,12 @@ if(OpenMesh_FOUND)
   create_single_source_cgal_program( "edge_collapse_OpenMesh.cpp" )
 
   target_link_libraries( edge_collapse_OpenMesh PRIVATE ${OPENMESH_LIBRARIES} )
+endif()
+
+if(METIS_FOUND)
+  create_single_source_cgal_program( "parallel_edge_collapse.cpp" )
+  target_link_libraries( parallel_edge_collapse ${METIS_LIBRARIES} )
+  
+  create_single_source_cgal_program( "parallel_edge_collapse_Polyhedron.cpp" )
+  target_link_libraries( parallel_edge_collapse_Polyhedron ${METIS_LIBRARIES} )
 endif()
