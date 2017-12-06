@@ -19,6 +19,7 @@
 
 #include <CGAL/license/Polygon_mesh_processing.h>
 
+#include <CGAL/assertions.h>
 #include <CGAL/boost/graph/Face_filtered_graph.h>
 #include <CGAL/boost/graph/copy_face_graph.h>
 
@@ -126,12 +127,12 @@ void partition(const PolygonMesh& m,
     do
     {
       vertex_descriptor v = target(h, m);
-      assert(j < d * ne);
+      CGAL_assertion(j < d * ne);
       eind[j++] = static_cast<idx_t>(get(indices, v));
       h = next(h, m);
     } while (h != done);
 
-    assert(i < ne);
+    CGAL_assertion(i < ne);
     eptr[i + 1] = j;
   }
 
@@ -143,11 +144,11 @@ void partition(const PolygonMesh& m,
 
   // partition info for the nodes
   idx_t* npart = (idx_t*) calloc(nn, sizeof(idx_t));
-  assert(npart != NULL);
+  CGAL_assertion(npart != NULL);
 
   // partition info for the elements
   idx_t* epart = (idx_t*) calloc(ne, sizeof(idx_t));
-  assert(epart != NULL);
+  CGAL_assertion(epart != NULL);
 
   int ret = METIS_PartMeshDual(&ne, &nn, eptr, eind,
                                NULL /* elements weights*/, NULL /*elements sizes*/,
@@ -157,7 +158,7 @@ void partition(const PolygonMesh& m,
                                &objval, epart, npart);
 
   std::cout << "return: " << ret << " with objval: " << objval << std::endl;
-  assert(ret == METIS_OK);
+  CGAL_assertion(ret == METIS_OK);
 
   boost::tie(fit, fe) = faces(m);
   for(int i=0; fit!=fe; ++fit, ++i)
