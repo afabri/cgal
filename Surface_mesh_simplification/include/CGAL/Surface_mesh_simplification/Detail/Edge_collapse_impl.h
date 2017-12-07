@@ -117,8 +117,9 @@ namespace Surface_mesh_simplification
   Equal_3 equal_points = Traits().equal_3_object();
     
   size_type lSize = (std::max)(current_num_edges,
-                               std::distance(boost::begin(edges(mSurface)),
-                                             boost::end(edges(mSurface))));
+                               static_cast<size_type>(
+                                 std::distance(boost::begin(edges(mSurface)),
+                                               boost::end(edges(mSurface)))));
 
   mInitialEdgeCount = mCurrentEdgeCount = current_num_edges;
   
