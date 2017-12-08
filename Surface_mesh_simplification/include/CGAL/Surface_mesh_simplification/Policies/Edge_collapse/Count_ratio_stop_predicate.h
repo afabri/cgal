@@ -22,15 +22,13 @@
 
 #include <CGAL/license/Surface_mesh_simplification.h>
 
-
 #include <CGAL/Surface_mesh_simplification/Detail/Common.h>
 #include <CGAL/Surface_mesh_simplification/Edge_collapse_visitor_base.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_profile.h>
 
 namespace CGAL {
 
-namespace Surface_mesh_simplification
-{
+namespace Surface_mesh_simplification {
 
 //*******************************************************************************************************************
 //                                -= stopping condition predicate =-
@@ -40,54 +38,39 @@ namespace Surface_mesh_simplification
 //
 //*******************************************************************************************************************
 
-//
 // Stops when the ratio of initial to current vertex pairs is below some value.
-//
 template<class ECM_>
 class Count_ratio_stop_predicate
 {
 public:
+  typedef ECM_                                                ECM;
+  typedef Edge_profile<ECM>                                   Profile;
 
-  typedef ECM_ ECM ;
+  typedef typename boost::graph_traits<ECM>::edge_descriptor  edge_descriptor;
+  typedef typename boost::graph_traits<ECM>::edges_size_type  size_type;
 
-  typedef Edge_profile<ECM> Profile ;
-
-  typedef typename boost::graph_traits<ECM>::edge_descriptor edge_descriptor ;
-  typedef typename boost::graph_traits<ECM>::edges_size_type size_type ;
-
-  Count_ratio_stop_predicate( double aRatio )
+  Count_ratio_stop_predicate(double aRatio)
     : mRatio(aRatio)
   {}
 
+  double ratio() const { return mRatio; }
+  void set_ratio(const double d) { mRatio = d; }
 
   template <typename F, typename Profile_>
-  bool operator()( F const&       // aCurrentCost
-                 , Profile_ const& // aEdgeProfile
-                 , size_type         aInitialCount
-                 , size_type         aCurrentCount
-                 ) const
+  bool operator()(const F& /*aCurrentCost*/,
+                  const Profile_& /*aEdgeProfile*/,
+                  size_type aInitialCount,
+                  size_type aCurrentCount) const
   {
-    return ( static_cast<double>(aCurrentCount) / static_cast<double>(aInitialCount) ) < mRatio ;
-  }
-
-  double ratio() const
-  {
-    return mRatio;
-  }
-
-  void set_ratio(const double d)
-  {
-    mRatio = d;
+    return ( static_cast<double>(aCurrentCount) / static_cast<double>(aInitialCount) ) < mRatio;
   }
 
 private:
   double mRatio;
 };
 
-} // namespace Surface_mesh_simplification
+} // end namespace Surface_mesh_simplification
 
-} //namespace CGAL
+} // end namespace CGAL
 
-#endif // CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_COUNT_RATIO_STOP_PREDICATE_H //
-// EOF //
-
+#endif // CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_COUNT_RATIO_STOP_PREDICATE_H

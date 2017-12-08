@@ -16,6 +16,7 @@ void naive_all_triangles(Mesh::Halfedge_index h, Mesh& m, std::set<Mesh::Face_in
     if (!is_border(hh, m))
       triangles.insert(face(hh,m));
   }
+
   BOOST_FOREACH(Mesh::Halfedge_index hh, CGAL::halfedges_around_target(h, m))
   {
     if (!is_border(hh, m))
@@ -34,8 +35,8 @@ void naive_link_vertices(Mesh::Halfedge_index h, Mesh& m,
       link_vertices.insert(target(h, m));
     }
   }
-  link_vertices.erase( source(h, m) );
-  link_vertices.erase( target(h, m) );
+  link_vertices.erase(source(h, m));
+  link_vertices.erase(target(h, m));
 }
 
 struct A{};
@@ -107,12 +108,12 @@ void test(const char* fname)
 
 int main(int argc, char** argv)
 {
-  for (int i=1; i<argc; ++i)
+  for(int i=1; i<argc; ++i)
   {
     std::cout << "Testing " << argv[i] << "\n";
     test(argv[i]);
   }
-  if (argc==1)
+  if(argc == 1)
   {
     std::cout << "No file provided, nothing tested\n";
   }

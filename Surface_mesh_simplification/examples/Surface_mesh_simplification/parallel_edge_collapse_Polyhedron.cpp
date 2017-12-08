@@ -41,7 +41,6 @@ int main(int argc, char** argv )
   t.start();
 
   Surface_mesh sm;
-
   std::ifstream in((argc>1) ? argv[1] : "data/elephant.ply", std::ios_base::binary);
 
   std::vector<Point_3> points;
@@ -89,18 +88,19 @@ int main(int argc, char** argv )
   SMS::LindstromTurk_cost<Surface_mesh> cost;
   SMS::Count_ratio_stop_predicate<Surface_mesh> stop(ratio);
 
-  if(ncc > 1) {
+  if(ncc > 1)
+  {
     SMS::parallel_edge_collapse(sm, stop, ccpmap, ncc,
                                 CGAL::parameters::get_placement(placement)
                                   .edge_is_constrained_map(ecpmap)
-                                  .get_cost(cost)
-                                );
-  } else {
+                                  .get_cost(cost));
+  }
+  else
+  {
     SMS::edge_collapse(sm, stop,
                        CGAL::parameters::get_placement(placement)
                          .edge_is_constrained_map(ecpmap)
-                         .get_cost(cost)
-                       );
+                         .get_cost(cost));
   }
 
   std::cerr << "\nSimplify in " << t.time() << " sec.\n"

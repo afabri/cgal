@@ -42,7 +42,6 @@ class Parallel_stop_predicate_visitor
   : public VisitorBase
 {
 public:
-
   typedef typename VisitorBase::size_type size_type;
 
   Parallel_stop_predicate_visitor(const VisitorBase& base)
@@ -73,8 +72,8 @@ public:
   }
 };
 
-} // namespace Surface_mesh_simplification
+} // end namespace Surface_mesh_simplification
 
-} // namespace CGAL
+} // end namespace CGAL
 
 #endif // CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_PARALLEL_STOP_PREDICATE_VISITOR_H

@@ -28,7 +28,7 @@ namespace PMP = CGAL::Polygon_mesh_processing;
 
 // Usage: ./parallel_edge_collapse input_mesh.ply keep_ratio (default:0.25) number_of_tasks (default: 8)
 
-int main(int argc, char** argv )
+int main(int argc, char** argv)
 {
   typedef boost::graph_traits<Surface_mesh>::edge_descriptor edge_descriptor;
   typedef boost::graph_traits<Surface_mesh>::face_descriptor face_descriptor;
@@ -74,15 +74,15 @@ int main(int argc, char** argv )
   {
     SMS::parallel_edge_collapse(sm, stop, fpmap, partition_size,
                                 CGAL::parameters::get_placement(placement)
-                                  .edge_is_constrained_map(ecmap)
-                                  .get_cost(cost)
-                                );
-  } else {
+                                                 .edge_is_constrained_map(ecmap)
+                                                 .get_cost(cost));
+  }
+  else
+  {
     SMS::edge_collapse(sm, stop,
                        CGAL::parameters::get_placement(placement)
-                         .edge_is_constrained_map(ecmap)
-                         .get_cost(cost)
-                       );
+                                        .edge_is_constrained_map(ecmap)
+                                        .get_cost(cost));
   }
 
   sm.collect_garbage();

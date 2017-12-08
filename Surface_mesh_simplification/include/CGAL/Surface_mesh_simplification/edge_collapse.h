@@ -18,10 +18,9 @@
 // Author(s)     : Fernando Cacciola <fernando.cacciola@geometryfactory.com>
 //
 #ifndef CGAL_SURFACE_MESH_SIMPLIFICATION_EDGE_COLLAPSE_H
-#define CGAL_SURFACE_MESH_SIMPLIFICATION_EDGE_COLLAPSE_H 1
+#define CGAL_SURFACE_MESH_SIMPLIFICATION_EDGE_COLLAPSE_H
 
 #include <CGAL/license/Surface_mesh_simplification.h>
-
 
 #include <CGAL/boost/graph/properties.h>
 #include <CGAL/boost/graph/named_function_params.h>
@@ -39,149 +38,107 @@
 
 namespace CGAL {
 
-namespace Surface_mesh_simplification
-{
+namespace Surface_mesh_simplification {
 
-template<class ECM
-        ,class ShouldStop
-        ,class ConcurrencyTag
-        ,class VertexIndexMap
-        ,class VertexPointMap
-        ,class EdgeIndexMap
-        ,class EdgeIsConstrainedMap
-        ,class GetCost
-        ,class GetPlacement
-        ,class Visitor
-        >
-int edge_collapse ( ECM&                       aSurface
-                  , ShouldStop           const& aShould_stop
-                  , ConcurrencyTag aConcurrency_tag
-                  , CGAL_MUTEX* removal_mutex
+template<class ECM,
+         class ShouldStop,
+         class ConcurrencyTag,
+         class VertexIndexMap,
+         class VertexPointMap,
+         class EdgeIndexMap,
+         class EdgeIsConstrainedMap,
+         class GetCost,
+         class GetPlacement,
+         class Visitor>
+int edge_collapse(ECM& aSurface,
+                  const ShouldStop& aShould_stop,
+                  ConcurrencyTag aConcurrency_tag,
+                  CGAL_MUTEX* removal_mutex,
+
                   // optional mesh information policies
-                    , std::size_t current_num_edges
-                  , VertexIndexMap       const& aVertex_index_map     // defaults to get(vertex_index,aSurface)
-                  , VertexPointMap       const& aVertex_point_map     // defaults to get(vertex_point,aSurface)
-                  , EdgeIndexMap         const& aEdge_index_map       // defaults to get(edge_index,aSurface)
-                  , EdgeIsConstrainedMap const& aEdge_is_constrained_map   // defaults to No_constrained_edge_map<ECM>()
+                  std::size_t current_num_edges,
+                  const VertexIndexMap& aVertex_index_map, // defaults to get(vertex_index,aSurface)
+                  const VertexPointMap& aVertex_point_map, // defaults to get(vertex_point,aSurface)
+                  const EdgeIndexMap& aEdge_index_map, // defaults to get(edge_index,aSurface)
+                  const EdgeIsConstrainedMap& aEdge_is_constrained_map, // defaults to No_constrained_edge_map<ECM>()
 
                   // optional strategy policies - defaults to LindstomTurk
-                  , GetCost              const& aGet_cost
-                  , GetPlacement         const& aGet_placement
-
-                  , Visitor                     aVisitor
-                    );
+                  const GetCost& aGet_cost,
+                  const GetPlacement& aGet_placement,
+                  Visitor aVisitor);
 
 
+template<class ECM,
+         class ShouldStop,
+         class VertexIndexMap,
+         class VertexPointMap,
+         class EdgeIndexMap,
+         class EdgeIsConstrainedMap,
+         class GetCost,
+         class GetPlacement,
+         class Visitor>
+int edge_collapse(ECM& aSurface,
+                  const ShouldStop& aShould_stop,
+                  Sequential_tag,
+                  CGAL_MUTEX* removal_mutex,
 
-template<class ECM
-        ,class ShouldStop
-        ,class VertexIndexMap
-        ,class VertexPointMap
-        ,class EdgeIndexMap
-        ,class EdgeIsConstrainedMap
-        ,class GetCost
-        ,class GetPlacement
-        ,class Visitor
-        >
-int edge_collapse ( ECM&                       aSurface
-                  , ShouldStop           const& aShould_stop
-                  , Sequential_tag
-                  , CGAL_MUTEX* removal_mutex
                   // optional mesh information policies
-                  , std::size_t current_num_edges
-                  , VertexIndexMap       const& aVertex_index_map     // defaults to get(vertex_index,aSurface)
-                  , VertexPointMap       const& aVertex_point_map     // defaults to get(vertex_point,aSurface)
-                  , EdgeIndexMap         const& aEdge_index_map       // defaults to get(edge_index,aSurface)
-                  , EdgeIsConstrainedMap const& aEdge_is_constrained_map   // defaults to No_constrained_edge_map<ECM>()
+                  std::size_t current_num_edges,
+                  const VertexIndexMap& aVertex_index_map, // defaults to get(vertex_index, aSurface)
+                  const VertexPointMap& aVertex_point_map, // defaults to get(vertex_point, aSurface)
+                  const EdgeIndexMap& aEdge_index_map, // defaults to get(edge_index, aSurface)
+                  const EdgeIsConstrainedMap& aEdge_is_constrained_map, // defaults to No_constrained_edge_map<ECM>()
 
                   // optional strategy policies - defaults to LindstomTurk
-                  , GetCost              const& aGet_cost
-                  , GetPlacement         const& aGet_placement
-
-                  , Visitor                     aVisitor
-                    )
+                  const GetCost& aGet_cost,
+                  const GetPlacement& aGet_placement,
+                  Visitor aVisitor)
 {
-  typedef EdgeCollapse< ECM
-                      , ShouldStop
-                      , VertexIndexMap
-                      , VertexPointMap
-                      , EdgeIndexMap
-                      , EdgeIsConstrainedMap
-                      , GetCost
-                      , GetPlacement
-                      , Visitor
-                      , Edge_profile<ECM,VertexPointMap>
-                      >
-                      Algorithm;
+  typedef EdgeCollapse<ECM, ShouldStop, VertexIndexMap, VertexPointMap, EdgeIndexMap,
+                       EdgeIsConstrainedMap, GetCost, GetPlacement, Visitor,
+                       Edge_profile<ECM, VertexPointMap> >           Algorithm;
 
-  Algorithm algorithm( aSurface
-                     , current_num_edges
-                     , aShould_stop
-                     , aVertex_index_map
-                     , aVertex_point_map
-                     , aEdge_index_map
-                     , aEdge_is_constrained_map
-                     , aGet_cost
-                     , aGet_placement
-                     , aVisitor
-                     ) ;
+  Algorithm algorithm(aSurface, current_num_edges, aShould_stop, aVertex_index_map,
+                      aVertex_point_map, aEdge_index_map, aEdge_is_constrained_map,
+                      aGet_cost, aGet_placement, aVisitor);
 
   return algorithm.run(removal_mutex);
 }
 
 
-template<class ECM
-        ,class ShouldStop
-        ,class VertexIndexMap
-        ,class VertexPointMap
-        ,class EdgeIndexMap
-        ,class EdgeIsConstrainedMap
-        ,class GetCost
-        ,class GetPlacement
-        ,class Visitor
-        >
-int edge_collapse ( ECM&                       aSurface
-                  , ShouldStop           const& aShould_stop
-                  , Parallel_tag
-                  , CGAL_MUTEX* removal_mutex
+template<class ECM,
+         class ShouldStop,
+         class VertexIndexMap,
+         class VertexPointMap,
+         class EdgeIndexMap,
+         class EdgeIsConstrainedMap,
+         class GetCost,
+         class GetPlacement,
+         class Visitor>
+int edge_collapse(ECM& aSurface,
+                  const ShouldStop& aShould_stop,
+                  Parallel_tag,
+                  CGAL_MUTEX* removal_mutex,
+
                   // optional mesh information policies
-                  , std::size_t current_num_edges
-                  , VertexIndexMap       const& aVertex_index_map     // defaults to get(vertex_index,aSurface)
-                  , VertexPointMap       const& aVertex_point_map     // defaults to get(vertex_point,aSurface)
-                  , EdgeIndexMap         const& aEdge_index_map       // defaults to get(edge_index,aSurface)
-                  , EdgeIsConstrainedMap const& aEdge_is_constrained_map   // defaults to No_constrained_edge_map<ECM>()
+                  std::size_t current_num_edges,
+                  const VertexIndexMap& aVertex_index_map, // defaults to get(vertex_index,aSurface)
+                  const VertexPointMap& aVertex_point_map, // defaults to get(vertex_point,aSurface)
+                  const EdgeIndexMap& aEdge_index_map, // defaults to get(edge_index,aSurface)
+                  const EdgeIsConstrainedMap& aEdge_is_constrained_map, // defaults to No_constrained_edge_map<ECM>()
 
                   // optional strategy policies - defaults to LindstomTurk
-                  , GetCost              const& aGet_cost
-                  , GetPlacement         const& aGet_placement
-
-                  , Visitor                     aVisitor
-                    )
+                  const GetCost& aGet_cost,
+                  const GetPlacement& aGet_placement,
+                  Visitor aVisitor)
 {
-  typedef EdgeCollapse< ECM
-                      , ShouldStop
-                      , VertexIndexMap
-                      , VertexPointMap
-                      , EdgeIndexMap
-                      , EdgeIsConstrainedMap
-                      , GetCost
-                      , GetPlacement
-                      , Visitor
-                      , CG_Edge_profile<Edge_profile<ECM,VertexPointMap> >
-                      >
-                      Algorithm;
+  typedef EdgeCollapse<ECM, ShouldStop, VertexIndexMap, VertexPointMap, EdgeIndexMap,
+                       EdgeIsConstrainedMap, GetCost, GetPlacement, Visitor,
+                       CG_Edge_profile<Edge_profile<ECM, VertexPointMap> > > Algorithm;
 
-  Algorithm algorithm( aSurface
-                     , current_num_edges
-                     , aShould_stop
-                     , aVertex_index_map
-                     , aVertex_point_map
-                     , aEdge_index_map
-                     , aEdge_is_constrained_map
-                     , aGet_cost
-                     , aGet_placement
-                     , aVisitor
-                     ) ;
+  Algorithm algorithm(aSurface, current_num_edges, aShould_stop, aVertex_index_map,
+                      aVertex_point_map, aEdge_index_map, aEdge_is_constrained_map,
+                      aGet_cost, aGet_placement, aVisitor);
 
   return algorithm.run(removal_mutex);
 }
@@ -191,180 +148,163 @@ struct Dummy_visitor
 {
   typedef typename boost::graph_traits<G>::edges_size_type   size_type;
 
-  template<class ECM>                                 void OnStarted( ECM& ) const {}
+  template<class ECM>                                 void OnStarted(ECM&) const {}
   template<class ECM, class Stop, class Size_type>    void OnParallelPassFinished(ECM&, Stop&, Size_type, Size_type) const {}
-  template<class ECM>                                 void OnFinished ( ECM& ) const {}
-  template<class Profile>                             void OnStopConditionReached( Profile const& ) const {}
-  template<class Profile, class OFT>                  void OnCollected( Profile const&, OFT const& ) const {}
-  template<class Profile, class OFT, class Size_type> void OnSelected( Profile const&, OFT const&, Size_type, Size_type ) const {}
-  template<class Profile, class OPoint>               void OnCollapsing(Profile const&, OPoint const& ) const {}
-  template<class Profile, class VH>                   void OnCollapsed( Profile const&, VH ) const {}
-  template<class Profile>                             void OnNonCollapsable(Profile const& ) const {}
-} ;
+  template<class ECM>                                 void OnFinished(ECM&) const {}
+  template<class Profile>                             void OnStopConditionReached(const Profile&) const {}
+  template<class Profile, class OFT>                  void OnCollected(const Profile&, const OFT&) const {}
+  template<class Profile, class OFT, class Size_type> void OnSelected(const Profile&, const OFT&, Size_type, Size_type) const {}
+  template<class Profile, class OPoint>               void OnCollapsing(const Profile&, const OPoint&) const {}
+  template<class Profile, class VH>                   void OnCollapsed(const Profile&, VH) const {}
+  template<class Profile>                             void OnNonCollapsable(const Profile&) const {}
+};
 
 template<class ECM, class ShouldStop, class NamedParameters>
-int edge_collapse ( ECM& aSurface
-                    , ShouldStop const& aShould_stop
-                    , Sequential_tag
-                    , CGAL_MUTEX* removal_mutex
-                    , NamedParameters const& aParams
-                               )
+int edge_collapse(ECM& aSurface,
+                  const ShouldStop& aShould_stop,
+                  Sequential_tag,
+                  CGAL_MUTEX* removal_mutex,
+                  const NamedParameters& aParams)
 {
-  using boost::choose_param ;
-  using boost::choose_const_pmap ;
-  using boost::get_param ;
+  using boost::choose_param;
+  using boost::choose_const_pmap;
+  using boost::get_param;
 
-  LindstromTurk_params lPolicyParams ;
+  LindstromTurk_params lPolicyParams;
 
-  internal_np::graph_visitor_t vis = internal_np::graph_visitor_t() ;
-   return edge_collapse(aSurface
-                      ,aShould_stop
-                      , Sequential_tag()
-                      , removal_mutex
-                      ,choose_param     (get_param(aParams,internal_np::current_num_edges), num_edges(aSurface))
-                      ,choose_const_pmap(get_param(aParams,internal_np::vertex_index),aSurface,boost::vertex_index)
-                      ,choose_pmap(get_param(aParams,internal_np::vertex_point),aSurface,boost::vertex_point)
-                      ,choose_const_pmap(get_param(aParams,internal_np::halfedge_index),aSurface,boost::halfedge_index)
-                       ,choose_param     (get_param(aParams,internal_np::edge_is_constrained),No_constrained_edge_map<ECM>())
-                       ,choose_param     (get_param(aParams,internal_np::get_cost_policy), LindstromTurk_cost<ECM>())
-                       ,choose_param     (get_param(aParams,internal_np::get_placement_policy), LindstromTurk_placement<ECM>())
-                        ,choose_param     (get_param(aParams,vis), Dummy_visitor<ECM>())
-                      );
+  internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
+   return edge_collapse(aSurface, aShould_stop, Sequential_tag(), removal_mutex,
+                        choose_param(get_param(aParams, internal_np::current_num_edges), num_edges(aSurface)),
+                        choose_const_pmap(get_param(aParams, internal_np::vertex_index), aSurface, boost::vertex_index),
+                        choose_pmap(get_param(aParams, internal_np::vertex_point), aSurface, boost::vertex_point),
+                        choose_const_pmap(get_param(aParams, internal_np::halfedge_index), aSurface, boost::halfedge_index),
+                        choose_param(get_param(aParams, internal_np::edge_is_constrained), No_constrained_edge_map<ECM>()),
+                        choose_param(get_param(aParams, internal_np::get_cost_policy), LindstromTurk_cost<ECM>()),
+                        choose_param(get_param(aParams, internal_np::get_placement_policy), LindstromTurk_placement<ECM>()),
+                        choose_param(get_param(aParams, vis), Dummy_visitor<ECM>()));
 }
 
 
-
 template<class ECM, class ShouldStop, class NamedParameters>
-int edge_collapse ( ECM& aSurface
-                    , ShouldStop const& aShould_stop
-                    , Parallel_tag
-                    , CGAL_MUTEX* removal_mutex
-                    , NamedParameters const& aParams
-                               )
+int edge_collapse(ECM& aSurface,
+                  const ShouldStop& aShould_stop,
+                  Parallel_tag,
+                  CGAL_MUTEX* removal_mutex,
+                  const NamedParameters& aParams)
 {
-  using boost::choose_param ;
-  using boost::choose_const_pmap ;
-  using boost::get_param ;
+  using boost::choose_param;
+  using boost::choose_const_pmap;
+  using boost::get_param;
 
-  LindstromTurk_params lPolicyParams ;
+  LindstromTurk_params lPolicyParams;
 
-  internal_np::graph_visitor_t vis = internal_np::graph_visitor_t() ;
-   return edge_collapse(aSurface
-                      ,aShould_stop
-                      , Parallel_tag()
-                      , removal_mutex
-                      ,choose_param     (get_param(aParams,internal_np::current_num_edges), num_edges(aSurface))
-                      ,choose_const_pmap(get_param(aParams,internal_np::vertex_index),aSurface,boost::vertex_index)
-                      ,choose_pmap(get_param(aParams,internal_np::vertex_point),aSurface,boost::vertex_point)
-                      ,choose_const_pmap(get_param(aParams,internal_np::halfedge_index),aSurface,boost::halfedge_index)
-                       ,choose_param     (get_param(aParams,internal_np::edge_is_constrained),No_constrained_edge_map<ECM>())
-                       ,choose_param     (get_param(aParams,internal_np::get_cost_policy), LindstromTurk_cost<ECM>())
-                       ,choose_param     (get_param(aParams,internal_np::get_placement_policy), LindstromTurk_placement<ECM>())
-                        ,choose_param     (get_param(aParams,vis), Dummy_visitor<ECM>())
-                      );
+  internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
+   return edge_collapse(aSurface, aShould_stop, Parallel_tag(), removal_mutex,
+                        choose_param(get_param(aParams, internal_np::current_num_edges), num_edges(aSurface)),
+                        choose_const_pmap(get_param(aParams, internal_np::vertex_index), aSurface, boost::vertex_index),
+                        choose_pmap(get_param(aParams, internal_np::vertex_point), aSurface, boost::vertex_point),
+                        choose_const_pmap(get_param(aParams, internal_np::halfedge_index), aSurface, boost::halfedge_index),
+                        choose_param(get_param(aParams, internal_np::edge_is_constrained), No_constrained_edge_map<ECM>()),
+                        choose_param(get_param(aParams, internal_np::get_cost_policy), LindstromTurk_cost<ECM>()),
+                        choose_param(get_param(aParams, internal_np::get_placement_policy), LindstromTurk_placement<ECM>()),
+                        choose_param(get_param(aParams, vis), Dummy_visitor<ECM>()));
 }
 
 template<class ECM, class ShouldStop, class NamedParameters>
-int edge_collapse ( ECM& aSurface
-                  , ShouldStop const& aShould_stop
-                  , Sequential_tag tag
-                  , NamedParameters const& aParams
-                  )
+int edge_collapse(ECM& aSurface,
+                  const ShouldStop& aShould_stop,
+                  Sequential_tag tag,
+                  const NamedParameters& aParams)
 {
   return edge_collapse(aSurface, aShould_stop, tag, NULL, aParams);
 }
 
 template<class ECM, class ShouldStop, class NamedParameters>
-int edge_collapse ( ECM& aSurface
-                  , ShouldStop const& aShould_stop
-                  , NamedParameters const& aParams
-                  )
+int edge_collapse(ECM& aSurface,
+                  const ShouldStop& aShould_stop,
+                  const NamedParameters& aParams)
 {
   return edge_collapse(aSurface, aShould_stop, Sequential_tag(), NULL, aParams);
 }
 
 template<class ECM, class ShouldStop, class FacePartionMap, class NamedParameters>
-int parallel_edge_collapse ( ECM& aSurface
-                             , ShouldStop const& aShould_stop
-                             , FacePartionMap fpm
-                             , int partition_size
-                             , NamedParameters const& aParams )
+int parallel_edge_collapse(ECM& aSurface,
+                           const ShouldStop& aShould_stop,
+                           FacePartionMap fpm,
+                           int partition_size,
+                           const NamedParameters& aParams)
 {
-  using boost::choose_param ;
-  using boost::get_param ;
+  using boost::choose_param;
+  using boost::get_param;
 
 #ifndef CGAL_LINKED_WITH_TBB
-  if(partition_size > 1){
+  if(partition_size > 1)
+  {
     partition_size = 1; // so let's do it sequentially
     std::cerr << "Not linked with TBB, so we perform the sequential algorithm" << std::endl;
   }
 #endif
-  if(partition_size == 1){
+  if(partition_size == 1)
+  {
     return edge_collapse(aSurface, aShould_stop, Sequential_tag(), NULL, aParams);
-  } else {
+  }
+  else
+  {
 #ifdef CGAL_LINKED_WITH_TBB
-    internal_np::graph_visitor_t vis = internal_np::graph_visitor_t() ;
-    return parallel_edge_collapse(aSurface
-                                  ,fpm // ,choose_param(get_param(aParams,internal_np::face_partition), Zero_face_partition_map<ECM>())
-                                  ,choose_param(get_param(aParams,internal_np::edge_is_constrained),No_constrained_edge_map<ECM>())
-                                  ,choose_param(get_param(aParams,internal_np::get_placement_policy), LindstromTurk_placement<ECM>())
-                                  ,aShould_stop
-                                  ,choose_param(get_param(aParams,internal_np::get_cost_policy), LindstromTurk_cost<ECM>())
-                                  ,partition_size // ,choose_param(get_param(aParams,internal_np::partition_size),1)
-                                  ,choose_param(get_param(aParams,vis), Dummy_visitor<ECM>())
-                                  );
-
+    internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
+    return parallel_edge_collapse(aSurface,
+                                  fpm, // choose_param(get_param(aParams,internal_np::face_partition), Zero_face_partition_map<ECM>()),
+                                  choose_param(get_param(aParams, internal_np::edge_is_constrained), No_constrained_edge_map<ECM>()),
+                                  choose_param(get_param(aParams, internal_np::get_placement_policy), LindstromTurk_placement<ECM>()),
+                                  aShould_stop,
+                                  choose_param(get_param(aParams, internal_np::get_cost_policy), LindstromTurk_cost<ECM>()),
+                                  partition_size, // choose_param(get_param(aParams, internal_np::partition_size),1),
+                                  choose_param(get_param(aParams,vis), Dummy_visitor<ECM>()));
 #endif
   }
 }
 
 
-
-
 template<class ECM, class ShouldStop, class GT, class NamedParameters>
-int edge_collapse ( ECM& aSurface
-                  , ShouldStop const& aShould_stop
-                  , NamedParameters const& aParams
-                  )
+int edge_collapse(ECM& aSurface,
+                  const ShouldStop& aShould_stop,
+                  const NamedParameters& aParams)
 {
-  using boost::choose_param ;
-  using boost::choose_const_pmap ;
-  using boost::get_param ;
+  using boost::choose_param;
+  using boost::choose_const_pmap;
+  using boost::get_param;
 
-  LindstromTurk_params lPolicyParams ;
+  LindstromTurk_params lPolicyParams;
 
-  internal_np::graph_visitor_t vis = internal_np::graph_visitor_t() ;
+  internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
 
-  return edge_collapse(aSurface
-                      ,aShould_stop
-                      ,choose_param     (get_param(aParams,internal_np::current_num_edges), num_edges(aSurface))
-                      ,choose_const_pmap(get_param(aParams,internal_np::vertex_index),aSurface,boost::vertex_index)
-                      ,choose_const_pmap(get_param(aParams,internal_np::vertex_point),aSurface,boost::vertex_point)
-                      ,choose_const_pmap(get_param(aParams,internal_np::halfedge_index),aSurface,boost::halfedge_index)
-                      ,choose_param     (get_param(aParams,internal_np::edge_is_constrained),No_constrained_edge_map<ECM>())
-                      ,choose_param     (get_param(aParams,internal_np::get_cost_policy), LindstromTurk_cost<ECM>())
-                      ,choose_param     (get_param(aParams,internal_np::get_placement_policy), LindstromTurk_placement<ECM>())
-                       ,choose_param     (get_param(aParams,vis), Dummy_visitor<ECM>())
-                      );
-
+  return edge_collapse(aSurface, aShould_stop,
+                       choose_param(get_param(aParams, internal_np::current_num_edges), num_edges(aSurface)),
+                       choose_const_pmap(get_param(aParams, internal_np::vertex_index), aSurface, boost::vertex_index),
+                       choose_const_pmap(get_param(aParams, internal_np::vertex_point), aSurface, boost::vertex_point),
+                       choose_const_pmap(get_param(aParams, internal_np::halfedge_index), aSurface, boost::halfedge_index),
+                       choose_param(get_param(aParams, internal_np::edge_is_constrained), No_constrained_edge_map<ECM>()),
+                       choose_param(get_param(aParams, internal_np::get_cost_policy), LindstromTurk_cost<ECM>()),
+                       choose_param(get_param(aParams, internal_np::get_placement_policy), LindstromTurk_placement<ECM>()),
+                       choose_param(get_param(aParams, vis), Dummy_visitor<ECM>()));
 }
 
 
 template<class ECM, class ShouldStop>
-int edge_collapse ( ECM& aSurface, ShouldStop const& aShould_stop )
+int edge_collapse(ECM& aSurface, const ShouldStop& aShould_stop)
 {
-  return edge_collapse(aSurface,aShould_stop, CGAL::parameters::halfedge_index_map(get(boost::halfedge_index,aSurface)));
+  return edge_collapse(aSurface, aShould_stop, CGAL::parameters::halfedge_index_map(get(boost::halfedge_index, aSurface)));
 }
 
-  template<class ECM, class ShouldStop, class GT>
-  int edge_collapse ( ECM& aSurface, ShouldStop const& aShould_stop)
+template<class ECM, class ShouldStop, class GT>
+int edge_collapse(ECM& aSurface, const ShouldStop& aShould_stop)
 {
-  return edge_collapse(aSurface,aShould_stop, CGAL::parameters::halfedge_index_map(get(boost::halfedge_index,aSurface)));
+  return edge_collapse(aSurface, aShould_stop, CGAL::parameters::halfedge_index_map(get(boost::halfedge_index, aSurface)));
 }
 
-} // namespace Surface_mesh_simplification
+} // end namespace Surface_mesh_simplification
 
-} //namespace CGAL
+} // end namespace CGAL
 
 #endif // CGAL_SURFACE_MESH_SIMPLIFICATION_EDGE_COLLAPSE_H //
 // EOF //
