@@ -29,11 +29,11 @@ namespace CGAL {
 
 namespace Surface_mesh_simplification {
 
-template<class ECM_>
+template<class TriangleMesh_>
 class Midpoint_placement
 {
 public:
-  typedef ECM_ ECM;
+  typedef TriangleMesh_                              TriangleMesh;
 
   Midpoint_placement() {}
 

@@ -31,14 +31,15 @@ namespace CGAL {
 
 namespace Surface_mesh_simplification {
 
-template<class ECM_,
-         class VertexPointMap_ = typename boost::property_map<ECM_, CGAL::vertex_point_t>::type>
+template<class TriangleMesh_,
+         class VertexPointMap_ = typename boost::property_map<TriangleMesh_,
+                                                              CGAL::vertex_point_t>::type>
 class Edge_profile
 {
 public:
-  typedef ECM_                                                        ECM;
+  typedef TriangleMesh_                                               TriangleMesh;
   typedef VertexPointMap_                                             VertexPointMap;
-  typedef boost::graph_traits<ECM>                                    GraphTraits;
+  typedef boost::graph_traits<TriangleMesh>                           GraphTraits;
 
   typedef typename GraphTraits::vertex_descriptor                     vertex_descriptor;
   typedef typename GraphTraits::face_descriptor                       face_descriptor;
@@ -47,7 +48,7 @@ public:
   typedef std::vector<vertex_descriptor>                              vertex_descriptor_vector;
   typedef std::vector<halfedge_descriptor>                            halfedge_descriptor_vector;
 
-  //typedef typename boost::property_map<ECM, CGAL::vertex_point_t>::type Vertex_point_pmap;
+  //typedef typename boost::property_map<TriangleMesh, CGAL::vertex_point_t>::type Vertex_point_pmap;
   typedef typename boost::property_traits<VertexPointMap>::value_type Point;
   typedef typename Kernel_traits<Point>::Kernel                       Kernel;
   typedef typename Kernel::FT                                         FT;
@@ -74,7 +75,7 @@ public:
 public:
   template<class VertexIdxMap, class EdgeIdxMap>
   Edge_profile(const halfedge_descriptor& aV0V1,
-               ECM& aSurface,
+               TriangleMesh& aSurface,
                const VertexIdxMap& aVertex_index_map,
                const VertexPointMap& aVertex_point_map,
                const EdgeIdxMap& aEdge_index_map,
@@ -117,9 +118,9 @@ public:
   const halfedge_descriptor_vector& border_edges() const {
     return mBorderEdges;
   }
-  ECM& surface() const { return *mSurface; }
-  ECM& surface_mesh() const { return *mSurface; }
 
+  TriangleMesh& surface() const { return *mSurface; }
+  TriangleMesh& surface_mesh() const { return *mSurface; }
   VertexPointMap vertex_point_map() const { return mvpm; }
 
 public :
@@ -137,7 +138,7 @@ private:
 
   bool is_border(halfedge_descriptor e) const
   {
-    return face(e,*mSurface) == boost::graph_traits<ECM>::null_face();
+    return face(e,*mSurface) == boost::graph_traits<TriangleMesh>::null_face();
   }
 
   void extract_borders();
@@ -169,7 +170,7 @@ private:
   halfedge_descriptor_vector mBorderEdges;
   Triangle_vector mTriangles;
 
-  ECM* mSurface;
+  TriangleMesh* mSurface;
   VertexPointMap mvpm;
 };
 
@@ -180,12 +181,12 @@ class CG_Edge_profile // used so that the placement and cost get the input mesh 
 {
 public:
   typedef typename EP::halfedge_descriptor              halfedge_descriptor;
-  typedef typename EP::ECM::G                           ECM;
+  typedef typename EP::TriangleMesh::G                  TriangleMesh;
   typedef typename EP::VertexPointMap                   VertexPointMap;
 
   template<class VertexIdxMap, class EdgeIdxMap>
   CG_Edge_profile(const halfedge_descriptor& aV0V1,
-                  typename EP::ECM& aSurface,
+                  typename EP::TriangleMesh& aSurface,
                   const VertexIdxMap& aVertex_index_map,
                   const VertexPointMap& aVertex_point_map,
                   const EdgeIdxMap& aEdge_index_map,
@@ -193,8 +194,8 @@ public:
     : EP(aV0V1, aSurface, aVertex_index_map, aVertex_point_map, aEdge_index_map, has_border)
   {}
 
-  ECM& surface_mesh() const { return EP::surface_mesh().g; }
-  ECM& surface() const { return EP::surface_mesh().g; }
+  TriangleMesh& surface_mesh() const { return EP::surface_mesh().g; }
+  TriangleMesh& surface() const { return EP::surface_mesh().g; }
 };
 
 } // end namespace Surface_mesh_simplification

@@ -30,7 +30,7 @@ template<class Placement>
 class Bounded_normal_change_placement
 {
 public:
-  typedef typename Placement::ECM ECM;
+  typedef typename Placement::TriangleMesh TriangleMesh;
 
 public:
   Bounded_normal_change_placement(const Placement& placement = Placement())

@@ -29,26 +29,27 @@ namespace CGAL {
 
 namespace Surface_mesh_simplification {
 
-template<class ECM_>
+template<class TriangleMesh_>
 struct Edge_collapse_visitor_base
 {
-  typedef ECM_                                                           ECM;
-  typedef Edge_profile<ECM>                                              Profile;
-  typedef boost::graph_traits<ECM>                                       GraphTraits;
+  typedef TriangleMesh_                                                  TriangleMesh;
+  typedef Edge_profile<TriangleMesh>                                     Profile;
+  typedef boost::graph_traits<TriangleMesh>                              GraphTraits;
 
   typedef typename GraphTraits::edges_size_type                          size_type;
   typedef typename GraphTraits::vertex_descriptor                        vertex_descriptor;
-  typedef typename boost::property_map<ECM, CGAL::vertex_point_t>::type  Vertex_point_pmap;
+  typedef typename boost::property_map<TriangleMesh,
+                                       CGAL::vertex_point_t>::type       Vertex_point_pmap;
   typedef typename boost::property_traits<Vertex_point_pmap>::value_type Point;
   typedef typename Kernel_traits<Point>::Kernel                          Kernel;
   typedef typename Kernel::FT                                            FT;
 
-  void OnStarted(ECM&) {}
+  void OnStarted(TriangleMesh&) {}
 
   template <typename StopPredicate>
-  void OnParallelPassFinished(ECM&, StopPredicate&, size_type /* initial */ , size_type /* current */) {}
+  void OnParallelPassFinished(TriangleMesh&, StopPredicate&, size_type /* initial */ , size_type /* current */) {}
 
-  void OnFinished (ECM&) {}
+  void OnFinished(TriangleMesh&) {}
   void OnStopConditionReached(const Profile&) {}
   void OnCollected(const Profile&, const boost::optional<FT>&) {}
   void OnSelected(const Profile&, const boost::optional<FT>&, size_type /* initial */, size_type /* current */) {}

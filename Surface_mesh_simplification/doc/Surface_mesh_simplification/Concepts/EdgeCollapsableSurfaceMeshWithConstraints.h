@@ -11,9 +11,9 @@ simplification algorithm.
 
 \cgalHeading{Valid Expressions}
 
-Let `v0v1` be an edge of the triangulated surface mesh `ecm` and
+Let `v0v1` be an edge of the triangulated surface mesh `tm` and
 `v0` and `v1` being the source and target vertices of that edge.
-The surface mesh simplification algorithm requires the call to the function `halfedge_collapse(v0v1,ecm)`
+The surface mesh simplification algorithm requires the call to the function `halfedge_collapse(v0v1, tm)`
 to be valid and to return the vertex not removed after collapsing
 the undirected edge `(v0v1,v1v0)`.
 
@@ -23,7 +23,7 @@ edges, that is `en = next_edge(e, surface_mesh)`, `ep = prev_edge(e,surface_mesh
 `eno = opposite_edge(en, surface_mesh)` and `epo = opposite_edge(ep,surface_mesh)`.
 
 Then, after the collapse of `(v0v1,v1v0)` the invariants described in the concept `EdgeCollapsableSurfaceMesh` hold
-if `ep` is not constrained. Otherwise, it is `en` that is removed from `ecm`.
+if `ep` is not constrained. Otherwise, it is `en` that is removed from `tm`.
 
 \image html collapse_constraints.png
 \image latex collapse_constraints.png

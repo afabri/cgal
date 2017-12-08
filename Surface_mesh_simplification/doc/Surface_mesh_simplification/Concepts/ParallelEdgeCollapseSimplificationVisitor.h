@@ -21,7 +21,7 @@ public:
   /*!
   Called after the parallel pass of the algorithm has finished and before the sequential pass starts.
   */
-  void OnParallelPassFinished(ECM& surface_mesh,
+  void OnParallelPassFinished(TriangleMesh& surface_mesh,
                               Stop_predicate& pred,
                               size_type initial_num_edges,
                               size_type num_current_edges );

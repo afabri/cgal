@@ -26,11 +26,11 @@ namespace CGAL {
 
 namespace Surface_mesh_simplification {
 
-template<class ECM, class VertexPointMap>
+template<class TriangleMesh, class VertexPointMap>
 template<class VertexIdxMap, class EdgeIdxMap>
-Edge_profile<ECM,VertexPointMap>::
+Edge_profile<TriangleMesh, VertexPointMap>::
 Edge_profile(const halfedge_descriptor& aV0V1,
-             ECM& aSurface,
+             TriangleMesh& aSurface,
              const VertexIdxMap& /*aVertex_index_map*/,
              const VertexPointMap& aVertex_point_map,
              const EdgeIdxMap& /*aEdge_index_map*/,
@@ -94,9 +94,9 @@ Edge_profile(const halfedge_descriptor& aV0V1,
 }
 
 
-template<class ECM, class VertexPointMap>
+template<class TriangleMesh, class VertexPointMap>
 void
-Edge_profile<ECM,VertexPointMap>::
+Edge_profile<TriangleMesh, VertexPointMap>::
 extract_borders()
 {
   halfedge_descriptor e = mV0V1;
@@ -135,9 +135,9 @@ extract_borders()
 
 // Extract all triangles (its normals) and vertices (the link) around the collapsing edge p_q
 //
-template<class ECM, class VertexPointMap>
+template<class TriangleMesh, class VertexPointMap>
 void
-Edge_profile<ECM,VertexPointMap>::
+Edge_profile<TriangleMesh, VertexPointMap>::
 extract_triangles_and_link()
 {
 #ifdef CGAL_SMS_EDGE_PROFILE_ALWAYS_NEED_UNIQUE_VERTEX_IN_LINK

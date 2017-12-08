@@ -38,14 +38,14 @@ namespace Surface_mesh_simplification {
 //*******************************************************************************************************************
 
 // Stops when the number of edges left falls below a given number.
-template<class ECM_>
+template<class TriangleMesh_>
 class Count_stop_predicate
 {
 public:
-  typedef ECM_                                               ECM;
-//  typedef Edge_profile<ECM>                                  Profile;
-  typedef typename boost::graph_traits<ECM>::edges_size_type size_type;
-//  typedef typename Kernel::FT                                FT;
+  typedef TriangleMesh_                                                 TriangleMesh;
+//  typedef Edge_profile<TriangleMesh>                                  Profile;
+  typedef typename boost::graph_traits<TriangleMesh>::edges_size_type   size_type;
+//  typedef typename Kernel::FT                                         FT;
 
 public:
   Count_stop_predicate( std::size_t aThres ) : mThres(aThres) {}

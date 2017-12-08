@@ -12,12 +12,12 @@ The callbacks <I>are not virtual</I> because this is not a dynamically polymorph
 and the derived visitor will never be used polymorphically at runtime (is perfectly fine to override
 and hide a non-virtual method in the context of the static polymorphism used in the simplification algorithm).
 
-\tparam ECM is the type of surface mesh being simplified, and must be a model of the `EdgeCollapsableSurfaceMesh` concept.
+\tparam TriangleMesh is the type of surface mesh being simplified, and must be a model of the `EdgeCollapsableSurfaceMesh` concept.
 
 \cgalModels `EdgeCollapseSimplificationVisitor`
 
 */
-template< typename ECM >
+template< typename TriangleMesh >
 struct Edge_collapse_visitor_base {
 
 /// @}

@@ -35,7 +35,7 @@ namespace Surface_mesh_simplification {
 //
 // Implementation of the vertex-pair collapse triangulated surface mesh simplification algorithm
 //
-template<class ECM_,
+template<class TriangleMesh_,
          class ShouldStop_,
          class VertexIndexMap_,
          class VertexPointMap_,
@@ -48,43 +48,43 @@ template<class ECM_,
 class EdgeCollapse
 {
 public:
-  typedef ECM_                                         ECM;
-  typedef ShouldStop_                                  ShouldStop;
-  typedef VertexIndexMap_                              VertexIndexMap;
-  typedef VertexPointMap_                              VertexPointMap;
-  typedef EdgeIndexMap_                                EdgeIndexMap;
-  typedef EdgeIsConstrainedMap_                        EdgeIsConstrainedMap;
-  typedef GetCost_                                     GetCost;
-  typedef GetPlacement_                                GetPlacement;
-  typedef VisitorT_                                    VisitorT;
+  typedef TriangleMesh_                                          TriangleMesh;
+  typedef ShouldStop_                                            ShouldStop;
+  typedef VertexIndexMap_                                        VertexIndexMap;
+  typedef VertexPointMap_                                        VertexPointMap;
+  typedef EdgeIndexMap_                                          EdgeIndexMap;
+  typedef EdgeIsConstrainedMap_                                  EdgeIsConstrainedMap;
+  typedef GetCost_                                               GetCost;
+  typedef GetPlacement_                                          GetPlacement;
+  typedef VisitorT_                                              VisitorT;
 
-  typedef EdgeCollapse                                 Self;
-  typedef Profile_                                     Profile;
+  typedef EdgeCollapse                                           Self;
+  typedef Profile_                                               Profile;
 
-  typedef boost::graph_traits<ECM>                     GraphTraits;
-  typedef boost::graph_traits<const ECM>               ConstGraphTraits;
+  typedef boost::graph_traits<TriangleMesh>                      GraphTraits;
+  typedef boost::graph_traits<const TriangleMesh>                ConstGraphTraits;
 
-  typedef typename GraphTraits::vertex_descriptor      vertex_descriptor;
-  typedef typename GraphTraits::vertex_iterator        vertex_iterator;
-  typedef typename GraphTraits::halfedge_descriptor    halfedge_descriptor;
-  typedef typename GraphTraits::halfedge_iterator      halfedge_iterator;
-  typedef CGAL::Halfedge_around_source_iterator<ECM>   out_edge_iterator;
-  typedef CGAL::Halfedge_around_target_iterator<ECM>   in_edge_iterator;
-  typedef typename GraphTraits::traversal_category     traversal_category;
-  typedef typename GraphTraits::edges_size_type        size_type;
+  typedef typename GraphTraits::vertex_descriptor                vertex_descriptor;
+  typedef typename GraphTraits::vertex_iterator                  vertex_iterator;
+  typedef typename GraphTraits::halfedge_descriptor              halfedge_descriptor;
+  typedef typename GraphTraits::halfedge_iterator                halfedge_iterator;
+  typedef CGAL::Halfedge_around_source_iterator<TriangleMesh>    out_edge_iterator;
+  typedef CGAL::Halfedge_around_target_iterator<TriangleMesh>    in_edge_iterator;
+  typedef typename GraphTraits::traversal_category               traversal_category;
+  typedef typename GraphTraits::edges_size_type                  size_type;
 
-  typedef typename GraphTraits::edge_iterator          edge_iterator;
-  typedef VertexPointMap                               Vertex_point_pmap;
+  typedef typename GraphTraits::edge_iterator                    edge_iterator;
+  typedef VertexPointMap                                         Vertex_point_pmap;
   typedef typename boost::property_traits<Vertex_point_pmap>::value_type Point;
-  typedef typename Kernel_traits<Point>::Kernel        Traits;
+  typedef typename Kernel_traits<Point>::Kernel                  Traits;
 
-  typedef typename Traits::Equal_3                     Equal_3;
+  typedef typename Traits::Equal_3                               Equal_3;
 
-  typedef typename Traits::FT                          FT;
-  typedef typename Traits::Vector_3                    Vector;
+  typedef typename Traits::FT                                    FT;
+  typedef typename Traits::Vector_3                              Vector;
 
-  typedef optional<FT>                                 Cost_type;
-  typedef optional<Point>                              Placement_type;
+  typedef optional<FT>                                          Cost_type;
+  typedef optional<Point>                                       Placement_type;
 
   struct Compare_id
   {
@@ -160,7 +160,7 @@ public:
   typedef boost::scoped_array<Edge_data>            Edge_data_array;
 
 public:
-  EdgeCollapse(ECM& aSurface,
+  EdgeCollapse(TriangleMesh& aSurface,
                std::size_t current_num_edges,
                const ShouldStop& aShouldStop,
                const VertexIndexMap& aVertex_index_map,
@@ -199,7 +199,7 @@ private:
     return is_primary_edge(aEdge) ? aEdge : opposite(aEdge, mSurface);
   }
 
-  bool is_border(const halfedge_descriptor& aEdge) const { return face(aEdge,mSurface) == boost::graph_traits<ECM>::null_face(); }
+  bool is_border(const halfedge_descriptor& aEdge) const { return face(aEdge,mSurface) == boost::graph_traits<TriangleMesh>::null_face(); }
 
   bool is_constrained(const vertex_descriptor& aVertex) const;
   bool is_constrained(const halfedge_descriptor& aEdge) const
@@ -342,9 +342,9 @@ private:
     return CGAL::Euler::collapse_edge(edge(pq, mSurface), mSurface, aEdge_is_constrained_map, removal_mutex);
   }
 
-  template<class ECM>
+  template<class TriangleMesh>
   vertex_descriptor halfedge_collapse_bk_compatibility(const halfedge_descriptor& pq,
-                                                       No_constrained_edge_map<ECM> aEdge_is_constrained_map,
+                                                       No_constrained_edge_map<TriangleMesh> aEdge_is_constrained_map,
                                                        CGAL_MUTEX* removal_mutex)
   {
     return CGAL::Euler::collapse_edge(edge(pq, mSurface), mSurface, aEdge_is_constrained_map, removal_mutex);
@@ -357,15 +357,15 @@ private:
     return is_constrained(aProfile.v0()) && is_constrained(aProfile.v1());
   }
 
-  template<class ECM>
-  bool is_edge_adjacent_to_a_constrained_edge(const halfedge_descriptor&, No_constrained_edge_map<ECM>)
+  template<class TriangleMesh>
+  bool is_edge_adjacent_to_a_constrained_edge(const halfedge_descriptor&, No_constrained_edge_map<TriangleMesh>)
   {
     return false;
   }
   ///
 
 private:
-  ECM&                        mSurface;
+  TriangleMesh&                        mSurface;
   size_type                   current_num_edges;
   const ShouldStop&           Should_stop;
   const VertexIndexMap&       Vertex_index_map;
@@ -384,7 +384,7 @@ private:
   size_type                   mCurrentEdgeCount;
   FT                          mcMaxDihedralAngleCos2;
 
-  CGAL_ECMS_DEBUG_CODE (unsigned mStep;)
+  CGAL_SMS_DEBUG_CODE (unsigned mStep;)
 };
 
 } // end namespace Surface_mesh_simplification

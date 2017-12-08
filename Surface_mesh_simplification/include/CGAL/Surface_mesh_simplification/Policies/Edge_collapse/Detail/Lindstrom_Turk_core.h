@@ -39,14 +39,14 @@ namespace CGAL {
 
 namespace Surface_mesh_simplification {
 
-template<class ECM_, class Profile_>
+template<class TriangleMesh_, class Profile_>
 class LindstromTurkCore
 {
 public:
-  typedef ECM_                                                           ECM;
+  typedef TriangleMesh_                                                  TriangleMesh;
   typedef Profile_                                                       Profile;
 
-  typedef boost::graph_traits<ECM>                                       GraphTraits;
+  typedef boost::graph_traits<TriangleMesh>                              GraphTraits;
 
   typedef typename GraphTraits::vertex_descriptor                        vertex_descriptor;
   typedef typename GraphTraits::halfedge_descriptor                      halfedge_descriptor;
@@ -56,9 +56,9 @@ public:
   typedef typename Profile::Point                                        Point;
 
   typedef typename Profile::VertexPointMap                               Vertex_point_pmap;
-  typedef typename boost::property_traits<Vertex_point_pmap>::value_type ECM_Point;
+  typedef typename boost::property_traits<Vertex_point_pmap>::value_type TriangleMesh_Point;
 
-  typedef typename Kernel_traits<ECM_Point>::Kernel                      ECM_Kernel;
+  typedef typename Kernel_traits<TriangleMesh_Point>::Kernel             TriangleMesh_Kernel;
 
   typedef typename Kernel_traits<Point>::Kernel                          Kernel;
   typedef typename Kernel::Vector_3                                      Vector;
@@ -161,7 +161,7 @@ private :
   template<class T>
   static optional<T> filter_infinity(const T& n) { return is_finite(n) ? optional<T>(n) : optional<T>(); }
 
-  ECM& surface() const { return mProfile.surface(); }
+  TriangleMesh& surface() const { return mProfile.surface(); }
 
 private:
   const Params& mParams;
@@ -178,7 +178,7 @@ private:
   Matrix mConstraints_A;
   Vector mConstraints_b;
 
-  Cartesian_converter<ECM_Kernel, Kernel> convert;
+  Cartesian_converter<TriangleMesh_Kernel, Kernel> convert;
 
   FT mSquared_cos_alpha;
   FT mSquared_sin_alpha;

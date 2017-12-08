@@ -30,14 +30,14 @@ namespace CGAL {
 namespace Surface_mesh_simplification {
 
 // Edge-length cost: the squared length of the collapsing edge
-template<class ECM>
+template<class TriangleMesh_>
 class Edge_length_cost
 {
 public:
   /*
-  typedef ECM_                                    ECM;
+  typedef TriangleMesh_                           TriangleMesh;
 
-  typedef Edge_profile<ECM>                       Profile;
+  typedef Edge_profile<TriangleMesh>              Profile;
   typedef typename Profile::Point                 Point;
   typedef typename Kernel_traits<Point>::Kernel   Kernel;
   typedef typename Kernel::FT                     FT;

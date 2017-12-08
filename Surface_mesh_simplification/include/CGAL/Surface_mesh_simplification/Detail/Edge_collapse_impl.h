@@ -28,7 +28,7 @@ namespace Surface_mesh_simplification {
 
 template<class M, class SP, class VIM, class VPM, class EIM, class ECTM, class CF, class PF, class V, class P>
 EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::
-EdgeCollapse(ECM& aSurface,
+EdgeCollapse(TriangleMesh& aSurface,
              std::size_t current_num_edges,
              const ShouldStop& aShould_stop,
              const VertexIndexMap& aVertex_index_map,
@@ -69,17 +69,17 @@ EdgeCollapse(ECM& aSurface,
     }
   }
 
-  CGAL_ECMS_TRACE(0, "EdgeCollapse of ECM with " << (num_edges(aSurface)/2) << " edges");
+  CGAL_SMS_TRACE(0, "EdgeCollapse of mesh with " << (num_edges(aSurface)/2) << " edges");
 
-  CGAL_ECMS_DEBUG_CODE(mStep = 0;)
+  CGAL_SMS_DEBUG_CODE(mStep = 0;)
 
 #ifdef CGAL_SURFACE_SIMPLIFICATION_ENABLE_TRACE
   vertex_iterator vb, ve;
   for(boost::tie(vb,ve) = vertices(mSurface); vb != ve; ++vb)
-    CGAL_ECMS_TRACE(1, vertex_to_string(*vb));
+    CGAL_SMS_TRACE(1, vertex_to_string(*vb));
 
   for(boost::tie(eb,ee) = halfedges(mSurface); eb!=ee; ++eb)
-    CGAL_ECMS_TRACE(1, edge_to_string(*eb));
+    CGAL_SMS_TRACE(1, edge_to_string(*eb));
 #endif
 }
 
@@ -97,7 +97,7 @@ run(CGAL_MUTEX* removal_mutex)
 
   // Then proceed to collapse each edge in turn
   loop(removal_mutex);
-  CGAL_ECMS_TRACE(0, "Finished: " << (mInitialEdgeCount - mCurrentEdgeCount) << " edges removed.");
+  CGAL_SMS_TRACE(0, "Finished: " << (mInitialEdgeCount - mCurrentEdgeCount) << " edges removed.");
 
   Visitor.OnFinished(mSurface);
 
@@ -110,7 +110,7 @@ void
 EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::
 collect(CGAL_MUTEX* removal_mutex)
 {
-  CGAL_ECMS_TRACE(0, "Collecting edges...");
+  CGAL_SMS_TRACE(0, "Collecting edges...");
 
   // Loop over all the _undirected_ edges in the surface putting them in the PQ
 
@@ -163,7 +163,7 @@ collect(CGAL_MUTEX* removal_mutex)
       CGAL_SURF_SIMPL_TEST_assertion_code(++lNotInserted);
     }
 
-    CGAL_ECMS_TRACE(2, edge_to_string(lEdge));
+    CGAL_SMS_TRACE(2, edge_to_string(lEdge));
   }
 
   CGAL_SURF_SIMPL_TEST_assertion(lInserted + lNotInserted == mInitialEdgeCount);
@@ -186,7 +186,7 @@ collect(CGAL_MUTEX* removal_mutex)
       Edge_data& lData = get_data(lEdge_to_remove);
       if(lData.is_in_PQ())
       {
-        CGAL_ECMS_TRACE(2, "Removing E" << get(Edge_index_map, lEdge_to_remove) << " from PQ");
+        CGAL_SMS_TRACE(2, "Removing E" << get(Edge_index_map, lEdge_to_remove) << " from PQ");
         remove_from_PQ(lEdge_to_remove, lData);
       }
       --mCurrentEdgeCount;
@@ -201,7 +201,7 @@ collect(CGAL_MUTEX* removal_mutex)
       Edge_data& lData = get_data(lEdge_to_remove);
       if(lData.is_in_PQ())
       {
-        CGAL_ECMS_TRACE(2, "Removing E" << get(Edge_index_map, lEdge_to_remove) << " from PQ");
+        CGAL_SMS_TRACE(2, "Removing E" << get(Edge_index_map, lEdge_to_remove) << " from PQ");
         remove_from_PQ(lEdge_to_remove, lData);
       }
       --mCurrentEdgeCount;
@@ -217,7 +217,7 @@ collect(CGAL_MUTEX* removal_mutex)
     Visitor.OnCollapsed(lProfile, rResult);
   }
 
-  CGAL_ECMS_TRACE(0, "Initial edge count: " << mInitialEdgeCount);
+  CGAL_SMS_TRACE(0, "Initial edge count: " << mInitialEdgeCount);
 }
 
 template<class M, class SP, class VIM, class VPM, class EIM, class ECTM, class CF, class PF, class V, class P>
@@ -225,7 +225,7 @@ void
 EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::
 loop(CGAL_MUTEX* removal_mutex)
 {
-  CGAL_ECMS_TRACE(0, "Collapsing edges...");
+  CGAL_SMS_TRACE(0, "Collapsing edges...");
 
   CGAL_SURF_SIMPL_TEST_assertion_code(size_type lLoop_watchdog = 0);
   CGAL_SURF_SIMPL_TEST_assertion_code(size_type lNonCollapsableCount = 0);
@@ -239,7 +239,7 @@ loop(CGAL_MUTEX* removal_mutex)
   {
     CGAL_SURF_SIMPL_TEST_assertion(lLoop_watchdog ++ < mInitialEdgeCount);
 
-    CGAL_ECMS_TRACE(1, "Popped " << edge_to_string(*lEdge));
+    CGAL_SMS_TRACE(1, "Popped " << edge_to_string(*lEdge));
     CGAL_assertion(!is_constrained(*lEdge));
 
     const Profile& lProfile = create_profile(*lEdge);
@@ -253,7 +253,7 @@ loop(CGAL_MUTEX* removal_mutex)
       {
         Visitor.OnStopConditionReached(lProfile);
 
-        CGAL_ECMS_TRACE(0, "Stop condition reached with InitialEdgeCount=" << mInitialEdgeCount
+        CGAL_SMS_TRACE(0, "Stop condition reached with InitialEdgeCount=" << mInitialEdgeCount
                         << " CurrentEdgeCount=" << mCurrentEdgeCount
                         << " Current Edge: " << edge_to_string(*lEdge));
         break;
@@ -289,12 +289,12 @@ loop(CGAL_MUTEX* removal_mutex)
 
         Visitor.OnNonCollapsable(lProfile);
 
-        CGAL_ECMS_TRACE(1, edge_to_string(*lEdge) << " NOT Collapsable" );
+        CGAL_SMS_TRACE(1, edge_to_string(*lEdge) << " NOT Collapsable" );
       }
     }
     else
     {
-      CGAL_ECMS_TRACE(1, edge_to_string(*lEdge) << " uncomputable cost." );
+      CGAL_SMS_TRACE(1, edge_to_string(*lEdge) << " uncomputable cost." );
     }
   }
 }
@@ -363,24 +363,24 @@ is_collapse_topologically_valid(const Profile& aProfile)
 {
   bool rR = true;
 
-  CGAL_ECMS_TRACE(3, "Testing topological collapsabilty of p_q=V"
+  CGAL_SMS_TRACE(3, "Testing topological collapsabilty of p_q=V"
                      << get(Vertex_index_map, aProfile.v0())
                      << "(%" << degree(aProfile.v0(), mSurface) << ")"
                      << "->V" << get(Vertex_index_map, aProfile.v1())
                      << "(%" << degree(aProfile.v1(), mSurface) << ")");
 
-  CGAL_ECMS_TRACE(4, "is p_q border:" << aProfile.is_v0_v1_a_border());
-  CGAL_ECMS_TRACE(4, "is q_q border:" << aProfile.is_v1_v0_a_border());
+  CGAL_SMS_TRACE(4, "is p_q border:" << aProfile.is_v0_v1_a_border());
+  CGAL_SMS_TRACE(4, "is q_q border:" << aProfile.is_v1_v0_a_border());
 
   out_edge_iterator eb1, ee1;
   out_edge_iterator eb2, ee2;
 
-  CGAL_ECMS_TRACE(4, "  t=V"
+  CGAL_SMS_TRACE(4, "  t=V"
                   << (aProfile.left_face_exists() ? get(Vertex_index_map, aProfile.vL()) : -1)
                   << "(%"
                   << (aProfile.left_face_exists() ? degree(aProfile.vL(), mSurface) : 0)
                   << ")");
-  CGAL_ECMS_TRACE(4, "  b=V"
+  CGAL_SMS_TRACE(4, "  b=V"
                   << (aProfile.right_face_exists() ? get(Vertex_index_map, aProfile.vR()) : -1)
                   << "(%"
                   << (aProfile.right_face_exists() ? degree(aProfile.vR(), mSurface) :0)
@@ -468,13 +468,13 @@ is_collapse_topologically_valid(const Profile& aProfile)
 
           if(!lIsFace)
           {
-            CGAL_ECMS_TRACE(3, "  k=V" << get(Vertex_index_map,k) << " IS NOT in a face with p-q. NON-COLLAPSABLE edge.");
+            CGAL_SMS_TRACE(3, "  k=V" << get(Vertex_index_map,k) << " IS NOT in a face with p-q. NON-COLLAPSABLE edge.");
             rR = false;
             break;
           }
           else
           {
-            CGAL_ECMS_TRACE(4, "  k=V" << get(Vertex_index_map,k) << " is in a face with p-q");
+            CGAL_SMS_TRACE(4, "  k=V" << get(Vertex_index_map,k) << " is in a face with p-q");
           }
         }
       }
@@ -492,7 +492,7 @@ is_collapse_topologically_valid(const Profile& aProfile)
       if(is_open_triangle(aProfile.v0_v1()))
       {
         rR = false;
-        CGAL_ECMS_TRACE(3, "  p-q belongs to an open triangle. NON-COLLAPSABLE edge.");
+        CGAL_SMS_TRACE(3, "  p-q belongs to an open triangle. NON-COLLAPSABLE edge.");
       }
     }
     else if(aProfile.is_v1_v0_a_border())
@@ -500,7 +500,7 @@ is_collapse_topologically_valid(const Profile& aProfile)
       if(is_open_triangle(aProfile.v1_v0()))
       {
         rR = false;
-        CGAL_ECMS_TRACE(3, "  p-q belongs to an open triangle. NON-COLLAPSABLE edge.");
+        CGAL_SMS_TRACE(3, "  p-q belongs to an open triangle. NON-COLLAPSABLE edge.");
       }
     }
     else
@@ -508,7 +508,7 @@ is_collapse_topologically_valid(const Profile& aProfile)
       if(is_border(aProfile.v0()) && is_border(aProfile.v1()))
       {
         rR = false;
-        CGAL_ECMS_TRACE(3, "  both p and q are boundary vertices but p-q is not. NON-COLLAPSABLE edge.");
+        CGAL_SMS_TRACE(3, "  both p and q are boundary vertices but p-q is not. NON-COLLAPSABLE edge.");
       }
       else
       {
@@ -519,7 +519,7 @@ is_collapse_topologically_valid(const Profile& aProfile)
         if(lTetra)
         {
           rR = false;
-          CGAL_ECMS_TRACE(3,"  p-q belongs to a tetrahedron. NON-COLLAPSABLE edge.");
+          CGAL_SMS_TRACE(3,"  p-q belongs to a tetrahedron. NON-COLLAPSABLE edge.");
         }
       }
     }
@@ -550,7 +550,7 @@ is_open_triangle(const halfedge_descriptor& h1)
   if(next(h3, mSurface) == h1)
   {
     // Now check if it is open
-    CGAL_ECMS_TRACE(4, "  p-q is a border edge... checking E" << get(Edge_index_map, h2) << " and E" << get(Edge_index_map,h3));
+    CGAL_SMS_TRACE(4, "  p-q is a border edge... checking E" << get(Edge_index_map, h2) << " and E" << get(Edge_index_map,h3));
 
     rR = is_border(h2) && is_border(h3);
 
@@ -589,7 +589,7 @@ are_shared_triangles_valid(const Point& p0, const Point& p1, const Point& p2, co
 
   const double cMaxAreaRatio = 1e8;
 
-  CGAL_ECMS_TRACE(4, "    Testing validity of shared triangles:"
+  CGAL_SMS_TRACE(4, "    Testing validity of shared triangles:"
                      << "\n      p0=" << xyz_to_string(p0) << "\n      p1=" << xyz_to_string(p1) << "\n      p2=" << xyz_to_string(p2) << "\n      p3=" << xyz_to_string(p3)
                      << "\n      e01=" << xyz_to_string(e01) << "\n      e02=" << xyz_to_string(e02) << "\n      e03=" << xyz_to_string(e03)
                      << "\n      n012=" << xyz_to_string(n012) << "\n      n023=" << xyz_to_string(n023)
@@ -598,7 +598,7 @@ are_shared_triangles_valid(const Point& p0, const Point& p1, const Point& p2, co
   if(larger < cMaxAreaRatio * smaller)
   {
     FT l0123 = Traits().compute_scalar_product_3_object()(n012, n023);
-    CGAL_ECMS_TRACE(4, "\n      l0123=" << n_to_string(l0123));
+    CGAL_SMS_TRACE(4, "\n      l0123=" << n_to_string(l0123));
 
     if(CGAL_NTS is_positive(l0123))
     {
@@ -606,7 +606,7 @@ are_shared_triangles_valid(const Point& p0, const Point& p1, const Point& p2, co
     }
     else
     {
-      CGAL_ECMS_TRACE(4, "\n      lhs: " << n_to_string((l0123 * l0123) / (l012 * l023))
+      CGAL_SMS_TRACE(4, "\n      lhs: " << n_to_string((l0123 * l0123) / (l012 * l023))
                          << " <= rhs: " << mcMaxDihedralAngleCos2);
 
       if((l0123 * l0123) <= mcMaxDihedralAngleCos2 * (l012 * l023))
@@ -681,7 +681,7 @@ is_collapse_geometrically_valid(const Profile& aProfile, Placement_type k0)
 {
   bool rR = true;
 
-  CGAL_ECMS_TRACE(3, "Testing geometrical collapsabilty of v0-v1=E" << get(Edge_index_map, aProfile.v0_v1()));
+  CGAL_SMS_TRACE(3, "Testing geometrical collapsabilty of v0-v1=E" << get(Edge_index_map, aProfile.v0_v1()));
 
   if(k0)
   {
@@ -702,7 +702,7 @@ is_collapse_geometrically_valid(const Profile& aProfile, Placement_type k0)
       vertex_descriptor k2 = *l;
       vertex_descriptor k3 = *nx;
 
-      CGAL_ECMS_TRACE(4, "  Screening link vertices k1=V" << get(Vertex_index_map, k1)
+      CGAL_SMS_TRACE(4, "  Screening link vertices k1=V" << get(Vertex_index_map, k1)
                                                << " k2=V" << get(Vertex_index_map, k2)
                                                << " k3=V" << get(Vertex_index_map, k3));
 
@@ -712,11 +712,11 @@ is_collapse_geometrically_valid(const Profile& aProfile, Placement_type k0)
       // If 'k1-k2-k3' are connected there will be two adjacent triangles 'k0,k1,k2' and 'k0,k2,k3' after the collapse.
       if(handle_assigned(e12) && handle_assigned(e23))
       {
-        CGAL_ECMS_TRACE(4, "    Link triangles shared");
+        CGAL_SMS_TRACE(4, "    Link triangles shared");
 
         if(!are_shared_triangles_valid(*k0, get_point(k1), get_point(k2), get_point(k3)))
         {
-          CGAL_ECMS_TRACE(3, "    Triangles VX-V" << get(Vertex_index_map, k1)
+          CGAL_SMS_TRACE(3, "    Triangles VX-V" << get(Vertex_index_map, k1)
                                           << "-V" << get(Vertex_index_map, k2)
                                    << " and VX-V" << get(Vertex_index_map, k3)
                               << " are not geometrically valid. Collapse rejected");
@@ -732,11 +732,11 @@ is_collapse_geometrically_valid(const Profile& aProfile, Placement_type k0)
         // There is indeed a triangle shared along e12
         if(handle_assigned(k4))
         {
-          CGAL_ECMS_TRACE(4, "    Found exterior link triangle shared along E" << get(Edge_index_map,e12) << " with third vertex: V" << get(Vertex_index_map,k4));
+          CGAL_SMS_TRACE(4, "    Found exterior link triangle shared along E" << get(Edge_index_map,e12) << " with third vertex: V" << get(Vertex_index_map,k4));
 
           if(!are_shared_triangles_valid(get_point(k1), get_point(k4), get_point(k2), *k0))
           {
-            CGAL_ECMS_TRACE(3, "    Triangles V" << get(Vertex_index_map, k1)
+            CGAL_SMS_TRACE(3, "    Triangles V" << get(Vertex_index_map, k1)
                                          << "-V" << get(Vertex_index_map, k4)
                                      << " and V" << get(Vertex_index_map, k2)
                                << "-VX are not geometrically valid. Collapse rejected");
@@ -753,12 +753,12 @@ is_collapse_geometrically_valid(const Profile& aProfile, Placement_type k0)
         // There is indeed a triangle shared along e12
         if(handle_assigned(k5))
         {
-          CGAL_ECMS_TRACE(4, "    Found exterior link triangle shared along E" << get(Edge_index_map, e23)
+          CGAL_SMS_TRACE(4, "    Found exterior link triangle shared along E" << get(Edge_index_map, e23)
                              << " with third vertex: V" << get(Vertex_index_map, k5));
 
           if(!are_shared_triangles_valid(get_point(k2), get_point(k5), get_point(k3), *k0))
           {
-            CGAL_ECMS_TRACE(3, "    Triangles V" << get(Vertex_index_map, k2)
+            CGAL_SMS_TRACE(3, "    Triangles V" << get(Vertex_index_map, k2)
                                          << "-V" << get(Vertex_index_map, k5)
                                      << " and V" << get(Vertex_index_map, k3)
                                << "-VX are not geometrically valid. Collapse rejected");
@@ -778,7 +778,7 @@ EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::
 collapse(const Profile& aProfile, Placement_type aPlacement, CGAL_MUTEX* removal_mutex)
 {
 
-  CGAL_ECMS_TRACE(1, "S" << mStep << ". Collapsing " << edge_to_string(aProfile.v0_v1()));
+  CGAL_SMS_TRACE(1, "S" << mStep << ". Collapsing " << edge_to_string(aProfile.v0_v1()));
 
   vertex_descriptor rResult;
 
@@ -800,14 +800,14 @@ collapse(const Profile& aProfile, Placement_type aPlacement, CGAL_MUTEX* removal
     if(is_constrained(lV0VL)) // make sure a constrained edge will not disappear
       lV0VL = primary_edge(aProfile.v1_vL());
 
-    CGAL_ECMS_TRACE(3, "V0VL E" << get(Edge_index_map, lV0VL)
+    CGAL_SMS_TRACE(3, "V0VL E" << get(Edge_index_map, lV0VL)
                         << "(V" << get(Vertex_index_map, source(lV0VL, mSurface))
                        << "->V" << get(Vertex_index_map, target(lV0VL, mSurface)) << ")");
 
     Edge_data& lData = get_data(lV0VL);
     if(lData.is_in_PQ())
     {
-      CGAL_ECMS_TRACE(2,"Removing E" << get(Edge_index_map, lV0VL) << " from PQ");
+      CGAL_SMS_TRACE(2,"Removing E" << get(Edge_index_map, lV0VL) << " from PQ");
       remove_from_PQ(lV0VL, lData);
     }
 
@@ -821,21 +821,21 @@ collapse(const Profile& aProfile, Placement_type aPlacement, CGAL_MUTEX* removal
     if(is_constrained(lVRV1)) //make sure a constrained edge will not disappear
       lVRV1 = primary_edge(aProfile.v0_vR());
 
-    CGAL_ECMS_TRACE(3, "V1VRE" << get(Edge_index_map, lVRV1)
+    CGAL_SMS_TRACE(3, "V1VRE" << get(Edge_index_map, lVRV1)
                        << "(V" << get(Vertex_index_map, source(lVRV1, mSurface))
                       << "->V" << get(Vertex_index_map, target(lVRV1, mSurface)) << ")");
 
     Edge_data& lData = get_data(lVRV1);
     if(lData.is_in_PQ())
     {
-      CGAL_ECMS_TRACE(2, "Removing E" << get(Edge_index_map, lVRV1) << " from PQ");
+      CGAL_SMS_TRACE(2, "Removing E" << get(Edge_index_map, lVRV1) << " from PQ");
       remove_from_PQ(lVRV1, lData);
     }
     -- mCurrentEdgeCount;
     CGAL_SURF_SIMPL_TEST_assertion_code(--lResultingEdgeCount);
   }
 
-  CGAL_ECMS_TRACE(1,"Removing:\n  v0v1: E" << get(Edge_index_map, aProfile.v0_v1())
+  CGAL_SMS_TRACE(1,"Removing:\n  v0v1: E" << get(Edge_index_map, aProfile.v0_v1())
                                    << "(V" << get(Vertex_index_map, aProfile.v0())
                                   << "->V" << get(Vertex_index_map, aProfile.v1()) << ")");
 
@@ -853,17 +853,17 @@ collapse(const Profile& aProfile, Placement_type aPlacement, CGAL_MUTEX* removal
   CGAL_SURF_SIMPL_TEST_assertion(lResultingVertexCount == mSurface.size_of_vertices());
   CGAL_SURF_SIMPL_TEST_assertion(mSurface.is_valid() && mSurface.is_pure_triangle());
 
-  CGAL_ECMS_TRACE(1, "V" << get(Vertex_index_map, rResult) << " kept.");
+  CGAL_SMS_TRACE(1, "V" << get(Vertex_index_map, rResult) << " kept.");
 
 #ifdef CGAL_SURFACE_SIMPLIFICATION_ENABLE_TRACE
   out_edge_iterator eb1, ee1;
   for(boost::tie(eb1, ee1)=halfedges_around_source(rResult, mSurface); eb1!=ee1; ++eb1)
-    CGAL_ECMS_TRACE(2, edge_to_string(*eb1));
+    CGAL_SMS_TRACE(2, edge_to_string(*eb1));
 #endif
 
   if(aPlacement)
   {
-    CGAL_ECMS_TRACE(1,"New vertex point: " << xyz_to_string(*aPlacement));
+    CGAL_SMS_TRACE(1,"New vertex point: " << xyz_to_string(*aPlacement));
     put(Vertex_point_map,rResult, *aPlacement);
   }
 
@@ -871,7 +871,7 @@ collapse(const Profile& aProfile, Placement_type aPlacement, CGAL_MUTEX* removal
 
   update_neighbors(rResult);
 
-  CGAL_ECMS_DEBUG_CODE(++mStep;)
+  CGAL_SMS_DEBUG_CODE(++mStep;)
 }
 
 template<class M, class SP, class VIM, class VPM, class EIM, class ECTM, class CF, class PF, class V, class P>
@@ -879,7 +879,7 @@ void
 EdgeCollapse<M,SP,VIM,VPM,EIM,ECTM,CF,PF,V,P>::
 update_neighbors(const vertex_descriptor& aKeptV)
 {
-  CGAL_ECMS_TRACE(3,"Updating cost of neighboring edges...");
+  CGAL_SMS_TRACE(3,"Updating cost of neighboring edges...");
 
   // (A) Collect all edges to update their cost: all those around each vertex adjacent to the vertex kept
   typedef std::set<halfedge_descriptor, Compare_id> edges;
@@ -903,7 +903,7 @@ update_neighbors(const vertex_descriptor& aKeptV)
         continue;
 
       Edge_data& lData2 = get_data(lEdge2);
-      CGAL_ECMS_TRACE(4, "Inedge around V" << get(Vertex_index_map,lAdj_k) << edge_to_string(lEdge2));
+      CGAL_SMS_TRACE(4, "Inedge around V" << get(Vertex_index_map,lAdj_k) << edge_to_string(lEdge2));
 
       // Only edges still in the PQ needs to be updated, the other needs to be re-inserted
       if(lData2.is_in_PQ())
@@ -921,7 +921,7 @@ update_neighbors(const vertex_descriptor& aKeptV)
     const Profile& lProfile = create_profile(lEdge);
     lData.cost() = get_cost(lProfile);
 
-    CGAL_ECMS_TRACE(3, edge_to_string(lEdge) << " updated in the PQ");
+    CGAL_SMS_TRACE(3, edge_to_string(lEdge) << " updated in the PQ");
 
     update_in_PQ(lEdge,lData);
   }
@@ -941,7 +941,7 @@ update_neighbors(const vertex_descriptor& aKeptV)
     const Profile& lProfile = create_profile(lEdge);
     lData.cost() = get_cost(lProfile);
 
-    CGAL_ECMS_TRACE(3, edge_to_string(lEdge) << " re-inserted in the PQ");
+    CGAL_SMS_TRACE(3, edge_to_string(lEdge) << " re-inserted in the PQ");
 
     insert_in_PQ(lEdge,lData);
   }
