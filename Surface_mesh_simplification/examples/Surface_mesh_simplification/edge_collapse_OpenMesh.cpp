@@ -37,10 +37,10 @@ public:
 
   inline friend reference get(const Constrained_edge_map& em, key_type e)
   {
-    bool b = em.sm_.property(em.constraint,em.sm_.edge_handle(e.idx())); 
+    bool b = em.sm_.property(em.constraint,em.sm_.edge_handle(e.idx()));
     return b;
   }
-  
+
   inline friend void put(const Constrained_edge_map& em, key_type e, value_type b)
   {
     em.sm_.property(em.constraint,em.sm_.edge_handle(e.idx())) = b;
@@ -52,10 +52,9 @@ private:
 };
 
 
-
 namespace SMS = CGAL::Surface_mesh_simplification ;
 
-int main( int argc, char** argv ) 
+int main(int argc, char** argv)
 {
   Surface_mesh surface_mesh;
   Constrained_edge_map constraints_map(surface_mesh);
@@ -64,7 +63,8 @@ int main( int argc, char** argv )
   else
     OpenMesh::IO::read_mesh(surface_mesh, "cube.off");
 
-  if (!CGAL::is_triangle_mesh(surface_mesh)){
+  if (!CGAL::is_triangle_mesh(surface_mesh))
+  {
     std::cerr << "Input geometry is not triangulated." << std::endl;
     return EXIT_FAILURE;
   }
@@ -72,30 +72,29 @@ int main( int argc, char** argv )
   // For the pupose of the example we mark 10 edges as constrained edges
   edge_iterator b,e;
   int count=0;
-  for(boost::tie(b,e) = edges(surface_mesh); b!= e; ++b){
-      put(constraints_map,*b,(count++ <100));
+  for(boost::tie(b,e) = edges(surface_mesh); b!= e; ++b)
+  {
+    put(constraints_map,*b,(count++ <100));
   }
   // This is a stop predicate (defines when the algorithm terminates).
   // In this example, the simplification stops when the number of undirected edges
   // left in the surface mesh drops below the specified number (1000)
   SMS::Count_stop_predicate<Surface_mesh> stop(0);
-     
+
   // This the actual call to the simplification algorithm.
   // The surface mesh and stop conditions are mandatory arguments.
 
-  int r = SMS::edge_collapse
-            (surface_mesh
-            ,stop
-             ,CGAL::parameters::halfedge_index_map  (get(CGAL::halfedge_index  ,surface_mesh)) 
-                               .vertex_point_map(get(boost::vertex_point, surface_mesh))
-                               .edge_is_constrained_map(constraints_map) 
-             );
-  
+  int r = SMS::edge_collapse(surface_mesh,
+                             stop,
+                             CGAL::parameters::halfedge_index_map(get(CGAL::halfedge_index, surface_mesh))
+                                              .vertex_point_map(get(boost::vertex_point, surface_mesh))
+                                              .edge_is_constrained_map(constraints_map));
+
   surface_mesh.garbage_collection();
-  std::cout << "\nFinished...\n" << r << " edges removed.\n" 
+  std::cout << "\nFinished...\n" << r << " edges removed.\n"
             << num_edges(surface_mesh) << " final edges.\n" ;
-        
-   OpenMesh::IO::write_mesh(surface_mesh, "out.off");
-  
+
+  OpenMesh::IO::write_mesh(surface_mesh, "out.off");
+
   return EXIT_SUCCESS;
 }

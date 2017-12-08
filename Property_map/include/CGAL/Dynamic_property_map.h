@@ -89,6 +89,7 @@ struct vertex_property_t
 };
 
 
+
 template <typename T>
 struct halfedge_property_t
 {

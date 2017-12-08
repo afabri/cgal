@@ -20,67 +20,65 @@
 typedef CGAL::Simple_cartesian<double> Kernel;
 typedef Kernel::Point_3 Point_3;
 
-typedef CGAL::Surface_mesh<Point_3> Surface_mesh; 
+typedef CGAL::Surface_mesh<Point_3> Surface_mesh;
 typedef boost::graph_traits<Surface_mesh>::halfedge_descriptor halfedge_descriptor;
 typedef boost::graph_traits<Surface_mesh>::edge_descriptor edge_descriptor;
 
-namespace SMS = CGAL::Surface_mesh_simplification ;
+namespace SMS = CGAL::Surface_mesh_simplification;
 
-//
 // BGL property map which indicates whether an edge is marked as non-removable
-//
-struct Border_is_constrained_edge_map{
+struct Border_is_constrained_edge_map
+{
   const Surface_mesh* sm_ptr;
-  typedef edge_descriptor key_type;
-  typedef bool value_type;
-  typedef value_type reference;
-  typedef boost::readable_property_map_tag category;
+  typedef edge_descriptor                           key_type;
+  typedef bool                                      value_type;
+  typedef value_type                                reference;
+  typedef boost::readable_property_map_tag          category;
 
   Border_is_constrained_edge_map(const Surface_mesh& sm)
     : sm_ptr(&sm)
   {}
 
   friend bool get(Border_is_constrained_edge_map m, const key_type& edge) {
-    return  CGAL::is_border(edge, *m.sm_ptr);
+    return CGAL::is_border(edge, *m.sm_ptr);
   }
 };
 
-//
 // Placement class
-//
 typedef SMS::Constrained_placement<SMS::Midpoint_placement<Surface_mesh>,
                                    Border_is_constrained_edge_map > Placement;
 
-int main( int argc, char** argv )
+int main(int argc, char** argv)
 {
-  Surface_mesh surface_mesh;
+  Surface_mesh sm;
 
-  if (argc!=2){
+  if(argc != 2) {
     std::cerr << "Usage: " << argv[0] << " input.off\n";
     return EXIT_FAILURE;
   }
 
   std::ifstream is(argv[1]);
-  if(!is){
+  if(!is) {
     std::cerr << "Filename provided is invalid\n";
     return EXIT_FAILURE;
   }
 
-  is >> surface_mesh  ;
-  if (!CGAL::is_triangle_mesh(surface_mesh)){
+  is >> sm;
+  if(!CGAL::is_triangle_mesh(sm)) {
     std::cerr << "Input geometry is not triangulated." << std::endl;
     return EXIT_FAILURE;
   }
 
-  Surface_mesh::Property_map<halfedge_descriptor,std::pair<Point_3, Point_3> > constrained_halfedges;
+  Surface_mesh::Property_map<halfedge_descriptor, std::pair<Point_3, Point_3> > constrained_halfedges;
+  constrained_halfedges = sm.add_property_map<halfedge_descriptor,std::pair<Point_3, Point_3> >("h:vertices").first;
 
-  constrained_halfedges = surface_mesh.add_property_map<halfedge_descriptor,std::pair<Point_3, Point_3> >("h:vertices").first;
-
-  std::size_t nb_border_edges=0;
-  BOOST_FOREACH(halfedge_descriptor hd, halfedges(surface_mesh)){
-    if(CGAL::is_border(hd,surface_mesh)){
-      constrained_halfedges[hd] = std::make_pair(surface_mesh.point(source(hd,surface_mesh)),
-                                                 surface_mesh.point(target(hd,surface_mesh)));
+  std::size_t nb_border_edges = 0;
+  BOOST_FOREACH(halfedge_descriptor hd, halfedges(sm))
+  {
+    if(CGAL::is_border(hd, sm))
+    {
+      constrained_halfedges[hd] = std::make_pair(sm.point(source(hd, sm)),
+                                                 sm.point(target(hd, sm)));
       ++nb_border_edges;
     }
   }
@@ -88,34 +86,33 @@ int main( int argc, char** argv )
   // Contract the surface mesh as much as possible
   SMS::Count_stop_predicate<Surface_mesh> stop(0);
 
-  Border_is_constrained_edge_map bem(surface_mesh);
-  
+  Border_is_constrained_edge_map bem(sm);
+
   // This the actual call to the simplification algorithm.
   // The surface mesh and stop conditions are mandatory arguments.
-  int r = SMS::edge_collapse
-            (surface_mesh
-            ,stop
-             ,CGAL::parameters::edge_is_constrained_map(bem)
-                               .get_placement(Placement(bem))
-            );
+  int r = SMS::edge_collapse(sm, stop,
+                             CGAL::parameters::edge_is_constrained_map(bem)
+                                              .get_placement(Placement(bem)));
 
   std::cout << "\nFinished...\n" << r << " edges removed.\n"
-            << surface_mesh.number_of_edges() << " final edges.\n" ;
+            << sm.number_of_edges() << " final edges.\n";
 
-  std::ofstream os( argc > 2 ? argv[2] : "out.off" ) ; os << surface_mesh ;
+  std::ofstream os(argc > 2 ? argv[2] : "out.off");
+  os << sm;
 
   // now check!
-  BOOST_FOREACH(halfedge_descriptor hd, halfedges(surface_mesh)){
-    if(CGAL::is_border(hd,surface_mesh)){
+  BOOST_FOREACH(halfedge_descriptor hd, halfedges(sm))
+  {
+    if(CGAL::is_border(hd, sm))
+    {
       --nb_border_edges;
-      if(constrained_halfedges[hd] != std::make_pair(surface_mesh.point(source(hd,surface_mesh)),
-                                                     surface_mesh.point(target(hd,surface_mesh)))){
-        std::cerr << "oops. send us a bug report\n";
+      if(constrained_halfedges[hd] != std::make_pair(sm.point(source(hd, sm)),
+                                                     sm.point(target(hd, sm)))) {
+        std::cerr << "Oops... Send us a bug report!\n";
       }
-
     }
   }
-  assert( nb_border_edges==0 );
+  assert(nb_border_edges == 0);
 
-  return EXIT_SUCCESS ;
+  return EXIT_SUCCESS;
 }
