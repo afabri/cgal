@@ -36,10 +36,6 @@ public:
     : m_edge_sq_length_threshold(edge_length_threshold*edge_length_threshold)
   {}
 
-  template <typename T>
-  void second_pass(T, T)
-  {}
-
   template <typename F, typename Profile>
   bool operator()(const F&,
                   const Profile& profile,
