@@ -20,13 +20,16 @@
 #include <CGAL/license/Polygon_mesh_processing.h>
 
 #include <CGAL/assertions.h>
-#include <CGAL/boost/graph/Face_filtered_graph.h>
 #include <CGAL/boost/graph/copy_face_graph.h>
+#include <CGAL/boost/graph/Face_filtered_graph.h>
+#include <CGAL/boost/graph/helpers.h>
+#include <CGAL/Polygon_mesh_processing/internal/named_function_params.h>
+#include <CGAL/Polygon_mesh_processing/internal/named_params_helper.h>
+
+#include <metis.h>
 
 #include <boost/graph/graph_traits.hpp>
 #include <boost/tuple/tuple.hpp>
-
-#include <metis.h>
 
 #include <iostream>
 #include <map>
@@ -38,21 +41,36 @@ namespace CGAL {
 
 namespace Polygon_mesh_processing {
 
+namespace internal {
+
+template <class TriangleMesh>
+struct Zero_face_partition_map
+{
+  typedef typename boost::graph_traits<TriangleMesh>::face_descriptor key_type;
+  typedef int                                                         value_type;
+  typedef value_type                                                  reference;
+  typedef boost::readable_property_map_tag                            category;
+
+  friend int get(Zero_face_partition_map, key_type) { return 0; }
+};
+
+} // end namespace internal
+
 /// Output a set of partitions
 ///
 /// \param n the number of parts
 ///
-/// \tparam PolygonMesh is a model of the face graph concept.
+/// \tparam TriangleMesh is a model of the face graph concept.
 /// \tparam FacePartitionIDPmap is is a model of `ReadablePropertyMap`
-///           with `boost::graph_traits<PolygonMesh>::%face_descriptor`
+///           with `boost::graph_traits<TriangleMesh>::%face_descriptor`
 ///           as key type and `boost::face_external_index` as value type.
 ///
-template<typename PolygonMesh, typename FacePartitionIDPmap>
-void output_partitions(const PolygonMesh& m,
+template<typename TriangleMesh, typename FacePartitionIDPmap>
+void output_partitions(const TriangleMesh& m,
                        const FacePartitionIDPmap fpmap,
                        const idx_t n)
 {
-  typedef CGAL::Face_filtered_graph<PolygonMesh>                       Filtered_graph;
+  typedef CGAL::Face_filtered_graph<TriangleMesh>         Filtered_graph;
 
   for(int i=0; i<n; ++i)
   {
@@ -62,34 +80,34 @@ void output_partitions(const PolygonMesh& m,
 
     Filtered_graph m_part(m, i, fpmap);
 
-    PolygonMesh out_mesh;
+    TriangleMesh out_mesh;
     CGAL::copy_face_graph(m_part, out_mesh);
 
     out << out_mesh;
   }
 }
 
-/// Computes a partition of the input mesh into `nparts` roughly equal parts
-///
-/// \param nparts the number of parts in the final partition
-///
-/// \tparam PolygonMesh is a model of the `FaceGraph` concept.
-/// \tparam FacePartitionIDPmap is is a model of `ReadWritePropertyMap`
-///           with `boost::graph_traits<PolygonMesh>::%face_descriptor`
-///           as key type and `boost::face_external_index` as value type.
-///           The default is `typename boost::property_map<FaceGraph, face_external_index>::%type`.
-///
-/// \pre `m` is a pure triangular surface mesh: there are no edges
-///       without at least one incident face
-template<typename PolygonMesh, typename FacePartitionIDPmap>
-void partition(const PolygonMesh& m,
-               FacePartitionIDPmap partition_id_map,
-               int nparts)
+template<typename TriangleMesh, typename NamedParameters>
+void partition(const TriangleMesh& tm, int nparts, const NamedParameters& np)
 {
-  typedef typename boost::graph_traits<PolygonMesh>::vertex_descriptor   vertex_descriptor;
+  CGAL_precondition(CGAL::is_triangle_mesh(tm));
+  CGAL_precondition(nparts > 0);
 
-  typedef typename boost::graph_traits<PolygonMesh>::halfedge_descriptor halfedge_descriptor;
-  typedef typename boost::graph_traits<PolygonMesh>::face_iterator       face_iterator;
+  typedef typename boost::graph_traits<TriangleMesh>::vertex_descriptor   vertex_descriptor;
+  typedef typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
+  typedef typename boost::graph_traits<TriangleMesh>::face_iterator       face_iterator;
+
+  using boost::get_param;
+  using boost::choose_param;
+
+  typedef typename boost::lookup_named_param_def <
+    internal_np::face_partition_t,
+    NamedParameters,
+    internal::Zero_face_partition_map<TriangleMesh> //default
+  > ::type                                               Fpmap;
+
+  Fpmap partition_id_map = choose_param(get_param(np, internal_np::face_partition),
+                                        internal::Zero_face_partition_map<TriangleMesh>());
 
   idx_t options[METIS_NOPTIONS];
   options[METIS_OPTION_CTYPE] = METIS_CTYPE_SHEM;
@@ -106,30 +124,30 @@ void partition(const PolygonMesh& m,
   options[METIS_OPTION_SEED] = 12343;
   options[METIS_OPTION_UFACTOR] = 1;
 
-  idx_t nn = static_cast<idx_t>(num_vertices(m));
-  idx_t ne = static_cast<idx_t>(num_faces(m));
+  idx_t nn = static_cast<idx_t>(num_vertices(tm));
+  idx_t ne = static_cast<idx_t>(num_faces(tm));
   idx_t d = 3; // number of nodes per element
   idx_t* eptr = new idx_t[ne + 1];
   idx_t* eind = new idx_t[d * ne];
 
   // fill the adjacency info
-  typedef typename boost::property_map<PolygonMesh,
+  typedef typename boost::property_map<TriangleMesh,
                                        boost::vertex_index_t>::const_type Indices;
-  Indices indices = get(boost::vertex_index, m);
+  Indices indices = get(boost::vertex_index, tm);
 
   face_iterator fit, fe;
-  boost::tie(fit, fe) = faces(m);
+  boost::tie(fit, fe) = faces(tm);
   for(int i=0, j=0; fit!=fe; ++fit, ++i)
   {
     eptr[i] = j;
 
-    halfedge_descriptor h = halfedge(*fit, m), done = h;
+    halfedge_descriptor h = halfedge(*fit, tm), done = h;
     do
     {
-      vertex_descriptor v = target(h, m);
+      vertex_descriptor v = target(h, tm);
       CGAL_assertion(j < d * ne);
       eind[j++] = static_cast<idx_t>(get(indices, v));
-      h = next(h, m);
+      h = next(h, tm);
     } while (h != done);
 
     CGAL_assertion(i < ne);
@@ -160,25 +178,40 @@ void partition(const PolygonMesh& m,
   std::cout << "return: " << ret << " with objval: " << objval << std::endl;
   CGAL_assertion(ret == METIS_OK);
 
-  boost::tie(fit, fe) = faces(m);
+  boost::tie(fit, fe) = faces(tm);
   for(int i=0; fit!=fe; ++fit, ++i)
     put(partition_id_map, *fit, epart[i]);
 
   //  output_partitions(m, partition_id_map, nparts);
 }
 
-template<typename PolygonMesh>
-void partition(const PolygonMesh& m, int nparts = 3)
+/// Computes a partition of the input mesh into `nparts` parts.
+///
+/// \param nparts the number of parts in the final partition
+///
+/// \tparam TriangleMesh is a model of the `FaceGraph` concept.
+/// \tparam NamedParameters a sequence of \ref namedparameters
+/// \tparam FacePartitionIDPmap is is a model of `ReadWritePropertyMap`
+///           with `boost::graph_traits<TriangleMesh>::%face_descriptor`
+///           as key type and `boost::face_external_index` as value type.
+///           The default is `typename boost::property_map<FaceGraph, face_external_index>::%type`.
+///
+/// \param tm a triangle mesh
+/// \param np optional \ref namedparameters described below
+///
+/// \pre `m` is a pure triangular surface mesh: there are no edges
+///       without at least one incident face
+template<typename TriangleMesh, typename NamedParameters>
+void partition(const TriangleMesh& tm, const NamedParameters& np)
 {
-  typedef typename boost::property_map<PolygonMesh,
-                                       boost::face_external_index_t>::type Fpmap;
-  Fpmap fpmap = get(boost::face_external_index, m);
+  using boost::get_param;
 
-  return partition(m, fpmap, nparts);
+  const int nparts = get_param(np, internal_np::number_of_partitions);
+  return partition(tm, nparts, np);
 }
 
-} //end namespace Polygon_mesh_processing
+} // end namespace Polygon_mesh_processing
 
-} //end namespace CGAL
+} // end namespace CGAL
 
 #endif // CGAL_POLYGON_MESH_PROCESSING_PARTITION_H
