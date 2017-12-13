@@ -155,6 +155,16 @@ int main()
                                          CGAL::Data_access<Point_value_map>(values));
 
 
+    
+    //Sibson interpolant: version without sqrt:
+    res =  CGAL::sibson_c1_interpolation_square(coords.begin(),
+                                                coords.end(), norm,
+                                                points[i],
+                                                CGAL::Data_access<Point_value_map>(values),
+                                                CGAL::Data_access<Point_vector_map>(gradients),
+                                                Traits());
+
+
     }
 
 

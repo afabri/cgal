@@ -52,11 +52,11 @@ struct Data_access
 
 
   template <typename T1, typename T2>
-  CGAL::cpp11::tuple<Key_type,Data_type,Data_type,bool>
+  CGAL::cpp11::tuple<Key_type,Data_type,T2,bool>
   operator()(const std::pair<T1,T2>& t)const
   {
     std::pair< Data_type, bool> oldres = operator()(t.first);
-    return CGAL::cpp11::tuple<Key_type,Data_type,Data_type,bool>(t.first, oldres.first, t.second, oldres.second);
+    return CGAL::cpp11::tuple<Key_type,Data_type,T2,bool>(t.first, oldres.first, t.second, oldres.second);
   }
 
   
@@ -209,16 +209,16 @@ sibson_c1_interpolation_square(ForwardIterator first, ForwardIterator beyond,
   Coord_type term1(0), term2(term1), term3(term1), term4(term1);
   Value_type linear_int(0),gradient_int(0);
   typename Functor::result_type frt;
-  typename GradFunctor::result_type grad;
+  //typename GradFunctor::result_type grad;
 
   for(; first!=beyond; ++first){
     frt = function_value(*first); // tuple<Point,value,bary,bool>
-    grad = function_gradient(*first);
+    auto grad = function_gradient(*first);
     CGAL_assertion(get<3>(frt));
-    if(!grad.second)
+    if(! get<3>(grad))
       //the gradient is not known
       return std::make_pair(Value_type(0), false);
-
+    
     Coord_type coeff = get<2>(frt)/norm;
     Coord_type squared_dist = traits.
       compute_squared_distance_d_object()(get<0>(frt), p);
@@ -236,9 +236,10 @@ sibson_c1_interpolation_square(ForwardIterator first, ForwardIterator beyond,
     term3 +=  coeff;
 
     linear_int += coeff * get<1>(frt);
-
-    gradient_int += (coeff/squared_dist) * (get<1>(frt) + grad.first *
+    /*
+    gradient_int += (coeff/squared_dist) * (get<1>(frt) + get<1>(grad) *
                                                            traits.construct_vector_d_object()(get<0>(frt), p));
+    */
   }
 
   term4 = term3/ term1;
