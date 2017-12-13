@@ -162,9 +162,12 @@ int main()
     
     //Coordinate_vector:
     std::vector< std::pair< Vertex_handle, Coord_type > > coords;
+    typedef CGAL::Identity<std::pair< Vertex_handle, Coord_type > > Identity;
     Coord_type norm =
-        CGAL::natural_neighbors_2(T, points[i],
-                                  std::back_inserter(coords)).second;
+        CGAL::natural_neighbor_coordinates_2(T,
+                                             points[i],
+                                             std::back_inserter(coords),
+                                             Identity()).second;
 
     std::cout << "norm = " << norm << std::endl;
     assert(norm>0);

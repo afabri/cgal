@@ -39,9 +39,7 @@ sibson_gradient_fitting(ForwardIterator first, ForwardIterator beyond,
                         const typename
                         std::iterator_traits<ForwardIterator>::
                           value_type::second_type& norm,
-                        const typename
-                        std::iterator_traits<ForwardIterator>::value_type
-                          ::first_type& p,
+                        const typename Traits::Point_d& p,
                         Functor function_value,
                         const Traits& traits)
 {

@@ -37,7 +37,7 @@ int main()
                                CGAL::Data_access<Point_value_map>(function_values),
                                Traits());
 
-  //coordiante computation
+  //coordinate computation
   K::Point_2 p(1.6,1.4);
   std::vector< std::pair< Point, Coord_type > > coords;
   Coord_type norm = CGAL::natural_neighbor_coordinates_2(T, p, std::back_inserter
