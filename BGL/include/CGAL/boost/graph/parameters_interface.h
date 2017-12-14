@@ -56,8 +56,6 @@ CGAL_add_named_parameter(number_of_points_per_edge_t, number_of_points_per_edge,
 CGAL_add_named_parameter(number_of_points_on_edges_t, number_of_points_on_edges, number_of_points_on_edges)
 CGAL_add_named_parameter(nb_points_per_area_unit_t, nb_points_per_area_unit, number_of_points_per_area_unit)
 CGAL_add_named_parameter(nb_points_per_distance_unit_t, nb_points_per_distance_unit, number_of_points_per_distance_unit)
-CGAL_add_named_parameter(face_partition_t, face_partition, face_partition_map)
-CGAL_add_named_parameter(partition_size_t, partition_size, partition_size)
 
 // List of named parameters that we use in the package 'Surface Mesh Simplification'
 CGAL_add_named_parameter(get_cost_policy_t, get_cost_policy, get_cost)
