@@ -45,45 +45,32 @@ namespace CGAL {
 
 namespace Polygon_mesh_processing {
 
-namespace internal {
-
-template <class TriangleMesh>
-struct Zero_face_partition_map
-{
-  typedef typename boost::graph_traits<TriangleMesh>::face_descriptor key_type;
-  typedef int                                                         value_type;
-  typedef value_type                                                  reference;
-  typedef boost::readable_property_map_tag                            category;
-
-  friend int get(Zero_face_partition_map, key_type) { return 0; }
-};
-
-} // end namespace internal
-
-/// Output a set of partitions
+/// Output a set of partitions.
 ///
-/// \param n the number of parts
+/// \param tm a triangle mesh
+/// \param nparts the number of parts
+/// \param fpmap the property map with the partition indices
 ///
-/// \tparam TriangleMesh is a model of the face graph concept.
+/// \tparam TriangleMesh must be a model of a `FaceListGraph`, `HalfedgeListGraph`, and \bgllink{VertexListGraph}.
 /// \tparam FacePartitionIDPmap is is a model of `ReadablePropertyMap`
 ///           with `boost::graph_traits<TriangleMesh>::%face_descriptor`
 ///           as key type and `boost::face_external_index` as value type.
 template<typename TriangleMesh, typename FacePartitionIDPmap>
-void output_partitions(const TriangleMesh& m,
-                       const FacePartitionIDPmap fpmap,
-                       const idx_t n)
+void output_partitions(const TriangleMesh& tm,
+                       const idx_t nparts,
+                       const FacePartitionIDPmap fpmap)
 {
   CGAL_precondition(CGAL::is_triangle_mesh(tm));
 
   typedef CGAL::Face_filtered_graph<TriangleMesh>         Filtered_graph;
 
-  for(int i=0; i<n; ++i)
+  for(int i=0; i<nparts; ++i)
   {
     std::ostringstream filename;
     filename << "partition_" << i << ".off" << std::ends;
     std::ofstream out(filename.str().c_str());
 
-    Filtered_graph m_part(m, i, fpmap);
+    Filtered_graph m_part(tm, i, fpmap);
 
     TriangleMesh out_mesh;
     CGAL::copy_face_graph(m_part, out_mesh);
@@ -92,11 +79,13 @@ void output_partitions(const TriangleMesh& m,
   }
 }
 
-template<typename TriangleMesh, typename NamedParameters>
-void partition(const TriangleMesh& tm, int nparts, const NamedParameters& np)
+template<typename TriangleMesh, typename FacePartitionIDPmap, typename NamedParameters>
+void partition(const TriangleMesh& tm,
+               int nparts, FacePartitionIDPmap partition_id_map,
+               const NamedParameters& np)
 {
   CGAL_precondition(CGAL::is_triangle_mesh(tm));
-  CGAL_precondition(nparts > 0);
+  CGAL_precondition_msg(nparts > 0, ("Partitioning requires a strictly positive number of parts"));
 
   typedef typename boost::graph_traits<TriangleMesh>::vertex_descriptor   vertex_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
@@ -104,15 +93,6 @@ void partition(const TriangleMesh& tm, int nparts, const NamedParameters& np)
 
   using boost::get_param;
   using boost::choose_param;
-
-  typedef typename boost::lookup_named_param_def <
-    internal_np::face_partition_t,
-    NamedParameters,
-    internal::Zero_face_partition_map<TriangleMesh> //default
-  > ::type                                               Fpmap;
-
-  Fpmap partition_id_map = choose_param(get_param(np, internal_np::face_partition),
-                                        internal::Zero_face_partition_map<TriangleMesh>());
 
   idx_t options[METIS_NOPTIONS];
   options[METIS_OPTION_CTYPE] = METIS_CTYPE_SHEM;
@@ -187,7 +167,7 @@ void partition(const TriangleMesh& tm, int nparts, const NamedParameters& np)
   for(int i=0; fit!=fe; ++fit, ++i)
     put(partition_id_map, *fit, epart[i]);
 
-  //  output_partitions(m, partition_id_map, nparts);
+  //  output_partitions(m, nparts, partition_id_map);
 }
 
 /// Computes a partition of the input mesh into `nparts` parts.
@@ -206,13 +186,11 @@ void partition(const TriangleMesh& tm, int nparts, const NamedParameters& np)
 ///
 /// \pre `m` is a pure triangular surface mesh: there are no edges
 ///       without at least one incident face
-template<typename TriangleMesh, typename NamedParameters>
-void partition(const TriangleMesh& tm, const NamedParameters& np)
+template<typename TriangleMesh, typename FacePartitionIDPmap>
+void partition(const TriangleMesh& tm,
+               const int nparts, FacePartitionIDPmap partition_id_map)
 {
-  using boost::get_param;
-
-  const int nparts = get_param(np, internal_np::number_of_partitions);
-  return partition(tm, nparts, np);
+  return partition(tm, nparts, partition_id_map, CGAL::parameters::all_default());
 }
 
 } // end namespace Polygon_mesh_processing
