@@ -85,6 +85,7 @@ int main(int argc, char** argv)
                                         .get_cost(cost));
   }
 
+  // Specific to the class Surface_mesh, to clean deleted elements
   sm.collect_garbage();
 
   std::cerr << "\nSimplify in " << t.time() << " sec.\n"

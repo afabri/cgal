@@ -8,9 +8,9 @@
 
 namespace PMP = CGAL::Polygon_mesh_processing;
 
-int main(int argc, char* argv[])
+int main(int argc, char** argv)
 {
-  typedef CGAL::Simple_cartesian<double>                           K;
+  typedef CGAL::Simple_cartesian<double>                             K;
 
   // with a polyhedron mesh
   {

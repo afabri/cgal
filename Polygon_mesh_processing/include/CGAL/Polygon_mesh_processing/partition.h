@@ -64,12 +64,13 @@ struct Zero_face_partition_map
 /// \tparam FacePartitionIDPmap is is a model of `ReadablePropertyMap`
 ///           with `boost::graph_traits<TriangleMesh>::%face_descriptor`
 ///           as key type and `boost::face_external_index` as value type.
-///
 template<typename TriangleMesh, typename FacePartitionIDPmap>
 void output_partitions(const TriangleMesh& m,
                        const FacePartitionIDPmap fpmap,
                        const idx_t n)
 {
+  CGAL_precondition(CGAL::is_triangle_mesh(tm));
+
   typedef CGAL::Face_filtered_graph<TriangleMesh>         Filtered_graph;
 
   for(int i=0; i<n; ++i)

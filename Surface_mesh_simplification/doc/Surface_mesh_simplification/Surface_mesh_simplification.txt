@@ -58,8 +58,8 @@ to set the background for the discussion of the parameters to the algorithm.
 There are two slightly different "edge" collapse operations. One is known as
 <I>edge-collapse</I> while the other is known as <I>halfedge-collapse</I>.
 Given an edge `e` joining vertices `w` and `v`, the edge-collapse operation replaces
-`e`,`w` and `v` for a new vertex `r`, while the halfedge-collapse operation
-pulls `v` into `w`, dissapearing `e` and leaving `w` in place.
+`e`, `w` and `v` for a new vertex `r`, while the halfedge-collapse operation
+pulls `v` into `w`, eliminating `e` and leaving `w` in place.
 In both cases the operation removes the edge `e` along with the 2 triangles
 adjacent to it.
 
@@ -84,7 +84,7 @@ Global error tracking methods produce highly accurate simplifications but take u
 of additional space. Cost-driven methods, like the one in this package, produce slightly
 less accurate simplifications but take up much less additional space, even none in some cases.
 
-The cost-driven method implemented in this package is mainly based on \cgalCite{cgal:lt-fmeps-98}, \cgalCite{cgal:lt-ems-99}, with contributions from \cgalCite{hddms-mo-93}, \cgalCite{gh-ssqem-97}
+The cost-driven method implemented in this package is mainly based on \cgalCite{cgal:lt-fmeps-98}, \cgalCite{cgal:lt-ems-99}, with contributions from \cgalCite{hddms-mo-93}, \cgalCite{gh-ssqem-97},
 and \cgalCite{degn-tpec-98}.
 
 The algorithm proceeds in two stages. In the first stage, called <I>collection stage</I>,
@@ -180,7 +180,7 @@ simplifying a surface mesh of 1 million edges (a normal size) requires 1 million
 of additional storage. Thus, to minimize the amount of additional memory required to
 simplify a surface mesh only the cost is attached to each edge and nothing else.
 
-But this is a tradeoff: the cost of a collapse is a function of the placement
+But this is a trade-off: the cost of a collapse is a function of the placement
 (the new position chosen for the remaining vertex) so before `GetCost`
 is called for each and every edge, `GetPlacement` must also be called to obtain
 the placement parameter to the cost function.
@@ -251,22 +251,20 @@ surface_mesh                  : the surface_mesh to simplify
 stop_predicate                : policy indicating when the simplification must finish
 vertex_index_map(vimap)       : property-map giving each vertex a unique integer index
 edge_index_map(eimap)         : property-map giving each edge a unique integer index
-edge_is_constrained_map(ecmap): property-map specifying whether an edge is a constained edge or not
+edge_is_constrained_map(ecmap): property-map specifying whether an edge is a constrained edge or not
 get_cost(cf)                  : function object computing the cost of a collapse
 get_placement(pf)             : function object computing the placement for the remaining vertex
 visitor(vis)                  : function object tracking the simplification process
 */
 
-int r = edge_collapse(surface_mesh
-                     ,stop_predicate
-                     ,vertex_index_map(vimap)
-                     .edge_index_map(eimap)
-                     .edge_is_constrained_map(ecmap)
-                     .get_cost(cf)
-                     .get_placement(pf)
-                     .visitor(vis)
-                     );
-
+int r = edge_collapse(surface_mesh,
+                      stop_predicate,
+                      vertex_index_map(vimap)
+                      .edge_index_map(eimap)
+                      .edge_is_constrained_map(ecmap)
+                      .get_cost(cf)
+                      .get_placement(pf)
+                      .visitor(vis));
 \endcode
 
 \section Surface_mesh_simplificationParallel Parallel Surface Mesh Simplification
@@ -277,13 +275,11 @@ in a parallel task with the edges between the components getting constrained.
 In a sequential pass the faces close to these constrained edges get simplified
 with the edges being no longer constrained.
 
-
 \cgalFigureBegin{SMS-parallel-simplification, parallel_simplification.png}
 <B>Left:</B> The partitioned mesh with the constrained edges incident to the boundaries of the partition.
 <B>Middle:</B> The mesh after the simplification of the different components.
 <B>Right:</B> The final mesh.
 \cgalFigureEnd
-
 
 The gain in performance as well as the overall quality of the simplified mesh
 will depend on the quality of the partition, and on the input mesh. Take for
@@ -334,18 +330,16 @@ get_placement(pf)             : function object computing the placement for the 
 visitor(vis)                  : function object tracking the simplification process
 */
 
-int r = parallel_edge_collapse(surface_mesh
-                               ,stop_predicate
-                               ,face_partition_map
-                               ,partition_size
-                               ,vertex_index_map(vimap)
+int r = parallel_edge_collapse(surface_mesh,
+                               stop_predicate,
+                               face_partition_map,
+                               number_of_partitions,
+                               vertex_index_map(vimap)
                                .edge_index_map(eimap)
                                .edge_is_constrained_map(ecmap)
                                .get_cost(cf)
                                .get_placement(pf)
-                               .visitor(vis)
-                               );
-
+                               .visitor(vis));
 \endcode
 
 
@@ -382,14 +376,14 @@ What is particular in this example is the property map that allows to associate
 \subsection Surface_mesh_simplificationExamplewithedges Example with Edges Marked as Non-Removable
 
 The following example shows how to use the optional named parameter `edge_is_constrained_map` to prevent
-edges from being removed. Edges marked as contrained are guaranteed to be in the final surface mesh. However,
+edges from being removed. Edges marked as constrained are guaranteed to be in the final surface mesh. However,
 the vertices of the constrained edges may change and the placement may change the points.
 The wrapper `CGAL::Surface_mesh_simplification::Constrained_placement` guarantees that these points are not changed.
 
 \cgalExample{Surface_mesh_simplification/edge_collapse_constrained_border_polyhedron.cpp}
 
 
-\subsection Surface_mesh_simplificationExamplewithBoundedNormal Example with Bounded Changement of Face Normals
+\subsection Surface_mesh_simplificationExamplewithBoundedNormal Example with Bounded Change of Face Normals
 
 The surface mesh simplification does not guarantee that the resulting surface
 has no self intersections. Even the rather trivial mesh shown in \cgalFigureRef{SMS-selfintersection}

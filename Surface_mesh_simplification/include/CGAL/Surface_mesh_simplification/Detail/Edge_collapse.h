@@ -365,7 +365,7 @@ private:
   ///
 
 private:
-  TriangleMesh&                        mSurface;
+  TriangleMesh&               mSurface;
   size_type                   current_num_edges;
   const ShouldStop&           Should_stop;
   const VertexIndexMap&       Vertex_index_map;

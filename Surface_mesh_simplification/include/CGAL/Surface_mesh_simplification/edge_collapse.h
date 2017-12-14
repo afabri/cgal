@@ -306,6 +306,4 @@ int edge_collapse(TriangleMesh& aSurface, const ShouldStop& aShould_stop)
 
 } // end namespace CGAL
 
-#endif // CGAL_SURFACE_MESH_SIMPLIFICATION_EDGE_COLLAPSE_H //
-// EOF //
-
+#endif // CGAL_SURFACE_MESH_SIMPLIFICATION_EDGE_COLLAPSE_H
