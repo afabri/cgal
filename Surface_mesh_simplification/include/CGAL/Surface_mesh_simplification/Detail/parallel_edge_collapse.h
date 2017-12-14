@@ -425,6 +425,9 @@ int parallel_edge_collapse(TriangleMesh& sm,
   typedef typename CGAL::internal::dynamic_property_map<TriangleMesh, Edge_property_tag >::type ECMap;
   ECMap ecmap = CGAL::internal::add_property(Edge_property_tag("e:internal::constrained"), sm);
 
+  typedef typename boost::property_map<TriangleMesh, boost::vertex_index_t>::const_type Indices;
+  Indices indices = get(boost::vertex_index, sm);
+
   std::vector<edge_descriptor> partition_edges;
 
   std::ofstream out;
@@ -451,10 +454,9 @@ int parallel_edge_collapse(TriangleMesh& sm,
       put(ecmap, ed, true);
       put(himap, hd, 0);
       put(himap, hop, 1);
+
       if(dump)
-      {
-        //out << int(source(ed,sm)) << " " << int(target(ed,sm)) << " ";
-      }
+        out << get(indices, (source(ed, sm))) << " " << get(indices, (target(ed, sm))) << " ";
     }
   }
 
