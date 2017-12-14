@@ -179,7 +179,6 @@ int main()
                                              std::back_inserter(coords),
                                              Identity()).second;
 
-    std::cout << "norm = " << norm << std::endl;
     assert(norm>0);
 
     Func fct;

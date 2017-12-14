@@ -125,6 +125,7 @@ int main()
                                         CGAL::Data_access<Point_vector_map>
                                         (gradients),
                                         Traits());
+
     if(res.second){
       error = CGAL_NTS abs(res.first - exact_value);
       f_total += error;
@@ -154,6 +155,7 @@ int main()
                                                 CGAL::Data_access<Point_vector_map>
                                                 (gradients),
                                                 Traits());
+
     //error statistics
     if(res.second){
       error = CGAL_NTS abs(res.first - exact_value);
@@ -170,7 +172,6 @@ int main()
                                          CGAL::Data_access<Point_vector_map>
                                          (gradients),
                                          Traits());
-
     //error statistics
     if(res.second){
       error = CGAL_NTS abs(res.first - exact_value);
