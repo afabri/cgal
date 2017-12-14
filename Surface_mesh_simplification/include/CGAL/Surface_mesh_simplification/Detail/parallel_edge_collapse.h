@@ -286,16 +286,17 @@ struct Simplify
 
     if(dump)
     {
+      typedef typename boost::property_map<TriangleMesh, boost::vertex_index_t>::const_type Indices;
+      Indices indices = get(boost::vertex_index, sm);
+
       std::ostringstream filename;
       filename << "constraints-" << ccindex << ".selection.txt" << std::ends;
       std::ofstream out(filename.str().c_str());
-      out << std::endl << std::endl;
+      out << std::endl << std::endl; // edges are on the third line of a CGAL selection file
       BOOST_FOREACH(edge_descriptor ed, V)
       {
         if(get(iscmap,ed))
-        {
-          //out << int(source(ed,sm)) << " " << int(target(ed,sm)) << " ";
-        }
+          out << get(indices, source(ed, sm)) << " " << get(indices, target(ed,sm)) << " ";
       }
       out << std::endl;
     }
@@ -416,7 +417,7 @@ int parallel_edge_collapse(TriangleMesh& sm,
       put(himap, hop, 1);
 
       if(dump)
-        out << get(indices, (source(ed, sm))) << " " << get(indices, (target(ed, sm))) << " ";
+        out << get(indices, source(ed, sm)) << " " << get(indices, target(ed, sm)) << " ";
     }
   }
 
