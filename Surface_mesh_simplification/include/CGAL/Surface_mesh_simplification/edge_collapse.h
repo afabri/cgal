@@ -22,19 +22,21 @@
 
 #include <CGAL/license/Surface_mesh_simplification.h>
 
-#include <CGAL/boost/graph/properties.h>
-#include <CGAL/boost/graph/named_function_params.h>
-
 #include <CGAL/Surface_mesh_simplification/Detail/Edge_collapse.h>
 #include <CGAL/Surface_mesh_simplification/Detail/Common.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/LindstromTurk.h>
 
-#include <CGAL/mutex.h>
-#include <CGAL/tags.h>
-
 #ifdef CGAL_LINKED_WITH_TBB
 #include <CGAL/Surface_mesh_simplification/Detail/parallel_edge_collapse.h>
 #endif
+
+#include <CGAL/use.h>
+
+#include <CGAL/boost/graph/properties.h>
+#include <CGAL/boost/graph/named_function_params.h>
+
+#include <CGAL/mutex.h>
+#include <CGAL/tags.h>
 
 namespace CGAL {
 
@@ -170,8 +172,6 @@ int edge_collapse(TriangleMesh& aSurface,
   using boost::choose_const_pmap;
   using boost::get_param;
 
-  LindstromTurk_params lPolicyParams;
-
   internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
    return edge_collapse(aSurface, aShould_stop, Sequential_tag(), removal_mutex,
                         choose_param(get_param(aParams, internal_np::current_num_edges), num_edges(aSurface)),
@@ -195,8 +195,6 @@ int edge_collapse(TriangleMesh& aSurface,
   using boost::choose_param;
   using boost::choose_const_pmap;
   using boost::get_param;
-
-  LindstromTurk_params lPolicyParams;
 
   internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
    return edge_collapse(aSurface, aShould_stop, Parallel_tag(), removal_mutex,
@@ -227,44 +225,6 @@ int edge_collapse(TriangleMesh& aSurface,
   return edge_collapse(aSurface, aShould_stop, Sequential_tag(), NULL, aParams);
 }
 
-template<class TriangleMesh, class ShouldStop, class FacePartionMap, class NamedParameters>
-int parallel_edge_collapse(TriangleMesh& aSurface,
-                           const ShouldStop& aShould_stop,
-                           FacePartionMap fpm,
-                           int partition_size,
-                           const NamedParameters& aParams)
-{
-  using boost::choose_param;
-  using boost::get_param;
-
-#ifndef CGAL_LINKED_WITH_TBB
-  if(partition_size > 1)
-  {
-    partition_size = 1; // so let's do it sequentially
-    std::cerr << "Not linked with TBB, so we perform the sequential algorithm" << std::endl;
-  }
-#endif
-  if(partition_size == 1)
-  {
-    return edge_collapse(aSurface, aShould_stop, Sequential_tag(), NULL, aParams);
-  }
-  else
-  {
-#ifdef CGAL_LINKED_WITH_TBB
-    internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
-    return parallel_edge_collapse(aSurface,
-                                  fpm, // choose_param(get_param(aParams,internal_np::face_partition), Zero_face_partition_map<TriangleMesh>()),
-                                  choose_param(get_param(aParams, internal_np::edge_is_constrained), No_constrained_edge_map<TriangleMesh>()),
-                                  choose_param(get_param(aParams, internal_np::get_placement_policy), LindstromTurk_placement<TriangleMesh>()),
-                                  aShould_stop,
-                                  choose_param(get_param(aParams, internal_np::get_cost_policy), LindstromTurk_cost<TriangleMesh>()),
-                                  partition_size, // choose_param(get_param(aParams, internal_np::partition_size), 1),
-                                  choose_param(get_param(aParams,vis), Dummy_visitor<TriangleMesh>()));
-#endif
-  }
-}
-
-
 template<class TriangleMesh, class ShouldStop, class GT, class NamedParameters>
 int edge_collapse(TriangleMesh& aSurface,
                   const ShouldStop& aShould_stop,
@@ -274,10 +234,7 @@ int edge_collapse(TriangleMesh& aSurface,
   using boost::choose_const_pmap;
   using boost::get_param;
 
-  LindstromTurk_params lPolicyParams;
-
   internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
-
   return edge_collapse(aSurface, aShould_stop,
                        choose_param(get_param(aParams, internal_np::current_num_edges), num_edges(aSurface)),
                        choose_const_pmap(get_param(aParams, internal_np::vertex_index), aSurface, boost::vertex_index),
@@ -300,6 +257,43 @@ template<class TriangleMesh, class ShouldStop, class GT>
 int edge_collapse(TriangleMesh& aSurface, const ShouldStop& aShould_stop)
 {
   return edge_collapse(aSurface, aShould_stop, CGAL::parameters::halfedge_index_map(get(boost::halfedge_index, aSurface)));
+}
+
+template<class TriangleMesh, class ShouldStop, class FacePartionMap, class NamedParameters>
+int parallel_edge_collapse(TriangleMesh& aSurface,
+                           const ShouldStop& aShould_stop,
+                           FacePartionMap partition_id_map,
+                           int number_of_parts,
+                           const NamedParameters& aParams)
+{
+#ifndef CGAL_LINKED_WITH_TBB
+  std::cerr << "CGAL is not linked with TBB, the mesh will be simplified sequentially." << std::endl;
+  number_of_parts = 1;
+#endif
+
+  if(number_of_parts == 1)
+  {
+    return edge_collapse(aSurface, aShould_stop, Sequential_tag(), NULL, aParams);
+  }
+  else
+  {
+#ifdef CGAL_LINKED_WITH_TBB
+    using boost::choose_param;
+    using boost::get_param;
+
+    internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
+    return parallel_edge_collapse(aSurface,
+                                  aShould_stop,
+                                  partition_id_map,
+                                  number_of_parts,
+                                  choose_param(get_param(aParams, internal_np::edge_is_constrained), No_constrained_edge_map<TriangleMesh>()),
+                                  choose_param(get_param(aParams, internal_np::get_placement_policy), LindstromTurk_placement<TriangleMesh>()),
+                                  choose_param(get_param(aParams, internal_np::get_cost_policy), LindstromTurk_cost<TriangleMesh>()),
+                                  choose_param(get_param(aParams,vis), Dummy_visitor<TriangleMesh>()));
+#else
+    CGAL_USE(partition_id_map);
+#endif
+  }
 }
 
 } // end namespace Surface_mesh_simplification
