@@ -20,21 +20,23 @@ int main(int argc, char** argv)
     in >> pm;
     CGAL::set_halfedgeds_items_id(pm);
 
-    PMP::partition(pm, PMP::parameters::number_of_partitions(8));
+    typedef boost::property_map<PM, boost::face_external_index_t>::type Face_id_map;
+    Face_id_map partition_id_map = get(boost::face_external_index, pm);
+
+    PMP::partition(pm, 8 /*number of partitions*/, partition_id_map);
   }
 
-  // with a surface mesh, a property map, and a custom number of iterations
+  // with a surface mesh
   {
-    typedef CGAL::Surface_mesh<K::Point_3> SM;
+    typedef CGAL::Surface_mesh<K::Point_3>                           SM;
     SM sm;
-    CGAL::read_off(sm, (argc>1) ? argv[1] : "data/blobby.off");
+    std::ifstream in((argc>1) ? argv[1] : "data/blobby.off");
+    CGAL::read_off(in, sm);
 
-    typedef SM::Property_map<SM::Face_index, std::size_t> Face_id_map;
-    Face_id_map partition_id_map =
-      sm.add_property_map<SM::Face_index, std::size_t>("f:pid").first;
+    typedef SM::Property_map<SM::Face_index, std::size_t>            Face_id_map;
+    Face_id_map partition_id_map = sm.add_property_map<SM::Face_index, std::size_t>("f:pid").first;
 
-    PMP::partition(sm, PMP::parameters::number_of_partitions(8)
-                                       .face_partition_map(partition_id_map));
+    PMP::partition(sm, 8 /*number of partitions*/, partition_id_map);
   }
 
   return 0;
