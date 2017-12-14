@@ -356,46 +356,6 @@ struct Simplify
   }
 };
 
-template <typename TriangleMesh, typename ECMap, typename CCMap>
-struct Collect_edges
-{
-  typedef typename boost::graph_traits<TriangleMesh>::edge_descriptor     edge_descriptor;
-  typedef typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
-  typedef typename boost::graph_traits<TriangleMesh>::face_descriptor     face_descriptor;
-
-  std::vector<tbb::concurrent_vector<edge_descriptor> >& cc_edges;
-  std::size_t ncc;
-  ECMap ecmap;
-  CCMap ccmap;
-  TriangleMesh& sm;
-
-  Collect_edges(std::vector<tbb::concurrent_vector<edge_descriptor> >& cc_edges,
-                std::size_t ncc,
-                ECMap ecmap,
-                CCMap ccmap,
-                TriangleMesh& sm)
-    :
-      cc_edges(cc_edges), ncc(ncc), ecmap(ecmap), ccmap(ccmap), sm(sm)
-  {}
-
-  void operator()(const tbb::blocked_range<std::size_t>& r) const
-  {
-    for(std::size_t i=r.begin(); i!=r.end(); ++i)
-    {
-      face_descriptor fd; // AF FIX (static_cast<typename boost::graph_traits<TriangleMesh>::faces_size_type>(i));
-      std::size_t cc = ccmap[fd]; // this is the partition
-      BOOST_FOREACH(halfedge_descriptor hd, halfedges_around_face(halfedge(fd, sm),sm))
-      {
-        halfedge_descriptor hop = opposite(hd,sm);
-        if(is_border(hop,sm) || get(ecmap,edge(hd,sm)) || (fd < face(hop ,sm)))
-        {
-          cc_edges[cc].push_back(edge((hd<hop)?hd:hop, sm));
-        }
-      }
-    }
-  }
-};
-
 } // end namespace internal
 
 template <typename TriangleMesh, typename Placement, typename CCMap, typename UECMap, typename Stop, typename Cost, typename Visitor>
@@ -470,7 +430,6 @@ int parallel_edge_collapse(TriangleMesh& sm,
   }
 
   std::vector<tbb::concurrent_vector<edge_descriptor> > cc_edges(ncc);
-#if 1
   BOOST_FOREACH(face_descriptor fd, faces(sm))
   {
     std::size_t cc = ccmap[fd]; // this is the partition
@@ -483,12 +442,6 @@ int parallel_edge_collapse(TriangleMesh& sm,
       }
     }
   }
-#else
-  // This only works for a vector-like container of faces as in Surface_mesh
-  tbb::parallel_for(tbb::blocked_range<size_t>(0, num_faces(sm)),
-                    internal::Collect_edges<TriangleMesh, ECMap, CCMap>(
-                      cc_edges, ncc, ecmap, ccmap, sm));
-#endif
 
   if(verbose)
   {
