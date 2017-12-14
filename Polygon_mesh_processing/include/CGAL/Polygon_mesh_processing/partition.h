@@ -174,7 +174,7 @@ void partition(const TriangleMesh& tm,
 ///
 /// \param nparts the number of parts in the final partition
 ///
-/// \tparam TriangleMesh is a model of the `FaceGraph` concept.
+/// \tparam TriangleMesh is a model of the `FaceListGraph` concept.
 /// \tparam NamedParameters a sequence of \ref namedparameters
 /// \tparam FacePartitionIDPmap is is a model of `ReadWritePropertyMap`
 ///           with `boost::graph_traits<TriangleMesh>::%face_descriptor`
