@@ -16,9 +16,9 @@ It can have any number of connected components, boundaries
 
 \cgalHeading{Valid Expressions}
 
-Let `v0v1` an edge of the triangulated surface mesh `ecm` and
+Let `v0v1` an edge of the triangulated surface mesh `tm` and
 `v0` and `v1` being the source and target vertices of that edge.
-The surface mesh simplification algorithm requires the call to the function `Euler::edge_collapse(e,ecm)`
+The surface mesh simplification algorithm requires the call to the function `Euler::edge_collapse(e, tm)`
 to be valid and to return the vertex not removed after collapsing
 the edge `e` with the two halfedges `v0v1`  and `v1v0`.
 

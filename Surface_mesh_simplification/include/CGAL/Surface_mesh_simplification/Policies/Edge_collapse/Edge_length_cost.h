@@ -17,56 +17,45 @@
 //
 // Author(s)     : Fernando Cacciola <fernando.cacciola@geometryfactory.com>
 //
-#ifndef CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_EDGE_LENGHT_COST_H
-#define CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_EDGE_LENGHT_COST_H
+#ifndef CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_EDGE_LENGTH_COST_H
+#define CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_EDGE_LENGTH_COST_H
 
 #include <CGAL/license/Surface_mesh_simplification.h>
-
 
 #include <CGAL/Surface_mesh_simplification/Detail/Common.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_profile.h>
 
 namespace CGAL {
 
-namespace Surface_mesh_simplification
-{
+namespace Surface_mesh_simplification {
 
-//
 // Edge-length cost: the squared length of the collapsing edge
-//
-  template<class ECM>
+template<class TriangleMesh_>
 class Edge_length_cost
 {
 public:
-  /*  
-  typedef ECM_ ECM ;
-  
-  typedef Edge_profile<ECM> Profile ;
-  typedef typename Profile::Point Point;  
-  typedef typename Kernel_traits<Point>::Kernel Kernel ;
-  typedef typename Kernel::FT FT ;
-  typedef optional<FT> result_type ;
+  /*
+  typedef TriangleMesh_                           TriangleMesh;
+
+  typedef Edge_profile<TriangleMesh>              Profile;
+  typedef typename Profile::Point                 Point;
+  typedef typename Kernel_traits<Point>::Kernel   Kernel;
+  typedef typename Kernel::FT                     FT;
+  typedef optional<FT>                            result_type;
   */
 public:
+  Edge_length_cost() {}
 
-  Edge_length_cost()
-  {}
-
-  template <typename Profile, typename T> 
-  optional<typename Profile::FT> operator()( Profile const& aProfile, T const& /*aPlacement*/ ) const
+  template <typename Profile, typename T>
+  optional<typename Profile::FT> operator()(const Profile& aProfile, const T& /*aPlacement*/) const
   {
     typedef optional<typename Profile::FT> result_type;
-    return result_type(squared_distance(aProfile.p0(),aProfile.p1()));
+    return result_type(squared_distance(aProfile.p0(), aProfile.p1()));
   }
-  
 };
 
+} // end namespace Surface_mesh_simplification
 
-} // namespace Surface_mesh_simplification
+} // end namespace CGAL
 
-
-} //namespace CGAL
-
-#endif // CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_EDGE_LENGHT_COST_H
-// EOF //
- 
+#endif // CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_EDGE_LENGTH_COST_H

@@ -60,6 +60,7 @@ CGAL_add_named_parameter(nb_points_per_distance_unit_t, nb_points_per_distance_u
 // List of named parameters that we use in the package 'Surface Mesh Simplification'
 CGAL_add_named_parameter(get_cost_policy_t, get_cost_policy, get_cost)
 CGAL_add_named_parameter(get_placement_policy_t, get_placement_policy, get_placement)
+CGAL_add_named_parameter(current_num_edges_t, current_num_edges, current_num_edges)
 
 //to be documented
 CGAL_add_named_parameter(face_normal_t, face_normal, face_normal_map)
