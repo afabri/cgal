@@ -50,7 +50,13 @@ int main(int argc, char** argv)
   Triangle_mesh::Property_map<face_descriptor, std::size_t> fpmap
     = tm.add_property_map<face_descriptor, std::size_t>("f:partition").first;
 
-  PMP::partition(tm, number_of_parts, fpmap);
+  // Set some custom options for METIS
+  idx_t options[METIS_NOPTIONS];
+  METIS_SetDefaultOptions(options);
+  options[METIS_OPTION_CONTIG] = 1; // need to have contiguous subdomains
+  options[METIS_OPTION_UFACTOR] = 1;
+
+  PMP::partition(tm, number_of_parts, fpmap, CGAL::parameters::METIS_options(&options));
   std::cerr << "Built partition in " << t.time() << " sec."<< std::endl;
   t.reset();
 
