@@ -45,7 +45,7 @@ namespace CGAL {
 
 namespace Polygon_mesh_processing {
 
-// \ingroup PMP_partition_grp
+// \ingroup PMPMesh_partitioning
 //
 // Output each part of a partition as a single mesh.
 //
@@ -169,7 +169,7 @@ void partition(const TriangleMesh& tm,
   return partition(tm, nparts, partition_id_map, &options, np);
 }
 
-/// \ingroup PMP_partition_grp
+/// \ingroup PMPMesh_partitioning
 ///
 /// Computes a partition of the input mesh into `nparts` parts.
 ///

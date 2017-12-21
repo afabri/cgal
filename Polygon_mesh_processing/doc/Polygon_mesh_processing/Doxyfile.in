@@ -6,6 +6,8 @@ EXTRACT_ALL                =  false
 HIDE_UNDOC_CLASSES         =  true
 WARN_IF_UNDOCUMENTED       =  false
 
+ALIASES +=  "bgllink{1}=<a href=\"http://www.boost.org/libs/graph/doc/\1.html\"><code>\1</code></a>"
+
 # macros to be used inside the code
 ALIASES += "cgalNamedParamsBegin=<dl class=\"params\"><dt>Named Parameters</dt><dd> <table class=\"params\">"
 ALIASES += "cgalNamedParamsEnd=</table> </dd> </dl>"
