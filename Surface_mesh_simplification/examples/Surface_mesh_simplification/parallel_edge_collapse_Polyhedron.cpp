@@ -8,8 +8,6 @@
 
 #include <CGAL/Polygon_mesh_processing/partition.h>
 #include <CGAL/Real_timer.h>
-#include <CGAL/IO/PLY_reader.h>
-#include <CGAL/IO/PLY_writer.h>
 #include <CGAL/Polygon_mesh_processing/polygon_soup_to_polygon_mesh.h>
 
 #include <boost/lexical_cast.hpp>
