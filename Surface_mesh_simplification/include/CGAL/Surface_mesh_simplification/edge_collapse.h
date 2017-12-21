@@ -262,8 +262,8 @@ int edge_collapse(TriangleMesh& aSurface, const ShouldStop& aShould_stop)
 template<class TriangleMesh, class ShouldStop, class FacePartionMap, class NamedParameters>
 int parallel_edge_collapse(TriangleMesh& aSurface,
                            const ShouldStop& aShould_stop,
-                           FacePartionMap partition_id_map,
                            int number_of_parts,
+                           FacePartionMap partition_id_map,
                            const NamedParameters& aParams)
 {
 #ifndef CGAL_LINKED_WITH_TBB
@@ -284,8 +284,8 @@ int parallel_edge_collapse(TriangleMesh& aSurface,
     internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
     return parallel_edge_collapse(aSurface,
                                   aShould_stop,
-                                  partition_id_map,
                                   number_of_parts,
+                                  partition_id_map,
                                   choose_param(get_param(aParams, internal_np::edge_is_constrained), No_constrained_edge_map<TriangleMesh>()),
                                   choose_param(get_param(aParams, internal_np::get_placement_policy), LindstromTurk_placement<TriangleMesh>()),
                                   choose_param(get_param(aParams, internal_np::get_cost_policy), LindstromTurk_cost<TriangleMesh>()),

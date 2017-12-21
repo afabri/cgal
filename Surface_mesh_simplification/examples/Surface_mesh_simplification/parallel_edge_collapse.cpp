@@ -71,7 +71,7 @@ int main(int argc, char** argv)
   SMS::LindstromTurk_cost<Triangle_mesh> cost;
   SMS::Count_ratio_stop_predicate<Triangle_mesh> stop(ratio);
 
-  SMS::parallel_edge_collapse(tm, stop, fpmap, number_of_parts,
+  SMS::parallel_edge_collapse(tm, stop, number_of_parts, fpmap,
                               CGAL::parameters::edge_is_constrained_map(ecmap)
                               .get_placement(placement)
                               .get_cost(cost));
