@@ -602,26 +602,23 @@ This package provides functions to enumerate and store
 the connected components of a polygon mesh.
 The connected components can be either closed and geometrically separated,
 or separated by border or user-specified \e constraint edges.
+The following functions are offered:
 
-First, the function `CGAL::Polygon_mesh_processing::connected_component()`
+- `CGAL::Polygon_mesh_processing::connected_component()`:
 collects all the faces that belong to the same connected component as
 the face that is given as a parameter.
-
-Then, `CGAL::Polygon_mesh_processing::connected_components()`
+- `CGAL::Polygon_mesh_processing::connected_components()`:
 collects all the connected components, and fills a property map
 with the indices of the different connected components.
-
-The functions `CGAL::Polygon_mesh_processing::keep_connected_components()`
-and `CGAL::Polygon_mesh_processing::remove_connected_components()`
+- `CGAL::Polygon_mesh_processing::keep_connected_components()`
+and `CGAL::Polygon_mesh_processing::remove_connected_components()`:
 enable the user to keep and remove only a selection of connected components,
 provided either as a range of faces that belong to the desired connected components
 or as a range of connected component ids (one or more per connected component).
-
-Finally, `CGAL::Polygon_mesh_processing::keep_largest_connected_components()`
+- `CGAL::Polygon_mesh_processing::keep_largest_connected_components()`:
 enables the user to keep only the largest connected components. This feature can
 for example be useful for noisy data were small connected components
 should be discarded in favour of major connected components.
-
 
 \subsection CCExample Connected Components Example
 
