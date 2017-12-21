@@ -16,7 +16,7 @@ int main(int argc, char** argv)
   std::ifstream in((argc>1) ? argv[1] : "data/mech-holes-shark.off");
   if(!in)
   {
-    std::cerr << "Error: could not read file " << in << std::endl;
+    std::cerr << "Error: could not read input file" << std::endl;
     return EXIT_FAILURE;
   }
 
