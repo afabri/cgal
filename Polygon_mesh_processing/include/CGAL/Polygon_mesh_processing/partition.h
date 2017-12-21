@@ -92,7 +92,7 @@ void partition(const TriangleMesh& tm,
                const NamedParameters& /*np*/)
 {
   CGAL_precondition(CGAL::is_triangle_mesh(tm));
-  CGAL_precondition_msg(nparts > 0, ("Partitioning requires a strictly positive number of parts"));
+  CGAL_precondition_msg(nparts > 1, ("Partitioning requires a number of parts > 1"));
 
   typedef typename boost::graph_traits<TriangleMesh>::vertex_descriptor   vertex_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
