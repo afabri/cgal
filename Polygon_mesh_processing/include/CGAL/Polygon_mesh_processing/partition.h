@@ -45,20 +45,25 @@ namespace CGAL {
 
 namespace Polygon_mesh_processing {
 
-/// Output a set of partitions.
-///
-/// \param tm a triangle mesh
-/// \param nparts the number of parts
-/// \param fpmap the property map with the partition indices
-///
-/// \tparam TriangleMesh must be a model of a `FaceListGraph`, `HalfedgeListGraph`, and \bgllink{VertexListGraph}.
-/// \tparam FacePartitionIDPmap is is a model of `ReadablePropertyMap`
-///           with `boost::graph_traits<TriangleMesh>::%face_descriptor`
-///           as key type and `boost::face_external_index` as value type.
+// \ingroup PMP_partition_grp
+//
+// Output each part of a partition as a single mesh.
+//
+// \param tm a triangle mesh
+// \param nparts the number of parts
+// \param fpmap the property map with the partition indices
+// \param filename_base Partitions will be output in `.off` files named
+//                      `{filename_base}_[0...nparts].off`
+//
+// \tparam TriangleMesh must be a model of a `FaceListGraph`, `HalfedgeListGraph`, and \bgllink{VertexListGraph}.
+// \tparam FacePartitionIDPmap is a model of `ReadablePropertyMap`
+//           with `boost::graph_traits<TriangleMesh>::%face_descriptor`
+//           as key type and `boost::graph_traits<Graph>::%faces_size_type` as value type.
 template<typename TriangleMesh, typename FacePartitionIDPmap>
-void output_partitions(const TriangleMesh& tm,
-                       const idx_t nparts,
-                       const FacePartitionIDPmap fpmap)
+void output_partition(const TriangleMesh& tm,
+                      const idx_t nparts,
+                      const FacePartitionIDPmap fpmap,
+                      const std::string filename_base)
 {
   CGAL_precondition(CGAL::is_triangle_mesh(tm));
 
@@ -67,7 +72,7 @@ void output_partitions(const TriangleMesh& tm,
   for(int i=0; i<nparts; ++i)
   {
     std::ostringstream filename;
-    filename << "partition_" << i << ".off" << std::ends;
+    filename << filename_base << "_" << i << ".off" << std::ends;
     std::ofstream out(filename.str().c_str());
 
     Filtered_graph m_part(tm, i, fpmap);
@@ -79,10 +84,12 @@ void output_partitions(const TriangleMesh& tm,
   }
 }
 
-template<typename TriangleMesh, typename FacePartitionIDPmap, typename NamedParameters>
+template<typename TriangleMesh, typename FacePartitionIDPmap,
+         typename MEDIT_options, typename NamedParameters>
 void partition(const TriangleMesh& tm,
                int nparts, FacePartitionIDPmap partition_id_map,
-               const NamedParameters& np)
+               MEDIT_options options, // pointer to the options array
+               const NamedParameters& /*np*/)
 {
   CGAL_precondition(CGAL::is_triangle_mesh(tm));
   CGAL_precondition_msg(nparts > 0, ("Partitioning requires a strictly positive number of parts"));
@@ -90,24 +97,6 @@ void partition(const TriangleMesh& tm,
   typedef typename boost::graph_traits<TriangleMesh>::vertex_descriptor   vertex_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::face_iterator       face_iterator;
-
-  using boost::get_param;
-  using boost::choose_param;
-
-  idx_t options[METIS_NOPTIONS];
-  options[METIS_OPTION_CTYPE] = METIS_CTYPE_SHEM;
-  options[METIS_OPTION_CONTIG] = 0;
-  options[METIS_OPTION_DBGLVL] = 0; // METIS_DBG_INFO;
-//  options[METIS_OPTION_IPTYPE] = METIS_IPTYPE_RANDOM;
-  options[METIS_OPTION_MINCONN] = 0;
-  options[METIS_OPTION_NCUTS] = 3;
-  options[METIS_OPTION_NITER] = 10;
-  options[METIS_OPTION_NUMBERING] = 0;
-  options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_VOL;
-  options[METIS_OPTION_PTYPE] = METIS_PTYPE_KWAY;
-//  options[METIS_OPTION_RTYPE] = METIS_RTYPE_FM;
-  options[METIS_OPTION_SEED] = 12343;
-  options[METIS_OPTION_UFACTOR] = 1;
 
   idx_t nn = static_cast<idx_t>(num_vertices(tm));
   idx_t ne = static_cast<idx_t>(num_faces(tm));
@@ -157,7 +146,7 @@ void partition(const TriangleMesh& tm,
                                NULL /* elements weights*/, NULL /*elements sizes*/,
                                &ncommon, &nparts,
                                NULL /* partitions weights */,
-                               options,
+                               *options,
                                &objval, epart, npart);
 
   std::cout << "return: " << ret << " with objval: " << objval << std::endl;
@@ -166,26 +155,56 @@ void partition(const TriangleMesh& tm,
   boost::tie(fit, fe) = faces(tm);
   for(int i=0; fit!=fe; ++fit, ++i)
     put(partition_id_map, *fit, epart[i]);
-
-  //  output_partitions(m, nparts, partition_id_map);
 }
 
+template<typename TriangleMesh, typename FacePartitionIDPmap, typename NamedParameters>
+void partition(const TriangleMesh& tm,
+               int nparts, FacePartitionIDPmap partition_id_map,
+               const boost::param_not_found, // no MEDIT options were passed
+               const NamedParameters& np)
+{
+  idx_t options[METIS_NOPTIONS];
+  METIS_SetDefaultOptions(options);
+  options[METIS_OPTION_DBGLVL] = METIS_DBG_INFO;
+  return partition(tm, nparts, partition_id_map, &options, np);
+}
+
+/// \ingroup PMP_partition_grp
+///
 /// Computes a partition of the input mesh into `nparts` parts.
 ///
+/// \param tm a triangle mesh
 /// \param nparts the number of parts in the final partition
+/// \param partition_id_map a property map of type `FacePartitionIDPmap`
+/// \param np optional \ref pmp_namedparameters "Named Parameters" described below
 ///
 /// \tparam TriangleMesh is a model of the `FaceListGraph` concept.
-/// \tparam NamedParameters a sequence of \ref namedparameters
-/// \tparam FacePartitionIDPmap is is a model of `ReadWritePropertyMap`
+/// \tparam FacePartitionIDPmap is a model of `ReadWritePropertyMap`
 ///           with `boost::graph_traits<TriangleMesh>::%face_descriptor`
-///           as key type and `boost::face_external_index` as value type.
-///           The default is `typename boost::property_map<FaceGraph, face_external_index>::%type`.
+///           as key type and `boost::graph_traits<Graph>::%faces_size_type` as value type.
+/// \tparam NamedParameters a sequence of \ref pmp_namedparameters "Named Parameters"
 ///
-/// \param tm a triangle mesh
-/// \param np optional \ref namedparameters described below
+/// \cgalNamedParamsBegin
+///   \cgalParamBegin{METIS_options}
+///     is a parameter used in `partition()` to pass options to the METIS mesh
+///     partitioner. The many options of METIS are not described here. Instead, users
+///     should refer to METIS' <a href="http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/manual.pdf">documentation</a>.
+///   \cgalParamEnd
+/// \cgalNamedParamsEnd
 ///
 /// \pre `m` is a pure triangular surface mesh: there are no edges
 ///       without at least one incident face
+template<typename TriangleMesh, typename FacePartitionIDPmap, typename NamedParameters>
+void partition(const TriangleMesh& tm,
+               int nparts, FacePartitionIDPmap partition_id_map,
+               const NamedParameters& np)
+{
+  using boost::get_param;
+
+  return partition(tm, nparts, partition_id_map,
+                   get_param(np, internal_np::METIS_options), np);
+}
+
 template<typename TriangleMesh, typename FacePartitionIDPmap>
 void partition(const TriangleMesh& tm,
                const int nparts, FacePartitionIDPmap partition_id_map)
