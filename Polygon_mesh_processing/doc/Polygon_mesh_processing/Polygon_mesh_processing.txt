@@ -659,11 +659,14 @@ library METIS \cgalCite{karypis1998fast}, allowing to split triangular
 meshes that are models of the concept `FaceListGraph` into a given number of
 subdomains.
 
-The following example shows how to read, partition, and write meshes using
-`partition()`. \ref BGLNamedParameters are used to optionally set some
-of the many options of METIS. Note the use of the class template  `CGAL::Face_filtered_graph`
-and the free function `copy_face_graph()` to create an independent mesh from one of the subdomains
-of the partition.
+The following example shows how to read, partition, and write a mesh using
+`partition()`. The class template `CGAL::Face_filtered_graph`
+and the free function `copy_face_graph()` are used to create an independent mesh from one
+of the subdomains of the partition. Note that the copy is optional as writing
+can be done directly using `Face_filtered_graph`.
+
+Using \ref BGLNamedParameters you can set some of the many options of METIS
+as shown in \ref Polygon_mesh_processing/partition_example_adv.cpp "this example".
 
 \cgalExample{Polygon_mesh_processing/partition_example.cpp}
 

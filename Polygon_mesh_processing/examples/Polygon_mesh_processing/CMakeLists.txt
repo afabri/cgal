@@ -133,6 +133,8 @@ endif(OpenMesh_FOUND)
 
 if(METIS_FOUND)
   create_single_source_cgal_program( "partition_example.cpp" )
+  create_single_source_cgal_program( "partition_example_adv.cpp" )
   target_link_libraries( partition_example PRIVATE ${METIS_LIBRARIES} )
+  target_link_libraries( partition_example_adv PRIVATE ${METIS_LIBRARIES} )
 endif()
 
