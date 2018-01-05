@@ -640,9 +640,9 @@ which enables to treat one or several connected components as a face graph.
 ****************************************
 \section PMPPartitioning Mesh Partitioning
 
-For algorithms that operate locally, mesh partitioning is often an easy to parallelize
+For algorithms that operate locally, mesh partitioning is often an easy way to parallelize
 the algorithm at little cost.
-The function `partition()` provides a wrapper to the mesh partitioning
+The function `partition()` provides a wrapper to the graph partitioning
 library METIS \cgalCite{karypis1998fast}, allowing to split triangular
 meshes that are models of the concept `FaceListGraph` into a given number of
 subdomains.
