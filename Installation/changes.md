@@ -67,6 +67,10 @@ Release date: April 2018
     `manifold()`, `manifold_with_boundary()`, and `non_manifold()` are
     added.
 
+### Triangulated Surface Mesh Simplification
+
+-   Add a naive parallel mesh simplification algorithm
+
 ### Polygon Mesh Processing
 
 -   Added two functions for orienting connected components :

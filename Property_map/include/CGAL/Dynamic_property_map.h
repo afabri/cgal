@@ -137,6 +137,7 @@ struct dynamic_vertex_property_t
 };
 
 
+
 template <typename T>
 struct dynamic_halfedge_property_t
 {

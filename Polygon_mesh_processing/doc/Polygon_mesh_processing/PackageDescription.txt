@@ -2,7 +2,7 @@
 /// \defgroup PkgPolygonMeshProcessingConcepts Concepts
 /// \ingroup PkgPolygonMeshProcessing
 
-/// \defgroup keep_connected_components_grp Connected Components
+/// \defgroup PMPConnected_components Connected Components
 ///
 /// Two faces are in the same <em>connected component</em> if there is a path 
 /// of adjacent faces such that all edges between two consecutive faces of the 
@@ -10,6 +10,11 @@
 ///
 /// \ingroup PkgPolygonMeshProcessing
 
+/// \defgroup PMPMesh_partitioning Mesh Partitioning
+///
+/// Methods to split a mesh into subdomains, using the library METIS.
+///
+/// \ingroup PkgPolygonMeshProcessing
 
 /// \defgroup hole_filling_grp Hole Filling
 /// Functions to fill holes given as a range of halfedges or as range of points.
@@ -138,8 +143,11 @@ and provides a list of the parameters that are used in this package.
 - `CGAL::Polygon_mesh_processing::connected_components()`
 - `CGAL::Polygon_mesh_processing::keep_large_connected_components()`
 - `CGAL::Polygon_mesh_processing::keep_largest_connected_components()`
-- \link keep_connected_components_grp `CGAL::Polygon_mesh_processing::keep_connected_components()` \endlink
-- \link keep_connected_components_grp `CGAL::Polygon_mesh_processing::remove_connected_components()` \endlink
+- \link PMPConnected_components `CGAL::Polygon_mesh_processing::keep_connected_components()` \endlink
+- \link PMPConnected_components `CGAL::Polygon_mesh_processing::remove_connected_components()` \endlink
+
+## Mesh Partitioning ##
+- `CGAL::Polygon_mesh_processing::partition()`
 
 ## Corefinement and Boolean Operation Functions ##
 - `CGAL::Polygon_mesh_processing::corefine_and_compute_union()`

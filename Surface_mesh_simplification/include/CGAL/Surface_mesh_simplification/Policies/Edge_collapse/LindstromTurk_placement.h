@@ -18,48 +18,40 @@
 // Author(s)     : Fernando Cacciola <fernando.cacciola@geometryfactory.com>
 //
 #ifndef CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_LINDSTROMTURK_PLACEMENT_H
-#define CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_LINDSTROMTURK_PLACEMENT_H 1
+#define CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_LINDSTROMTURK_PLACEMENT_H
 
 #include <CGAL/license/Surface_mesh_simplification.h>
-
 
 #include <CGAL/Surface_mesh_simplification/Detail/Common.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Detail/Lindstrom_Turk_core.h>
 
 namespace CGAL {
 
-namespace Surface_mesh_simplification  
-{
+namespace Surface_mesh_simplification {
 
-  template<class ECM_>
+template<class TriangleMesh_>
 class LindstromTurk_placement
 {
 public:
-    
-  typedef ECM_ ECM ;
-  
+  typedef TriangleMesh_                                    TriangleMesh;
+
 public:
+  LindstromTurk_placement(const LindstromTurk_params& aParams = LindstromTurk_params())
+    : mParams(aParams)
+  {}
 
-  LindstromTurk_placement( LindstromTurk_params const& aParams = LindstromTurk_params() ) : mParams(aParams) {}
-     
-  template <typename Profile> 
-  optional<typename Profile::Point>
-  operator()( Profile const& aProfile) const
+  template <typename Profile>
+  optional<typename Profile::Point> operator()(const Profile& aProfile) const
   {
-    return LindstromTurkCore<ECM,Profile>(mParams,aProfile).compute_placement() ;
+    return LindstromTurkCore<TriangleMesh, Profile>(mParams, aProfile).compute_placement();
   }
-  
+
 private:
-
-  LindstromTurk_params mParams ;    
-
+  LindstromTurk_params mParams;
 };
 
+} // end namespace Surface_mesh_simplification
 
-} // namespace Surface_mesh_simplification
+} // end namespace CGAL
 
-} //namespace CGAL
-
-#endif // CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_LINDSTROMTURK_PLACEMENT_H //
-// EOF //
- 
+#endif // CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_LINDSTROMTURK_PLACEMENT_H
