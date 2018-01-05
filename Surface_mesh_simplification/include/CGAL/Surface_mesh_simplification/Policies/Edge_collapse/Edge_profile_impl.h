@@ -27,13 +27,10 @@ namespace CGAL {
 namespace Surface_mesh_simplification {
 
 template<class TriangleMesh, class VertexPointMap>
-template<class VertexIdxMap, class EdgeIdxMap>
 Edge_profile<TriangleMesh, VertexPointMap>::
 Edge_profile(const halfedge_descriptor& aV0V1,
              TriangleMesh& aSurface,
-             const VertexIdxMap& /*aVertex_index_map*/,
              const VertexPointMap& aVertex_point_map,
-             const EdgeIdxMap& /*aEdge_index_map*/,
              bool has_border)
   :
     mV0V1(aV0V1),

@@ -73,12 +73,9 @@ public:
   typedef std::vector<Triangle>                                       Triangle_vector;
 
 public:
-  template<class VertexIdxMap, class EdgeIdxMap>
   Edge_profile(const halfedge_descriptor& aV0V1,
                TriangleMesh& aSurface,
-               const VertexIdxMap& aVertex_index_map,
                const VertexPointMap& aVertex_point_map,
-               const EdgeIdxMap& aEdge_index_map,
                bool has_border);
 
 public:
@@ -184,14 +181,11 @@ public:
   typedef typename EP::TriangleMesh::G                  TriangleMesh;
   typedef typename EP::VertexPointMap                   VertexPointMap;
 
-  template<class VertexIdxMap, class EdgeIdxMap>
   CG_Edge_profile(const halfedge_descriptor& aV0V1,
                   typename EP::TriangleMesh& aSurface,
-                  const VertexIdxMap& aVertex_index_map,
                   const VertexPointMap& aVertex_point_map,
-                  const EdgeIdxMap& aEdge_index_map,
                   bool has_border)
-    : EP(aV0V1, aSurface, aVertex_index_map, aVertex_point_map, aEdge_index_map, has_border)
+    : EP(aV0V1, aSurface, aVertex_point_map, has_border)
   {}
 
   TriangleMesh& surface_mesh() const { return EP::surface_mesh().g; }

@@ -186,7 +186,7 @@ private:
 
   Profile create_profile(const halfedge_descriptor& aEdge)
   {
-    return Profile(aEdge, mSurface, Vertex_index_map, Vertex_point_map, Edge_index_map, m_has_border);
+    return Profile(aEdge, mSurface, Vertex_point_map, m_has_border);
   }
 
   size_type get_halfedge_id(const halfedge_descriptor& aEdge) const { return get(Edge_index_map, aEdge); }
