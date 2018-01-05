@@ -250,7 +250,6 @@ struct Simplify
     Component_graph cg(sm, sicm, cc_edges);
 
     std::vector<edge_descriptor> buffer_edges;
-    int i = 2;
     BOOST_FOREACH(edge_descriptor ed, cc_edges)
     {
       halfedge_descriptor hd, hop;
@@ -259,11 +258,6 @@ struct Simplify
       if(get(sicm, ed))
       {
         buffer_edges.push_back(ed);
-      }
-      else
-      {
-        put(himap, hd, i++);
-        put(himap, hop, i++);
       }
     }
 
@@ -404,19 +398,20 @@ int parallel_edge_collapse(TriangleMesh& sm,
     out << std::endl << std::endl; // edges are on the third line of a CGAL selection file
   }
 
-  // now we have to find the constrained edges
+  // now we have to find the constrained edges and set halfedge indices
+  std::vector<int> hindices(number_of_parts, 1);
   BOOST_FOREACH(edge_descriptor ed, edges(sm))
   {
     halfedge_descriptor hd = halfedge(ed, sm);
     halfedge_descriptor hop = opposite(hd, sm);
-    put(himap, hd, -1);
-    put(himap, hop, -1);
-    put(ecmap, ed, false);
+    if ( is_border(hd, sm) )
+      std::swap(hd, hop);
 
-    if(is_border(ed, sm))
-      continue;
+    typename boost::property_traits<FacePartitionIDPmap>::value_type
+      pid = get(partition_id_map, face(hd, sm)),
+      pid_opp = is_border(hop, sm) ? pid : get(partition_id_map, face(hop, sm));
 
-    if(get(partition_id_map, face(hd, sm)) != get(partition_id_map, face(hop, sm)))
+    if(pid != pid_opp)
     {
       partition_edges.push_back(ed);
       put(ecmap, ed, true);
@@ -425,6 +420,12 @@ int parallel_edge_collapse(TriangleMesh& sm,
 
       if(dump)
         out << get(vim, source(ed, sm)) << " " << get(vim, target(ed, sm)) << " ";
+    }
+    else
+    {
+      put(himap, hd, ++hindices[pid]);
+      put(himap, hop, ++hindices[pid]);
+      put(ecmap, ed, false);
     }
   }
 
