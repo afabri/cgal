@@ -47,7 +47,7 @@ int main(int argc, char** argv )
   Triangle_mesh tm;
   in >> tm;
 
-  CGAL::set_halfedgeds_items_id(pm);
+  CGAL::set_halfedgeds_items_id(tm);
 
   std::cerr << "Input: #V = "<< num_vertices(tm) << " #E = "<< num_edges(tm)
             << " #F = " << num_faces(tm) << " read in " << t.time() << " sec." << std::endl;
