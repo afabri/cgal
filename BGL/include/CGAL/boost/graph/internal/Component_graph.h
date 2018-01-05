@@ -18,12 +18,13 @@
 //
 // Author(s)     : Andreas Fabri
 
-#ifndef CGAL_BOOST_COMPONENT_GRAPH_H
-#define CGAL_BOOST_COMPONENT_GRAPH_H
+#ifndef CGAL_BOOST_GRAPH_INTERNAL_COMPONENT_GRAPH_H
+#define CGAL_BOOST_GRAPH_INTERNAL_COMPONENT_GRAPH_H
 
 #include <tbb/concurrent_vector.h>
 
 namespace CGAL {
+namespace internal {
 
 template <typename G_, typename ECMap>
 class Component_graph {
@@ -51,13 +52,13 @@ public:
   }
 }; 
 
-} // namespace CGAL
+} } // namespace CGAL::internal
 
 
 namespace boost {
 
 template <typename G, typename ECMap>
-struct graph_traits<CGAL::Component_graph<G,ECMap> > {
+struct graph_traits<CGAL::internal::Component_graph<G,ECMap> > {
   typedef typename boost::graph_traits<G>::vertex_descriptor vertex_descriptor;
   typedef typename boost::graph_traits<G>::edge_descriptor edge_descriptor;
   typedef typename boost::graph_traits<G>::face_descriptor face_descriptor;
@@ -69,7 +70,7 @@ struct graph_traits<CGAL::Component_graph<G,ECMap> > {
   typedef typename boost::graph_traits<G>::edges_size_type edges_size_type;
   typedef typename boost::graph_traits<G>::vertex_iterator vertex_iterator; // in SMS only for tracing
   typedef typename boost::graph_traits<G>::halfedge_iterator halfedge_iterator; // in order to set bool m_has_border
-  typedef typename CGAL::Component_graph<G,ECMap>::edge_iterator edge_iterator;
+  typedef typename CGAL::internal::Component_graph<G,ECMap>::edge_iterator edge_iterator;
 
   static face_descriptor null_face()
   {
@@ -79,7 +80,7 @@ struct graph_traits<CGAL::Component_graph<G,ECMap> > {
 } // namespace boost
 
 namespace CGAL {
-
+namespace internal {
 template <typename G, typename ECMap>
 CGAL::Iterator_range<typename tbb::concurrent_vector<typename boost::graph_traits<G>::edge_descriptor>::iterator>
 edges(const Component_graph<G,ECMap>& cg)
@@ -258,11 +259,11 @@ set_face(typename boost::graph_traits<G>::halfedge_descriptor h,
   return set_face(h,f, cg.g);
 }
 
-} // namespace CGAL
+} } // namespace CGAL::internal
 
 namespace boost {
 template <typename G, typename ECMap>
-struct property_map<CGAL::Component_graph<G,ECMap>,CGAL::vertex_point_t>
+struct property_map<CGAL::internal::Component_graph<G,ECMap>,CGAL::vertex_point_t>
 {
   typedef typename boost::property_map<G,CGAL::vertex_point_t>::type type;
 };
@@ -270,7 +271,7 @@ struct property_map<CGAL::Component_graph<G,ECMap>,CGAL::vertex_point_t>
 } // namespace boost
 
 namespace CGAL {
-
+namespace internal {
 template <typename G, typename ECMap>
 typename boost::property_map<Component_graph<G,ECMap>,CGAL::vertex_point_t>::type
 get(CGAL::vertex_point_t t, Component_graph<G,ECMap>& cg)
@@ -278,6 +279,6 @@ get(CGAL::vertex_point_t t, Component_graph<G,ECMap>& cg)
   return get(t,cg.g);
 }
 
-} // namespace CGAL
+} } // namespace CGAL::internal
 
-#endif // CGAL_BOOST_COMPONENT_GRAPH_H
+#endif // CGAL_BOOST_GRAPH_INTERNAL_COMPONENT_GRAPH_H

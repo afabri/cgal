@@ -25,7 +25,7 @@
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Constrained_placement.h>
 #include <CGAL/Surface_mesh_simplification/Parallel_stop_predicate_visitor.h>
 
-#include <CGAL/boost/graph/Component_graph.h>
+#include <CGAL/boost/graph/internal/Component_graph.h>
 #include <CGAL/boost/graph/copy_face_graph.h>
 #include <CGAL/boost/graph/selection.h>
 #include <CGAL/Surface_mesh_simplification/edge_collapse.h>
@@ -241,7 +241,7 @@ struct Simplify
   void operator()() const
   {
     typedef Selection_is_constraint_map<HIMap, TriangleMesh> SICM;
-    typedef Component_graph<TriangleMesh,SICM>               Component_graph;
+    typedef CGAL::internal::Component_graph<TriangleMesh,SICM> Component_graph;
 
     SICM sicm(himap, sm);
     Component_graph cg(sm, sicm, cc_edges);
