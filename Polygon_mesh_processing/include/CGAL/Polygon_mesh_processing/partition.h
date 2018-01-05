@@ -21,7 +21,7 @@
 #ifndef CGAL_POLYGON_MESH_PROCESSING_PARTITION_H
 #define CGAL_POLYGON_MESH_PROCESSING_PARTITION_H
 
-#include <CGAL/license/Polygon_mesh_processing.h>
+#include <CGAL/license/Polygon_mesh_processing/connected_components.h>
 
 #include <CGAL/assertions.h>
 #include <CGAL/boost/graph/copy_face_graph.h>
