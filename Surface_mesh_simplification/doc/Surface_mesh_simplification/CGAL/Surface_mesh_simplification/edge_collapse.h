@@ -94,8 +94,9 @@ and the value type `boost::graph_traits<EdgeCollapsableSurfaceMesh>::%faces_size
 \param stop is the stop predicate
 \param fpm is the property map that associates to each face the component it is in
 \param partition_size must be the number of different values in `fpm`
-\param np optional sequence of \ref sms_namedparameters "Named Parameters". These named parameters are the same as in `edge_collapse()`
-
+\param np optional sequence of \ref sms_namedparameters "Named Parameters".
+       These named parameters are the same as in `edge_collapse()`. Note that the
+       `halfedge_index_map()` parameter is not needed.
 */
 template<class TriangleMesh, class Stop, class FacePartionMap, class NamedParameters>
 int parallel_edge_collapse(TriangleMesh& tm,

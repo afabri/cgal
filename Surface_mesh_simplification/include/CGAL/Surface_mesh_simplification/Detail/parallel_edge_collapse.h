@@ -378,7 +378,6 @@ int parallel_edge_collapse(TriangleMesh& sm,
                            bool verbose = false,
                            bool dump = false)
 {
-  typedef typename boost::graph_traits<TriangleMesh>::vertex_descriptor vertex_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::edge_descriptor edge_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::face_descriptor face_descriptor;
@@ -545,16 +544,11 @@ int parallel_edge_collapse(TriangleMesh& sm,
   size_type current_num_edges = initial_num_edges - result;
   vis.OnParallelPassFinished(sm, stop, static_cast<size_type>(initial_num_edges), static_cast<size_type>(current_num_edges));
 
+  // Re-number halfedges and indices after the parallel pass
+  int index = 0;
+  BOOST_FOREACH(halfedge_descriptor hd, halfedges(sm))
   {
-    // Re-number halfedges and indices after the parallel pass
-
-    int index = 0;
-    typedef typename boost::property_map<TriangleMesh, halfedge_index_t>::type HIMap;
-    HIMap him = get(halfedge_index, sm);
-    BOOST_FOREACH(halfedge_descriptor hd, halfedges(sm))
-    {
-      put(him, hd, index++);
-    }
+    put(himap, hd, index++);
   }
 
   if(verbose)
@@ -568,6 +562,7 @@ int parallel_edge_collapse(TriangleMesh& sm,
                             Sequential_tag(),
                             NULL,
                             parameters::vertex_index_map(vim)
+                            .halfedge_index_map(himap)
                             .current_num_edges(current_num_edges)
                             .get_placement(constrained_placement)
                             .get_cost(cost)
@@ -580,6 +575,7 @@ int parallel_edge_collapse(TriangleMesh& sm,
                             Sequential_tag(),
                             NULL,
                             parameters::vertex_index_map(vim)
+                            .halfedge_index_map(himap)
                             .current_num_edges(current_num_edges)
                             .get_placement(placement)
                             .get_cost(cost)
