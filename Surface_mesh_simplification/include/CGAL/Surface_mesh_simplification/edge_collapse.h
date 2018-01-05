@@ -25,6 +25,7 @@
 #include <CGAL/Surface_mesh_simplification/Detail/Edge_collapse.h>
 #include <CGAL/Surface_mesh_simplification/Detail/Common.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/LindstromTurk.h>
+#include <CGAL/Default.h>
 
 #ifdef CGAL_LINKED_WITH_TBB
 #include <CGAL/Surface_mesh_simplification/Detail/parallel_edge_collapse.h>
@@ -175,7 +176,11 @@ int edge_collapse(TriangleMesh& aSurface,
   internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
    return edge_collapse(aSurface, aShould_stop, Sequential_tag(), removal_mutex,
                         choose_param(get_param(aParams, internal_np::current_num_edges), num_edges(aSurface)),
+#ifdef CGAL_SURFACE_SIMPLIFICATION_ENABLE_TRACE
                         choose_const_pmap(get_param(aParams, internal_np::vertex_index), aSurface, boost::vertex_index),
+#else
+                        Default(),// needed only for debug purpose
+#endif
                         choose_pmap(get_param(aParams, internal_np::vertex_point), aSurface, boost::vertex_point),
                         choose_const_pmap(get_param(aParams, internal_np::halfedge_index), aSurface, boost::halfedge_index),
                         choose_param(get_param(aParams, internal_np::edge_is_constrained), No_constrained_edge_map<TriangleMesh>()),
@@ -199,7 +204,11 @@ int edge_collapse(TriangleMesh& aSurface,
   internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
    return edge_collapse(aSurface, aShould_stop, Parallel_tag(), removal_mutex,
                         choose_param(get_param(aParams, internal_np::current_num_edges), num_edges(aSurface)),
+#ifdef CGAL_SURFACE_SIMPLIFICATION_ENABLE_TRACE
                         choose_const_pmap(get_param(aParams, internal_np::vertex_index), aSurface, boost::vertex_index),
+#else
+                        Default(),
+#endif
                         choose_pmap(get_param(aParams, internal_np::vertex_point), aSurface, boost::vertex_point),
                         choose_const_pmap(get_param(aParams, internal_np::halfedge_index), aSurface, boost::halfedge_index),
                         choose_param(get_param(aParams, internal_np::edge_is_constrained), No_constrained_edge_map<TriangleMesh>()),
@@ -237,7 +246,11 @@ int edge_collapse(TriangleMesh& aSurface,
   internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
   return edge_collapse(aSurface, aShould_stop,
                        choose_param(get_param(aParams, internal_np::current_num_edges), num_edges(aSurface)),
+#ifndef CGAL_SURFACE_SIMPLIFICATION_ENABLE_TRACE
                        choose_const_pmap(get_param(aParams, internal_np::vertex_index), aSurface, boost::vertex_index),
+#else
+                       Default(),
+#endif
                        choose_const_pmap(get_param(aParams, internal_np::vertex_point), aSurface, boost::vertex_point),
                        choose_const_pmap(get_param(aParams, internal_np::halfedge_index), aSurface, boost::halfedge_index),
                        choose_param(get_param(aParams, internal_np::edge_is_constrained), No_constrained_edge_map<TriangleMesh>()),
@@ -286,6 +299,11 @@ int parallel_edge_collapse(TriangleMesh& aSurface,
                                   aShould_stop,
                                   number_of_parts,
                                   partition_id_map,
+#ifndef CGAL_SURFACE_SIMPLIFICATION_ENABLE_TRACE
+                                  choose_const_pmap(get_param(aParams, internal_np::vertex_index), aSurface, boost::vertex_index),
+#else
+                                  Default(),
+#endif
                                   choose_param(get_param(aParams, internal_np::edge_is_constrained), No_constrained_edge_map<TriangleMesh>()),
                                   choose_param(get_param(aParams, internal_np::get_placement_policy), LindstromTurk_placement<TriangleMesh>()),
                                   choose_param(get_param(aParams, internal_np::get_cost_policy), LindstromTurk_cost<TriangleMesh>()),

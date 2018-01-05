@@ -178,7 +178,7 @@ struct In_same_component_map
 
 // The parallel task
 template <typename TriangleMesh, typename Stop, typename CCMap, typename HIMap,
-          typename ECMap, typename UECMap, typename Placement, typename Cost>
+          typename VIpmap, typename ECMap, typename UECMap, typename Placement, typename Cost>
 struct Simplify
 {
   typedef typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
@@ -193,6 +193,7 @@ struct Simplify
   Placement placement;
   Cost cost;
   HIMap himap;
+  VIpmap vim;
   std::vector<int>& buffer_size;
   std::vector<int>& results;
   tbb::concurrent_vector<edge_descriptor>& cc_edges;
@@ -205,6 +206,7 @@ struct Simplify
            Stop stop,
            CCMap ccmap,
            HIMap himap,
+           VIpmap vim,
            ECMap ecmap,
            UECMap uecmap,
            Placement placement,
@@ -227,6 +229,7 @@ struct Simplify
       placement(placement),
       cost(cost),
       himap(himap),
+      vim(vim),
       buffer_size(buffer_size),
       results(results),
       cc_edges(cc_edges),
@@ -245,9 +248,6 @@ struct Simplify
 
     SICM sicm(himap, sm);
     Component_graph cg(sm, sicm, cc_edges);
-
-    typedef typename boost::property_map<TriangleMesh, boost::vertex_index_t>::const_type VIpmap;
-    VIpmap vim = get(boost::vertex_index, sm);
 
     std::vector<edge_descriptor> buffer_edges;
     int i = 2;
@@ -362,11 +362,13 @@ struct Simplify
 } // end namespace internal
 
 template <typename TriangleMesh, typename Stop, typename FacePartitionIDPmap,
-          typename UECMap, typename Placement, typename Cost, typename Visitor>
+          typename VertexIndexMap, typename UECMap, typename Placement, typename Cost,
+          typename Visitor>
 int parallel_edge_collapse(TriangleMesh& sm,
                            Stop stop,
                            std::size_t number_of_parts,
                            FacePartitionIDPmap partition_id_map,
+                           VertexIndexMap vim,
                            UECMap uecmap,
                            Placement placement,
                            Cost cost,
@@ -393,9 +395,6 @@ int parallel_edge_collapse(TriangleMesh& sm,
   typedef CGAL::dynamic_edge_property_t<char> Edge_property_tag;
   typedef typename boost::property_map<TriangleMesh, Edge_property_tag>::type ECMap;
   ECMap ecmap = get(Edge_property_tag(), sm);
-
-  typedef typename boost::property_map<TriangleMesh, boost::vertex_index_t>::type VIMap;
-  VIMap vim = get(boost::vertex_index, sm);
 
   std::vector<edge_descriptor> partition_edges;
 
@@ -476,8 +475,8 @@ int parallel_edge_collapse(TriangleMesh& sm,
   for(std::size_t id=0; id<number_of_parts; ++id)
   {
     tasks.run(
-      internal::Simplify<TriangleMesh, Stop, FacePartitionIDPmap, HIMap, ECMap, UECMap, Placement, Cost>(
-        sm, stop, partition_id_map, himap, ecmap, uecmap, placement, cost, buffer_size, removed,
+      internal::Simplify<TriangleMesh, Stop, FacePartitionIDPmap, HIMap, VertexIndexMap, ECMap, UECMap, Placement, Cost>(
+        sm, stop, partition_id_map, himap, vim, ecmap, uecmap, placement, cost, buffer_size, removed,
         cc_edges[id], id, layers, dump, verbose, increase, &removal_mutex));
   }
   tasks.wait();
@@ -555,12 +554,6 @@ int parallel_edge_collapse(TriangleMesh& sm,
     BOOST_FOREACH(halfedge_descriptor hd, halfedges(sm))
     {
       put(him, hd, index++);
-    }
-
-    index = 0;
-    BOOST_FOREACH(vertex_descriptor vd, vertices(sm))
-    {
-      put(vim, vd, index++);
     }
   }
 
