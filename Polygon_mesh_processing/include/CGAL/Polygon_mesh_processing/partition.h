@@ -85,10 +85,10 @@ void output_partition(const TriangleMesh& tm,
 }
 
 template<typename TriangleMesh, typename FacePartitionIDPmap,
-         typename MEDIT_options, typename NamedParameters>
+         typename METIS_options, typename NamedParameters>
 void partition(const TriangleMesh& tm,
                int nparts, FacePartitionIDPmap partition_id_map,
-               MEDIT_options options, // pointer to the options array
+               METIS_options options, // pointer to the options array
                const NamedParameters& np)
 {
   CGAL_precondition(CGAL::is_triangle_mesh(tm));
@@ -164,7 +164,7 @@ void partition(const TriangleMesh& tm,
 template<typename TriangleMesh, typename FacePartitionIDPmap, typename NamedParameters>
 void partition(const TriangleMesh& tm,
                int nparts, FacePartitionIDPmap partition_id_map,
-               const boost::param_not_found, // no MEDIT options were passed
+               const boost::param_not_found, // no METIS options were passed
                const NamedParameters& np)
 {
   idx_t options[METIS_NOPTIONS];
