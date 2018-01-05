@@ -89,10 +89,13 @@ template<typename TriangleMesh, typename FacePartitionIDPmap,
 void partition(const TriangleMesh& tm,
                int nparts, FacePartitionIDPmap partition_id_map,
                MEDIT_options options, // pointer to the options array
-               const NamedParameters& /*np*/)
+               const NamedParameters& np)
 {
   CGAL_precondition(CGAL::is_triangle_mesh(tm));
   CGAL_precondition_msg(nparts > 1, ("Partitioning requires a number of parts > 1"));
+
+  using boost::choose_param;
+  using boost::get_param;
 
   typedef typename boost::graph_traits<TriangleMesh>::vertex_descriptor   vertex_descriptor;
   typedef typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
@@ -104,11 +107,12 @@ void partition(const TriangleMesh& tm,
   idx_t* eptr = new idx_t[ne + 1];
   idx_t* eind = new idx_t[d * ne];
 
-  // fill the adjacency info
-  typedef typename boost::property_map<TriangleMesh,
-                                       boost::vertex_index_t>::const_type Indices;
-  Indices indices = get(boost::vertex_index, tm);
+  //Vertex index map
+  typedef typename GetVertexIndexMap<TriangleMesh, NamedParameters>::type Indices;
+  Indices indices = choose_param(get_param(np, internal_np::vertex_index),
+                                 get_const_property_map(boost::vertex_index, tm));
 
+  // fill the adjacency info
   face_iterator fit, fe;
   boost::tie(fit, fe) = faces(tm);
   for(int i=0, j=0; fit!=fe; ++fit, ++i)
@@ -173,6 +177,9 @@ void partition(const TriangleMesh& tm,
 ///
 /// Computes a partition of the input mesh into `nparts` parts.
 ///
+/// Property map for `CGAL::vertex_index_t` should be either available
+/// as an internal property map to `tm` or provided as \ref pmp_namedparameters "Named Parameters".
+///
 /// \param tm a triangle mesh
 /// \param nparts the number of parts in the final partition
 /// \param partition_id_map a property map of type `FacePartitionIDPmap`
@@ -185,6 +192,9 @@ void partition(const TriangleMesh& tm,
 /// \tparam NamedParameters a sequence of \ref pmp_namedparameters "Named Parameters"
 ///
 /// \cgalNamedParamsBegin
+///   \cgalParamBegin{vertex_index_map}
+///     a property map containing the index of each vertex of `tm` intialized from `0` to `num_vertices(tm)-1`.
+///   \cgalParamEnd
 ///   \cgalParamBegin{METIS_options}
 ///     is a parameter used in `partition()` to pass options to the METIS mesh
 ///     partitioner. The many options of METIS are not described here. Instead, users
