@@ -385,13 +385,14 @@ int parallel_edge_collapse(TriangleMesh& sm,
   Real_timer t;
   Parallel_stop_predicate_visitor<TriangleMesh, Visitor> vis(pvis);
 
-  typedef CGAL::internal::halfedge_property_t<int> Halfedge_property_tag;
-  typedef typename CGAL::internal::dynamic_property_map<TriangleMesh, Halfedge_property_tag >::type HIMap;
-  HIMap himap = CGAL::internal::add_property(Halfedge_property_tag("h:internal::index_in_cc"), sm);
 
-  typedef CGAL::internal::edge_property_t<char> Edge_property_tag;
-  typedef typename CGAL::internal::dynamic_property_map<TriangleMesh, Edge_property_tag >::type ECMap;
-  ECMap ecmap = CGAL::internal::add_property(Edge_property_tag("e:internal::constrained"), sm);
+  typedef CGAL::dynamic_halfedge_property_t<int> Halfedge_property_tag;
+  typedef typename boost::property_map<TriangleMesh, Halfedge_property_tag>::type HIMap;
+  HIMap himap = get(Halfedge_property_tag(), sm);
+
+  typedef CGAL::dynamic_edge_property_t<char> Edge_property_tag;
+  typedef typename boost::property_map<TriangleMesh, Edge_property_tag>::type ECMap;
+  ECMap ecmap = get(Edge_property_tag(), sm);
 
   typedef typename boost::property_map<TriangleMesh, boost::vertex_index_t>::type VIMap;
   VIMap vim = get(boost::vertex_index, sm);
@@ -591,9 +592,6 @@ int parallel_edge_collapse(TriangleMesh& sm,
                             .get_cost(cost)
                             .edge_is_constrained_map(ormap));
   }
-
-  CGAL::internal::remove_property(ecmap, sm);
-  CGAL::internal::remove_property(himap, sm);
 
   if(verbose)
   {
