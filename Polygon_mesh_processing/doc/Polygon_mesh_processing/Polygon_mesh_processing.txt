@@ -644,7 +644,7 @@ the propagation of a connected component index to cross it.
 
 \cgalExample{Polygon_mesh_processing/connected_components_example.cpp}
 
-The second example shows how to use the class template `Face_filtered_graph`
+The second example shows how to use the class template `CGAL::Face_filtered_graph`
 which enables to treat one or several connected components as a face graph.
 
 \cgalExample{Polygon_mesh_processing/face_filtered_graph_example.cpp}
@@ -654,7 +654,7 @@ which enables to treat one or several connected components as a face graph.
 
 For algorithms that operate locally, mesh partitioning is often an easy way to parallelize
 the algorithm at little cost.
-The function `partition()` provides a wrapper to the graph partitioning
+The function `CGAL::Polygon_mesh_processing::partition()` provides a wrapper to the graph partitioning
 library METIS \cgalCite{karypis1998fast}, allowing to split triangular
 meshes that are models of the concept `FaceListGraph` into a given number of
 subdomains.

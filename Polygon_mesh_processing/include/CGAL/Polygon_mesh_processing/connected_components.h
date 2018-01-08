@@ -99,7 +99,7 @@ namespace Polygon_mesh_processing{
 }// namespace internal
 
 /*!
- * \ingroup PMPConnected_components_and_mesh_partitioning
+ * \ingroup PMPConnected_components
  *  discovers all the faces in the same connected component as `seed_face` and records them in `out`.
  * `seed_face` will also be added in `out`.
  *
@@ -179,7 +179,7 @@ connected_component(typename boost::graph_traits<PolygonMesh>::face_descriptor s
 }
 
 /*!
- * \ingroup PMPConnected_components_and_mesh_partitioning
+ * \ingroup PMPConnected_components
  *  computes for each face the index of the corresponding connected component.
  *
  *  A property map for `CGAL::face_index_t` should be either available as an internal property map 
@@ -263,7 +263,7 @@ void keep_connected_components(PolygonMesh& pmesh
                               , const NamedParameters& np);
 
 /*!
- * \ingroup PMPConnected_components_and_mesh_partitioning
+ * \ingroup PMPConnected_components
  *  removes the small connected components and all isolated vertices.
  *  Keep `nb_components_to_keep` largest connected components. 
  *
@@ -347,7 +347,7 @@ std::size_t keep_largest_connected_components(PolygonMesh& pmesh,
 }
 
 /*!
- * \ingroup PMPConnected_components_and_mesh_partitioning
+ * \ingroup PMPConnected_components
  *  removes connected components with less than a given number of faces.
  *
  * Property maps for `CGAL::face_index_t` and `CGAL::vertex_index_t`
@@ -557,7 +557,7 @@ void keep_or_remove_connected_components(PolygonMesh& pmesh
 }
 
 /*!
-* \ingroup PMPConnected_components_and_mesh_partitioning
+* \ingroup PMPConnected_components
 * keeps the connected components designated by theirs ids in `components_to_keep`,
 * and removes the other connected components as well as all isolated vertices.
 * The connected component id of a face is given by `fcm`.
@@ -600,7 +600,7 @@ void keep_connected_components(PolygonMesh& pmesh
 }
 
 /*!
-* \ingroup PMPConnected_components_and_mesh_partitioning
+* \ingroup PMPConnected_components
 * Removes in `pmesh` the connected components designated by theirs ids
 * in `components_to_remove` as well as all isolated vertices.
 * The connected component id of a face is given by `fcm`.
@@ -645,7 +645,7 @@ void remove_connected_components(PolygonMesh& pmesh
 }
 
 /*!
-* \ingroup PMPConnected_components_and_mesh_partitioning
+* \ingroup PMPConnected_components
 *  keeps the connected components not designated by the faces in `components_to_remove`,
 *  and removes the other connected components and all isolated vertices.
 *
@@ -703,7 +703,7 @@ void remove_connected_components(PolygonMesh& pmesh
 }
 
 /*!
-* \ingroup PMPConnected_components_and_mesh_partitioning
+* \ingroup PMPConnected_components
 *  keeps the connected components designated by the faces in `components_to_keep`,
 *  and removes the other connected components and all isolated vertices.
 *
