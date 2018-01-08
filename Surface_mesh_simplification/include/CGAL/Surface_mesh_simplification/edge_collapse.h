@@ -173,9 +173,14 @@ int edge_collapse(TriangleMesh& aSurface,
   using boost::choose_const_pmap;
   using boost::get_param;
 
+  typedef boost::graph_traits<TriangleMesh>                      GraphTraits;
+  typedef typename GraphTraits::edges_size_type                  size_type;
+
   internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
    return edge_collapse(aSurface, aShould_stop, Sequential_tag(), removal_mutex,
-                        choose_param(get_param(aParams, internal_np::current_num_edges), num_edges(aSurface)),
+                        choose_param(get_param(aParams, internal_np::current_num_edges),
+                                     static_cast<size_type>(std::distance(boost::begin(edges(aSurface)),
+                                                                          boost::end(edges(aSurface))))),
 #ifdef CGAL_SURFACE_SIMPLIFICATION_ENABLE_TRACE
                         choose_const_pmap(get_param(aParams, internal_np::vertex_index), aSurface, boost::vertex_index),
 #else
@@ -201,9 +206,14 @@ int edge_collapse(TriangleMesh& aSurface,
   using boost::choose_const_pmap;
   using boost::get_param;
 
+  typedef boost::graph_traits<TriangleMesh>                      GraphTraits;
+  typedef typename GraphTraits::edges_size_type                  size_type;
+
   internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
    return edge_collapse(aSurface, aShould_stop, Parallel_tag(), removal_mutex,
-                        choose_param(get_param(aParams, internal_np::current_num_edges), num_edges(aSurface)),
+                        choose_param(get_param(aParams, internal_np::current_num_edges),
+                                     static_cast<size_type>(std::distance(boost::begin(edges(aSurface)),
+                                                                          boost::end(edges(aSurface))))),
 #ifdef CGAL_SURFACE_SIMPLIFICATION_ENABLE_TRACE
                         choose_const_pmap(get_param(aParams, internal_np::vertex_index), aSurface, boost::vertex_index),
 #else
@@ -243,9 +253,14 @@ int edge_collapse(TriangleMesh& aSurface,
   using boost::choose_const_pmap;
   using boost::get_param;
 
+  typedef boost::graph_traits<TriangleMesh>                      GraphTraits;
+  typedef typename GraphTraits::edges_size_type                  size_type;
+
   internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
   return edge_collapse(aSurface, aShould_stop,
-                       choose_param(get_param(aParams, internal_np::current_num_edges), num_edges(aSurface)),
+                       choose_param(get_param(aParams, internal_np::current_num_edges),
+                                    static_cast<size_type>(std::distance(boost::begin(edges(aSurface)),
+                                                                         boost::end(edges(aSurface))))),
 #ifndef CGAL_SURFACE_SIMPLIFICATION_ENABLE_TRACE
                        choose_const_pmap(get_param(aParams, internal_np::vertex_index), aSurface, boost::vertex_index),
 #else

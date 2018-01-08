@@ -116,15 +116,10 @@ collect(CGAL_MUTEX* removal_mutex)
 
   Equal_3 equal_points = Traits().equal_3_object();
 
-  size_type lSize = (std::max)(current_num_edges,
-                               static_cast<size_type>(
-                                 std::distance(boost::begin(edges(mSurface)),
-                                               boost::end(edges(mSurface)))));
-
   mInitialEdgeCount = mCurrentEdgeCount = current_num_edges;
 
+  size_type lSize = num_edges(mSurface);
   mEdgeDataArray.reset(new Edge_data[lSize]);
-
   mPQ.reset(new PQ (lSize, Compare_cost(this), edge_id(this))); // AF: can lsize be changed to current_num_edges
 
   std::size_t id = 0;
