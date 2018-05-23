@@ -16,6 +16,7 @@ include_directories( BEFORE "../../include" )
 
 include( CGAL_CreateSingleSourceCGALProgram )
 
+create_single_source_cgal_program( "round_edges_SM.cpp" )
 create_single_source_cgal_program( "prim.cpp" )
 create_single_source_cgal_program( "gwdwg.cpp" )
 create_single_source_cgal_program( "seam_mesh.cpp" )

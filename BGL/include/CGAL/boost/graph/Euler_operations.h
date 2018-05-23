@@ -1461,6 +1461,93 @@ bool
   return true ;
 }
 
+
+template<typename HalfedgeRange, typename Graph>
+void
+round_edges(const HalfedgeRange& hedges,
+            Graph& g)
+{
+  typedef typename boost::graph_traits<Graph>::vertex_descriptor vertex_descriptor;
+  typedef typename boost::graph_traits<Graph>::edge_descriptor edge_descriptor;
+  typedef typename boost::graph_traits<Graph>::halfedge_descriptor halfedge_descriptor;
+  typedef typename boost::graph_traits<Graph>::face_descriptor face_descriptor;
+
+  typedef typename HalfedgeRange::const_iterator It;
+
+  assert(hedges.size() >= 2);
+  std::vector<halfedge_descriptor> opp;
+  opp.reserve(hedges.size());
+
+  It bit = hedges.begin();
+  It eit = boost::prior(hedges.end());
+  face_descriptor fd = add_face(g);
+  set_halfedge(fd,opposite(*bit,g),g);
+  
+  vertex_descriptor hes, het;
+  
+  for(It it = bit; it!= hedges.end();++it){
+    halfedge_descriptor hd = *it;
+    halfedge_descriptor gd = prev(opposite(hd,g), g);
+    
+    edge_descriptor e = add_edge(g);
+    halfedge_descriptor he = halfedge(e,g);
+    opp.push_back(he);
+    set_face(he, face(gd,g),g);
+    set_halfedge(face(gd,g),he,g);
+    set_next(gd,he,g);
+    set_next(he, prev(gd,g),g);
+  
+    if(it == bit){
+      het = source(hd,g);
+      hes = add_vertex(g);
+      g.point(hes) = g.point(target(hd,g));
+    } else if(it == eit){
+      het = hes;
+      hes = target(hd,g);
+    }else{
+      het = hes;
+      hes = add_vertex(g);
+      g.point(hes) = g.point(target(hd,g));
+    }
+    set_halfedge(target(hd,g),hd,g);
+    set_target(gd,hes,g);
+    set_halfedge(hes,gd,g);
+    set_target(he,het,g);
+    set_halfedge(het,he,g);
+    set_target(opposite(he,g),hes,g);
+  }
+
+  for(It it = bit; it!= hedges.end(); ++it){
+    halfedge_descriptor hd = opposite(*it,g);
+    set_face(hd,fd,g);
+    if(it == bit){
+      set_next(hd,opposite(opp.front(),g), g);
+    }else{
+      set_next(hd, opposite(*boost::prior(it),g), g);
+    }
+    vertex_descriptor vda = target(hd,g);
+    BOOST_FOREACH(halfedge_descriptor hda, halfedges_around_target(hd,g)){
+      set_target(hda,vda,g);
+    }
+  }
+
+  std::vector<halfedge_descriptor>::iterator eit2 = boost::prior(opp.end());
+  for(std::vector<halfedge_descriptor>::iterator it = opp.begin(); it!= opp.end(); ++it){
+    halfedge_descriptor hd = opposite(*it,g);
+    set_face(hd,fd,g);
+    if(it == eit2){
+      set_next(hd,opposite(*eit,g),g);
+    }else{
+      set_next(hd, opposite(*boost::next(it),g),g);
+    }
+    vertex_descriptor vda = target(hd,g);
+    BOOST_FOREACH(halfedge_descriptor hda, halfedges_around_target(hd,g)){
+      set_target(hda,vda,g);
+    }
+  }
+}
+
+    
 #ifndef CGAL_NO_DEPRECATED_CODE
 /// \cond SKIP_IN_MANUAL
 template<typename Graph>
