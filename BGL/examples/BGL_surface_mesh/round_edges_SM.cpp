@@ -2,6 +2,7 @@
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/boost/graph/Euler_operations.h>
+#include <CGAL/boost/graph/helpers.h>
 
 #include <iostream>
 #include <fstream>
@@ -39,6 +40,7 @@ int main(int argc, char* argv[])
     hedges.push_back(hd);
   }
   assert(sm.is_valid());
+  assert(CGAL::is_triangle_mesh(sm));
   std::cout << num_vertices(sm) << std::endl;
   CGAL::Euler::round_edges(hedges,sm);
 
