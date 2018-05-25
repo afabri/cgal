@@ -96,16 +96,20 @@ int main(int argc, char* argv[])
 {
   Mesh tm;
 
-  typedef Mesh::Property_map<edge_descriptor,bool> Feature;
-  Feature fm;
+  typedef Mesh::Property_map<vertex_descriptor,bool> vFeature;
+  typedef Mesh::Property_map<edge_descriptor,bool> eFeature;
+  vFeature vfm;
+  eFeature efm;
   bool created;
-  boost::tie(fm, created) = tm.add_property_map<edge_descriptor,bool>("e:feature",false);
+  boost::tie(vfm, created) = tm.add_property_map<vertex_descriptor,bool>("v:feature",false);
+  boost::tie(efm, created) = tm.add_property_map<edge_descriptor,bool>("e:feature",false);
 
-  Is_feature<Feature> isf(fm);
+  Is_feature<vFeature> isvf(vfm);
+  Is_feature<eFeature> isef(efm);
 
-  typedef boost::filtered_graph<Mesh,Is_feature<Feature> > FG;
+  typedef boost::filtered_graph<Mesh,Is_feature<eFeature>,Is_feature<vFeature> > FG;
 
-  FG fg(tm,isf);
+  FG fg(tm,isef,isvf);
 
   
   std::ifstream inm(argv[1]);
@@ -122,7 +126,9 @@ int main(int argc, char* argv[])
     halfedge_descriptor hd = halfedge(edb.first,tm);
     assert(target(hd,tm) == vj);
     hedges.push_back(hd);
-    put(fm, edge(hd,tm),true);
+    put(efm, edge(hd,tm),true);
+    put(vfm, vi,true);
+    put(vfm, vj,true);
   }
 
   Visitor<FG> vis;
