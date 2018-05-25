@@ -4,12 +4,15 @@
 #include <CGAL/boost/graph/Euler_operations.h>
 #include <CGAL/boost/graph/helpers.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
+#include <CGAL/boost/graph/split_graph_into_polylines.h>
 
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <map>
 #include <boost/foreach.hpp>
+#include <boost/graph/filtered_graph.hpp>
+#include <boost/graph/adjacency_list.hpp>
 
 typedef CGAL::Simple_cartesian<double>                       Kernel;
 typedef Kernel::Point_3                                      Point;
@@ -53,17 +56,65 @@ round(TM& tm, const std::vector<typename boost::graph_traits<TM>::halfedge_descr
 }
 
 
+template <typename FeatureEdgeMap>
+struct Is_feature {
+  Is_feature()
+  {}
+  
+  Is_feature(FeatureEdgeMap m)
+    : m_m(m)
+  {}
+  
+  template <typename Edge>
+  bool operator()(const Edge& e) const {
+    return get(m_m, e);
+  }
+  FeatureEdgeMap m_m;
+};
+
+
+template <typename Graph>
+struct Visitor {
+
+    void start_new_polyline()
+  {
+    std::cout << "start polyline" << std::endl;
+  }
+    void add_node(typename boost::graph_traits<Graph>::vertex_descriptor v)
+  {
+    std::cout << "Add "<< v << std::endl;
+  }
+    void end_polyline()
+  {
+    std::cout << "end polyline" << std::endl;
+  }
+};
+
+      
+
 int main(int argc, char* argv[])
 {
   Mesh tm;
 
+  typedef Mesh::Property_map<edge_descriptor,bool> Feature;
+  Feature fm;
+  bool created;
+  boost::tie(fm, created) = tm.add_property_map<edge_descriptor,bool>("e:feature",false);
+
+  Is_feature<Feature> isf(fm);
+
+  typedef boost::filtered_graph<Mesh,Is_feature<Feature> > FG;
+
+  FG fg(tm,isf);
+
+  
   std::ifstream inm(argv[1]);
   inm >> tm;
-  
+
   std::ifstream ins(argv[2]);
   int i,j;
   std::vector<halfedge_descriptor> hedges;
-
+  
   while(ins >> i >> j){
     vertex_descriptor vi(i), vj(j);
     std::pair<edge_descriptor,bool> edb = edge(vi,vj,tm);
@@ -71,12 +122,23 @@ int main(int argc, char* argv[])
     halfedge_descriptor hd = halfedge(edb.first,tm);
     assert(target(hd,tm) == vj);
     hedges.push_back(hd);
+    put(fm, edge(hd,tm),true);
   }
 
+  Visitor<FG> vis;
+  
+  CGAL::split_graph_into_polylines(fg,vis);
+     
+  BOOST_FOREACH(boost::graph_traits<FG>::edge_descriptor ed, edges(fg)){
+    std::cout << ed << std::endl;
+  }
+
+  #if 0
   std::vector<std::pair<boost::graph_traits<Mesh>::vertex_descriptor,
                         boost::graph_traits<Mesh>::face_descriptor> >  vvpairs;
-  vvpairs = round<Mesh,Kernel::Vector_3>(tm, hedges);
+  vvpairs = round(tm, hedges);
   assert(tm.is_valid());
+#endif
   std::cout << "done" << std::endl;
   return 0;
 }
