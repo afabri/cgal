@@ -1480,15 +1480,15 @@ round_edges(const HalfedgeRange& hedges,
 
   It bit = hedges.begin();
   It eit = boost::prior(hedges.end());
-
+  halfedge_descriptor hd, he, hd0, he0;
   vertex_descriptor hes, het;
   halfedge_descriptor thd;
   for(It it = bit; it!= hedges.end();++it){
-    halfedge_descriptor hd = *it;
+    hd = *it;
     halfedge_descriptor gd = prev(opposite(hd,g), g);
 
     edge_descriptor e = add_edge(g);
-    halfedge_descriptor he = halfedge(e,g);
+    he = halfedge(e,g);
     opp.push_back(he);
     set_face(he, face(gd,g),g);
     set_halfedge(face(gd,g),he,g);
@@ -1496,6 +1496,8 @@ round_edges(const HalfedgeRange& hedges,
     set_next(he, prev(gd,g),g);
 
     if(it == bit){
+      hd0 = hd;
+      he0 = he;
       het = source(hd,g);
       hes = add_vertex(g);
       g.point(hes) = g.point(target(hd,g));
@@ -1586,6 +1588,20 @@ round_edges(const HalfedgeRange& hedges,
     BOOST_FOREACH(halfedge_descriptor hda, halfedges_around_target(hd,g)){
       set_target(hda,vda,g);
     }
+  }
+
+  if(source(*bit,g) == target(*eit,g)){
+    std::cout << "// we have a loop" << std::endl;
+    // hd0 and he0 are the very first outer halfedges
+    // hd and he are the very last.
+    assert(target(he0,g) == source(*bit,g));
+    assert(source(hd0,g) == source(*bit,g));
+    assert(source(he,g) == target(*eit,g));
+    assert(target(hd,g) == target(*eit,g));
+    halfedge_descriptor hnew = split_vertex(opposite(hd0,g), opposite(he,g),g);
+    split_face(prev(hnew,g),next(hnew,g),g);
+    hnew = opposite(hnew,g);
+    split_face(prev(hnew,g),next(hnew,g),g);
   }
 }
 
