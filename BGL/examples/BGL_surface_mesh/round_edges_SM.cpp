@@ -73,20 +73,47 @@ struct Is_feature {
 };
 
 
-template <typename Graph>
+template <typename Graph, typename Base>
 struct Visitor {
+  std::vector<typename boost::graph_traits<Base>::vertex_descriptor> poly;
+  Graph& g;
+  Base& b;
 
+  Visitor(Graph&g, Base& b)
+    : g(g),b(b)
+  {}
+  
     void start_new_polyline()
   {
     std::cout << "start polyline" << std::endl;
+    poly.clear();
   }
-    void add_node(typename boost::graph_traits<Graph>::vertex_descriptor v)
+
+  void add_node(typename boost::graph_traits<Graph>::vertex_descriptor v)
   {
-    std::cout << "Add "<< v << std::endl;
+    poly.push_back(v);
   }
+  
     void end_polyline()
   {
     std::cout << "end polyline" << std::endl;
+    std::vector<typename boost::graph_traits<Base>::halfedge_descriptor> hedges;
+    std::vector<typename boost::graph_traits<Base>::vertex_descriptor>::iterator it = poly.begin();
+    boost::graph_traits<Base>::vertex_descriptor vp = *it;
+    for(++it; it != poly.end(); ++it){
+      boost::graph_traits<Base>::vertex_descriptor vq = *it;
+      typename boost::graph_traits<Base>::edge_descriptor ed;
+      bool found = false;
+      boost::tie(ed,found) = edge(vp,vq,b);
+      assert(found);
+      hedges.push_back(halfedge(ed,b));
+      vp = vq;
+    }
+    
+    std::vector<std::pair<boost::graph_traits<Base>::vertex_descriptor,
+                          boost::graph_traits<Base>::face_descriptor> >  vvpairs;
+    vvpairs = round(b, hedges);
+
   }
 };
 
@@ -131,13 +158,10 @@ int main(int argc, char* argv[])
     put(vfm, vj,true);
   }
 
-  Visitor<FG> vis;
-  
+  Visitor<FG,Mesh> vis(fg,tm);
+  std::cout << num_vertices(tm) << std::endl;
   CGAL::split_graph_into_polylines(fg,vis);
-     
-  BOOST_FOREACH(boost::graph_traits<FG>::edge_descriptor ed, edges(fg)){
-    std::cout << ed << std::endl;
-  }
+  std::cout << num_vertices(tm) << std::endl;
 
   #if 0
   std::vector<std::pair<boost::graph_traits<Mesh>::vertex_descriptor,
