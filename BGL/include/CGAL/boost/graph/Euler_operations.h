@@ -1480,13 +1480,13 @@ round_edges(const HalfedgeRange& hedges,
 
   It bit = hedges.begin();
   It eit = boost::prior(hedges.end());
-  
+
   vertex_descriptor hes, het;
   halfedge_descriptor thd;
   for(It it = bit; it!= hedges.end();++it){
     halfedge_descriptor hd = *it;
     halfedge_descriptor gd = prev(opposite(hd,g), g);
-    
+
     edge_descriptor e = add_edge(g);
     halfedge_descriptor he = halfedge(e,g);
     opp.push_back(he);
@@ -1494,7 +1494,7 @@ round_edges(const HalfedgeRange& hedges,
     set_halfedge(face(gd,g),he,g);
     set_next(gd,he,g);
     set_next(he, prev(gd,g),g);
-  
+
     if(it == bit){
       het = source(hd,g);
       hes = add_vertex(g);
@@ -1536,7 +1536,7 @@ round_edges(const HalfedgeRange& hedges,
       set_face(opposite(he,g),fd,g);
       set_face(opposite(hd,g),fd,g);
       set_halfedge(fd,thd,g);
-      
+
     }else{
       set_next(thd,opposite(he,g),g);
       set_next(opposite(hd,g),thd,g);
@@ -1571,17 +1571,17 @@ round_edges(const HalfedgeRange& hedges,
 
   for(It it = bit; it!= hedges.end(); ++it){
     halfedge_descriptor hd = opposite(*it,g);
-   
+
     vertex_descriptor vda = target(hd,g);
     BOOST_FOREACH(halfedge_descriptor hda, halfedges_around_target(hd,g)){
       set_target(hda,vda,g);
     }
   }
 
-  std::vector<halfedge_descriptor>::iterator eit2 = boost::prior(opp.end());
-  for(std::vector<halfedge_descriptor>::iterator it = opp.begin(); it!= opp.end(); ++it){
+  typename std::vector<halfedge_descriptor>::iterator eit2 = boost::prior(opp.end());
+  for(typename std::vector<halfedge_descriptor>::iterator it = opp.begin(); it!= opp.end(); ++it){
     halfedge_descriptor hd = opposite(*it,g);
-   
+
     vertex_descriptor vda = target(hd,g);
     BOOST_FOREACH(halfedge_descriptor hda, halfedges_around_target(hd,g)){
       set_target(hda,vda,g);

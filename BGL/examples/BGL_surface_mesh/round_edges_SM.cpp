@@ -21,35 +21,34 @@ typedef boost::graph_traits<Mesh>::edge_descriptor           edge_descriptor;
 typedef boost::graph_traits<Mesh>::face_descriptor           face_descriptor;
 
 
-template <typename TM, typename V>
-std::vector<std::pair<typename boost::graph_traits<TM>::vertex_descriptor,V> >
+template <typename TM>
+std::vector<std::pair<typename boost::graph_traits<TM>::vertex_descriptor,
+                      typename boost::graph_traits<TM>::face_descriptor> >
 round(TM& tm, const std::vector<typename boost::graph_traits<TM>::halfedge_descriptor>& hedges)
 {
-  typedef boost::graph_traits<TM>::halfedge_descriptor halfedge_descriptor;
-  typedef boost::graph_traits<TM>::face_descriptor     face_descriptor;
-  
+  typedef typename boost::graph_traits<TM>::halfedge_descriptor halfedge_descriptor;
+  typedef typename boost::graph_traits<TM>::face_descriptor face_descriptor;
+  typedef typename boost::graph_traits<TM>::vertex_descriptor vertex_descriptor;
+
   assert(tm.is_valid());
   assert(CGAL::is_triangle_mesh(tm));
-  
-  std::vector<std::pair<typename boost::graph_traits<TM>::vertex_descriptor,V> > res(2*(hedges.size()-1));
-  
-  for(int i = 0; i < hedges.size()-1; ++i){
-    V v = CGAL::Polygon_mesh_processing::compute_face_normal(face(hedges[i],tm),tm);
-    v = v/(v*v);
-    res[i] = std::make_pair(target(hedges[i],tm), v);
+
+  std::vector<std::pair<vertex_descriptor,face_descriptor> > res(2*(hedges.size()-1));
+
+  for(std::size_t i = 0; i < hedges.size()-1; ++i)
+  {
+    res[i] = std::make_pair(target(hedges[i],tm), face(hedges[i],tm));
   }
   CGAL::Euler::round_edges(hedges,tm);
   std::size_t offset = hedges.size() - 1;
-  for(int i = 0; i < offset; ++i){
+  for(std::size_t i = 0; i < offset; ++i){
     halfedge_descriptor hd = hedges[i];
     hd = prev(opposite(hd,tm),tm);
     hd = next(opposite(hd,tm),tm);
     hd = opposite(hd,tm);
-    V v = CGAL::Polygon_mesh_processing::compute_face_normal(face(hd,tm),tm);
-    v = v/(v*v);
-    res[i+offset] = std::make_pair(target(hd,tm),v);
+    res[i+offset] = std::make_pair(target(hd,tm),face(hd,tm));
   }
-  
+
   return res;
 }
 
@@ -74,7 +73,8 @@ int main(int argc, char* argv[])
     hedges.push_back(hd);
   }
 
-  std::vector<std::pair<boost::graph_traits<Mesh>::vertex_descriptor,Kernel::Vector_3> >  vvpairs;
+  std::vector<std::pair<boost::graph_traits<Mesh>::vertex_descriptor,
+                        boost::graph_traits<Mesh>::face_descriptor> >  vvpairs;
   vvpairs = round<Mesh,Kernel::Vector_3>(tm, hedges);
   assert(tm.is_valid());
   std::cout << "done" << std::endl;
