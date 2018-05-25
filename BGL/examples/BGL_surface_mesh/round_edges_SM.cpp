@@ -145,7 +145,9 @@ int main(int argc, char* argv[])
   std::ifstream ins(argv[2]);
   int i,j;
   std::vector<halfedge_descriptor> hedges;
-  
+  std::string ignore;
+  std::getline(ins,ignore);
+    std::getline(ins,ignore);
   while(ins >> i >> j){
     vertex_descriptor vi(i), vj(j);
     std::pair<edge_descriptor,bool> edb = edge(vi,vj,tm);
