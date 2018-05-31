@@ -1467,6 +1467,7 @@ void
 round_edges(const HalfedgeRange& hedges,
             Graph& g)
 {
+  //typedef typename CGAL::Simple_cartesian<double>::Vector_3 Vector_3;
   typedef typename boost::graph_traits<Graph>::vertex_descriptor vertex_descriptor;
   typedef typename boost::graph_traits<Graph>::edge_descriptor edge_descriptor;
   typedef typename boost::graph_traits<Graph>::halfedge_descriptor halfedge_descriptor;
@@ -1501,6 +1502,7 @@ round_edges(const HalfedgeRange& hedges,
       het = source(hd,g);
       hes = add_vertex(g);
       g.point(hes) = g.point(target(hd,g));
+      //g.point(target(hd,g)) = g.point(target(hd,g))+Vector_3(0.01,0,0);
     } else if(it == eit){
       het = hes;
       hes = target(hd,g);
@@ -1508,6 +1510,7 @@ round_edges(const HalfedgeRange& hedges,
       het = hes;
       hes = add_vertex(g);
       g.point(hes) = g.point(target(hd,g));
+      //g.point(target(hd,g)) = g.point(target(hd,g))+Vector_3(0.01,0,0);
     }
     set_halfedge(target(hd,g),hd,g);
     set_target(gd,hes,g);
@@ -1589,7 +1592,7 @@ round_edges(const HalfedgeRange& hedges,
       set_target(hda,vda,g);
     }
   }
-
+  
   if(source(*bit,g) == target(*eit,g)){
     std::cout << "// we have a loop" << std::endl;
     // hd0 and he0 are the very first outer halfedges
@@ -1599,10 +1602,16 @@ round_edges(const HalfedgeRange& hedges,
     assert(source(he,g) == target(*eit,g));
     assert(target(hd,g) == target(*eit,g));
     halfedge_descriptor hnew = split_vertex(opposite(hd0,g), opposite(he,g),g);
+    
+    g.point(target(opposite(hnew,g),g)) = g.point(target(hnew,g));
+    //g.point(target(hnew,g)) = g.point(target(hnew,g))+Vector_3(0.01,0,0);
+
     split_face(prev(hnew,g),next(hnew,g),g);
     hnew = opposite(hnew,g);
     split_face(prev(hnew,g),next(hnew,g),g);
+
   }
+  
 }
 
     

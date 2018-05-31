@@ -171,6 +171,8 @@ int main(int argc, char* argv[])
   vvpairs = round(tm, hedges);
   assert(tm.is_valid());
 #endif
+  std::ofstream out("out.off");
+  out << tm << std::endl;
   std::cout << "done" << std::endl;
   return 0;
 }
