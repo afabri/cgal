@@ -16,6 +16,7 @@
 
 typedef CGAL::Simple_cartesian<double>                       Kernel;
 typedef Kernel::Point_3                                      Point;
+typedef Kernel::Vector_3                                     Vector;
 typedef CGAL::Surface_mesh<Point>                            Mesh;
 
 typedef boost::graph_traits<Mesh>::vertex_descriptor         vertex_descriptor;
@@ -37,20 +38,66 @@ round(TM& tm, const std::vector<typename boost::graph_traits<TM>::halfedge_descr
   assert(CGAL::is_triangle_mesh(tm));
 
   std::vector<std::pair<vertex_descriptor,face_descriptor> > res(2*(hedges.size()-1));
-
+  std::vector<halfedge_descriptor> opp_hedges;
+  
   for(std::size_t i = 0; i < hedges.size()-1; ++i)
   {
     res[i] = std::make_pair(target(hedges[i],tm), face(hedges[i],tm));
   }
+  if(hedges.size() <= 2){
+    res.clear();
+    return res;
+  }
   CGAL::Euler::round_edges(hedges,tm);
-  std::size_t offset = hedges.size() - 1;
+  
+  std::size_t offset = hedges.size();
+  if(source(hedges.front(),tm) != target(hedges.back(),tm)){
+    --offset;
+  }
   for(std::size_t i = 0; i < offset; ++i){
     halfedge_descriptor hd = hedges[i];
+    std::cout << "hd  " << hd << " " << source(hd,tm) << " " << target(hd,tm) << std::endl;
     hd = prev(opposite(hd,tm),tm);
     hd = next(opposite(hd,tm),tm);
     hd = opposite(hd,tm);
-    res[i+offset] = std::make_pair(target(hd,tm),face(hd,tm));
+    // res[i+offset] = std::make_pair(target(hd,tm),face(hd,tm));
+    opp_hedges.push_back(hd);
+    std::cout << "opp " << hd << " " << source(hd,tm) << " " << target(hd,tm) << std::endl;
   }
+
+  std::cout << opp_hedges.size() << std::endl;;
+  std::vector<Point> newpoints;
+  BOOST_FOREACH(halfedge_descriptor hd, hedges){
+    Vector v = CGAL::unit_normal(tm.point(source(hd,tm)),
+                                 tm.point(target(hd,tm)),
+                                 tm.point(target(next(hd,tm),tm)));
+    newpoints.push_back(tm.point(target(hd,tm)) + 0.01 * v);
+  }
+
+  int i = 0;
+  BOOST_FOREACH(halfedge_descriptor hd, hedges){
+    tm.point(target(hd,tm))= newpoints[i++];
+  }
+
+  newpoints.clear();
+  BOOST_FOREACH(halfedge_descriptor hd, opp_hedges){
+    std::cout << "A" << std::endl;
+    std::cout << tm.point(source(hd,tm)) << "|"<< 
+                                 tm.point(target(hd,tm)) << "|"<< 
+      tm.point(target(next(hd,tm),tm)) << std::endl;
+    Vector v = CGAL::unit_normal(tm.point(source(hd,tm)),
+                                 tm.point(target(hd,tm)),
+                                 tm.point(target(next(hd,tm),tm)));
+    newpoints.push_back(tm.point(target(hd,tm)) + 0.01 * v);
+  }
+  std::cout << opp_hedges.size() << std::endl;;
+  i = 0;
+  BOOST_FOREACH(halfedge_descriptor hd, opp_hedges){
+        std::cout << "set " << hd << " " << source(hd,tm) << " " << target(hd,tm) << std::endl;
+    tm.point(target(hd,tm))= newpoints[i++];
+  }
+
+  
 
   return res;
 }

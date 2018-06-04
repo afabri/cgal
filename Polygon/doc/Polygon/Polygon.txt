@@ -82,4 +82,8 @@ of polygons that represent the holes.
 These classes do not add any semantic requirements on the simplicity
 or orientation of their boundary polygons.
 
+\section secPolygonWKT Polygons and the WKT File Format
+
+
+
 }
