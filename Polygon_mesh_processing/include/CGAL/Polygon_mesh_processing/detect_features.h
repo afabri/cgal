@@ -77,6 +77,34 @@ is_sharp(PolygonMesh& polygonMesh,
 }
 
 
+  
+// AF: may be wrong if the faces are not triangles
+template <typename PolygonMesh>
+bool
+is_reflex(PolygonMesh& polygonMesh,
+          const typename boost::graph_traits<PolygonMesh>::halfedge_descriptor& he)
+{
+  typedef typename boost::graph_traits<PolygonMesh>::vertex_descriptor vertex_descriptor;
+  if(is_border(edge(he,polygonMesh),polygonMesh)){
+    return false;
+  }
+
+  vertex_descriptor vp, vq, vr, vs;
+  vp = source(he,polygonMesh);
+  vq = target(he,polygonMesh);
+  vr = target(next(he,polygonMesh),polygonMesh);
+  vs = target(next(opposite(he,polygonMesh),polygonMesh),polygonMesh);
+  typename boost::property_map<PolygonMesh,vertex_point_t>::type vpm = get(vertex_point,polygonMesh);
+
+  Orientation ori = orientation(get(vpm, vp),
+                                get(vpm, vq),
+                                get(vpm, vr),
+                                get(vpm, vs));
+  CGAL_assertion(ori != COPLANAR);
+  return(ori == NEGATIVE);
+}
+  
+
 //wrapper for patchid map.
 template<typename PatchIdMap,
          typename ValueType = typename boost::property_traits<PatchIdMap>::value_type>
