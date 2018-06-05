@@ -37,10 +37,14 @@ round(TM& tm, const std::vector<typename boost::graph_traits<TM>::halfedge_descr
   assert(tm.is_valid());
   assert(CGAL::is_triangle_mesh(tm));
 
-  std::vector<std::pair<vertex_descriptor,face_descriptor> > res(2*(hedges.size()-1));
+  std::size_t offset = hedges.size();
+  if(source(hedges.front(),tm) != target(hedges.back(),tm)){
+    --offset;
+  }
+  std::vector<std::pair<vertex_descriptor,face_descriptor> > res(2*(offset));
   std::vector<halfedge_descriptor> opp_hedges;
   
-  for(std::size_t i = 0; i < hedges.size()-1; ++i)
+  for(std::size_t i = 0; i < offset; ++i)
   {
     res[i] = std::make_pair(target(hedges[i],tm), face(hedges[i],tm));
   }
@@ -50,10 +54,7 @@ round(TM& tm, const std::vector<typename boost::graph_traits<TM>::halfedge_descr
   }
   CGAL::Euler::round_edges(hedges,tm);
   
-  std::size_t offset = hedges.size();
-  if(source(hedges.front(),tm) != target(hedges.back(),tm)){
-    --offset;
-  }
+
   for(std::size_t i = 0; i < offset; ++i){
     halfedge_descriptor hd = hedges[i];
     std::cout << "hd  " << hd << " " << source(hd,tm) << " " << target(hd,tm) << std::endl;
