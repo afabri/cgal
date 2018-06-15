@@ -1,18 +1,19 @@
-
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/Surface_mesh.h>
+
 #include <CGAL/boost/graph/Euler_operations.h>
 #include <CGAL/boost/graph/helpers.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
 #include <CGAL/boost/graph/split_graph_into_polylines.h>
 
+#include <boost/foreach.hpp>
+#include <boost/graph/filtered_graph.hpp>
+#include <boost/graph/adjacency_list.hpp>
+
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <map>
-#include <boost/foreach.hpp>
-#include <boost/graph/filtered_graph.hpp>
-#include <boost/graph/adjacency_list.hpp>
 
 typedef CGAL::Simple_cartesian<double>                       Kernel;
 typedef Kernel::Point_3                                      Point;
@@ -23,7 +24,6 @@ typedef boost::graph_traits<Mesh>::vertex_descriptor         vertex_descriptor;
 typedef boost::graph_traits<Mesh>::halfedge_descriptor       halfedge_descriptor;
 typedef boost::graph_traits<Mesh>::edge_descriptor           edge_descriptor;
 typedef boost::graph_traits<Mesh>::face_descriptor           face_descriptor;
-
 
 template <typename TM>
 std::vector<std::pair<typename boost::graph_traits<TM>::vertex_descriptor,
@@ -38,9 +38,10 @@ round(TM& tm, const std::vector<typename boost::graph_traits<TM>::halfedge_descr
   assert(CGAL::is_triangle_mesh(tm));
 
   std::size_t offset = hedges.size();
-  if(source(hedges.front(),tm) != target(hedges.back(),tm)){
+  if(source(hedges.front(),tm) != target(hedges.back(),tm)) {
     --offset;
   }
+
   std::vector<std::pair<vertex_descriptor,face_descriptor> > res(2*(offset));
   std::vector<halfedge_descriptor> opp_hedges;
   
@@ -48,14 +49,15 @@ round(TM& tm, const std::vector<typename boost::graph_traits<TM>::halfedge_descr
   {
     res[i] = std::make_pair(target(hedges[i],tm), face(hedges[i],tm));
   }
-  if(hedges.size() <= 2){
+
+  if(hedges.size() <= 2) {
     res.clear();
     return res;
   }
-  CGAL::Euler::round_edges(hedges,tm);
-  
 
-  for(std::size_t i = 0; i < offset; ++i){
+  CGAL::Euler::round_edges(hedges,tm);
+
+  for(std::size_t i = 0; i < offset; ++i) {
     halfedge_descriptor hd = hedges[i];
     std::cout << "hd  " << hd << " " << source(hd,tm) << " " << target(hd,tm) << std::endl;
     hd = prev(opposite(hd,tm),tm);
@@ -66,9 +68,9 @@ round(TM& tm, const std::vector<typename boost::graph_traits<TM>::halfedge_descr
     std::cout << "opp " << hd << " " << source(hd,tm) << " " << target(hd,tm) << std::endl;
   }
 
-  std::cout << opp_hedges.size() << std::endl;;
+  std::cout << opp_hedges.size() << std::endl;
   std::vector<Point> newpoints;
-  BOOST_FOREACH(halfedge_descriptor hd, hedges){
+  BOOST_FOREACH(halfedge_descriptor hd, hedges) {
     Vector v = CGAL::unit_normal(tm.point(source(hd,tm)),
                                  tm.point(target(hd,tm)),
                                  tm.point(target(next(hd,tm),tm)));
@@ -76,12 +78,12 @@ round(TM& tm, const std::vector<typename boost::graph_traits<TM>::halfedge_descr
   }
 
   int i = 0;
-  BOOST_FOREACH(halfedge_descriptor hd, hedges){
+  BOOST_FOREACH(halfedge_descriptor hd, hedges) {
     tm.point(target(hd,tm))= newpoints[i++];
   }
 
   newpoints.clear();
-  BOOST_FOREACH(halfedge_descriptor hd, opp_hedges){
+  BOOST_FOREACH(halfedge_descriptor hd, opp_hedges) {
     std::cout << "A" << std::endl;
     std::cout << tm.point(source(hd,tm)) << "|"<< 
                                  tm.point(target(hd,tm)) << "|"<< 
@@ -91,18 +93,17 @@ round(TM& tm, const std::vector<typename boost::graph_traits<TM>::halfedge_descr
                                  tm.point(target(next(hd,tm),tm)));
     newpoints.push_back(tm.point(target(hd,tm)) + 0.01 * v);
   }
-  std::cout << opp_hedges.size() << std::endl;;
+
+  std::cout << opp_hedges.size() << std::endl;
+
   i = 0;
-  BOOST_FOREACH(halfedge_descriptor hd, opp_hedges){
+  BOOST_FOREACH(halfedge_descriptor hd, opp_hedges) {
         std::cout << "set " << hd << " " << source(hd,tm) << " " << target(hd,tm) << std::endl;
     tm.point(target(hd,tm))= newpoints[i++];
   }
 
-  
-
   return res;
 }
-
 
 template <typename FeatureEdgeMap>
 struct Is_feature {
@@ -146,10 +147,11 @@ struct Visitor {
   {
     std::cout << "end polyline" << std::endl;
     std::vector<typename boost::graph_traits<Base>::halfedge_descriptor> hedges;
-    std::vector<typename boost::graph_traits<Base>::vertex_descriptor>::iterator it = poly.begin();
-    boost::graph_traits<Base>::vertex_descriptor vp = *it;
-    for(++it; it != poly.end(); ++it){
-      boost::graph_traits<Base>::vertex_descriptor vq = *it;
+
+    typename std::vector<typename boost::graph_traits<Base>::vertex_descriptor>::iterator it = poly.begin();
+    typename boost::graph_traits<Base>::vertex_descriptor vp = *it;
+    for(++it; it != poly.end(); ++it) {
+      typename boost::graph_traits<Base>::vertex_descriptor vq = *it;
       typename boost::graph_traits<Base>::edge_descriptor ed;
       bool found = false;
       boost::tie(ed,found) = edge(vp,vq,b);
@@ -158,14 +160,12 @@ struct Visitor {
       vp = vq;
     }
     
-    std::vector<std::pair<boost::graph_traits<Base>::vertex_descriptor,
-                          boost::graph_traits<Base>::face_descriptor> >  vvpairs;
+    std::vector<std::pair<typename boost::graph_traits<Base>::vertex_descriptor,
+                          typename boost::graph_traits<Base>::face_descriptor> >  vvpairs;
     vvpairs = round(b, hedges);
 
   }
 };
-
-      
 
 int main(int argc, char* argv[])
 {
@@ -186,17 +186,16 @@ int main(int argc, char* argv[])
 
   FG fg(tm,isef,isvf);
 
-  
-  std::ifstream inm(argv[1]);
+  std::ifstream inm(argv[1]); // mesh
   inm >> tm;
 
-  std::ifstream ins(argv[2]);
+  std::ifstream ins(argv[2]); // selection
   int i,j;
   std::vector<halfedge_descriptor> hedges;
   std::string ignore;
   std::getline(ins,ignore);
-    std::getline(ins,ignore);
-  while(ins >> i >> j){
+  std::getline(ins,ignore);
+  while(ins >> i >> j) {
     vertex_descriptor vi(i), vj(j);
     std::pair<edge_descriptor,bool> edb = edge(vi,vj,tm);
     assert(edb.second);
@@ -213,12 +212,6 @@ int main(int argc, char* argv[])
   CGAL::split_graph_into_polylines(fg,vis);
   std::cout << num_vertices(tm) << std::endl;
 
-  #if 0
-  std::vector<std::pair<boost::graph_traits<Mesh>::vertex_descriptor,
-                        boost::graph_traits<Mesh>::face_descriptor> >  vvpairs;
-  vvpairs = round(tm, hedges);
-  assert(tm.is_valid());
-#endif
   std::ofstream out("out.off");
   out << tm << std::endl;
   std::cout << "done" << std::endl;
