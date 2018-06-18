@@ -1583,7 +1583,6 @@ round_edges(const HalfedgeRange& hedges,
     }
   }
 
-  typename std::vector<halfedge_descriptor>::iterator eit2 = boost::prior(opp.end());
   for(typename std::vector<halfedge_descriptor>::iterator it = opp.begin(); it!= opp.end(); ++it){
     halfedge_descriptor hd = opposite(*it,g);
 
