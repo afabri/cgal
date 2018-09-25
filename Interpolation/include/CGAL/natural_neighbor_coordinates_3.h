@@ -29,6 +29,13 @@
 #include <CGAL/utility.h>
 #include <CGAL/triangulation_assertions.h>
 #include <CGAL/number_utils.h>
+#include <CGAL/Surface_mesh.h>
+#include <CGAL/Convex_hull_3/dual/halfspace_intersection_3.h>
+#include <CGAL/Convex_hull_3/dual/halfspace_intersection_with_constructions_3.h>
+#include <CGAL/Concatenate_iterator.h>
+#include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
+
+#include <boost/lexical_cast.hpp>
 
 #include <algorithm>
 #include <iostream> //TO DO : to remove
@@ -337,6 +344,87 @@ bool is_correct_natural_neighborhood(const Dt& /*dt*/,
           && (sum_z == norm_coeff*Q.z()));
 }
 
+
+template <class Dt>
+void
+natural_neighbor_coordinates_3(const Dt& dt,
+                               const typename Dt::Geom_traits::Point_3& q)
+{
+  typedef typename Dt::Geom_traits::Plane_3 Plane_3;
+  typedef typename Dt::Geom_traits::Point_3 Point_3;
+  typedef typename Dt::Cell_handle Cell_handle;
+  typedef typename Dt::Vertex_handle Vertex_handle;
+  typedef typename Dt::Facet Facet;
+  Cell_handle ch = dt.locate(q);
+
+  std::vector<Facet> facets;
+  std::set<Vertex_handle> vertices;
+
+  dt.find_conflicts(q, ch, std::back_inserter(facets), Emptyset_iterator());
+  BOOST_FOREACH(Facet f, facets){
+    for(int i = 0; i < 3; i++){
+      int j = Dt::vertex_triple_index(f.second,i);
+      vertices.insert(f.first->vertex(j));
+    }
+  }
+
+  std::vector<Plane_3> planes;
+  BOOST_FOREACH(Vertex_handle vh, vertices){
+    Point_3 &p = vh->point();
+    Plane_3 plane = bisector(p, q);
+    planes.push_back(plane);
+  }
+
+  Surface_mesh<Point_3> sm;
+  std::cout << "construct cell " << std::flush;
+  CGAL::halfspace_intersection_with_constructions_3(planes.begin(), planes.end(), sm);
+  std::cout << "done" << std::endl;
+  CGAL::Polygon_mesh_processing::triangulate_faces(sm);
+  std::ofstream mesh("cell.off");
+  mesh << sm << std::endl;
+
+  int i = 0;
+  BOOST_FOREACH(Vertex_handle vh, vertices){
+    Point_3 &p = vh->point();
+    std::vector<Vertex_handle> incident;
+    std::vector<Plane_3> planes2;
+    dt.incident_vertices(vh, std::back_inserter(incident));
+    BOOST_FOREACH(Vertex_handle vh, incident){
+      if(dt.is_infinite(vh)){
+        std::cout << "skip infinite vertex"<< std::endl;
+      } else {
+        Point_3 &p2 = vh->point();
+        Plane_3 plane2 = bisector(p2, p);
+        planes2.push_back(plane2);
+      }
+    }
+    planes2.insert(planes2.end(), planes.begin(), planes.end());
+    sm.clear();
+    std::cout << "Construct cell " << i << std::flush;
+    CGAL::halfspace_intersection_with_constructions_3(planes2.begin(), planes2.end(), sm);
+    std::cout << "done" << std::endl;
+    
+    CGAL::Polygon_mesh_processing::triangulate_faces(sm);
+    /*
+    typedef CGAL::Concatenate_iterator<std::vector<Plane_3>::iterator,std::vector<Plane_3>::iterator> CI;
+                                       
+    CGAL::halfspace_intersection_3(CI(planes.end(),
+                                      planes2.begin(),
+                                      planes.begin()),
+                                   CI(planes.end(),
+                                      planes2.begin(),
+                                      planes2.end(), 0),
+                                   sm);
+    */
+    
+    std::string fn("cell-");
+    fn = fn + boost::lexical_cast<std::string>(i++) + std::string(".off");
+    std::ofstream mesh(fn.c_str());
+    mesh << sm << std::endl;
+  }
+}
+  
+                               
 // ====================== Geometric Traits utilities =========================================
 // === Definitions
 
