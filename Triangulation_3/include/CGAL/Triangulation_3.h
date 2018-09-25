@@ -866,6 +866,40 @@ public:
     return is_infinite(e.first, e.second, e.third);
   }
 
+  bool is_on_convex_hull(Facet f) const
+  {
+    if(is_infinite(f.first->vertex(f.second))){
+      return true;
+    }
+    f = mirror_facet(f);
+    return is_infinite(f.first->vertex(f.second));
+  }
+
+  
+  bool is_on_convex_hull(const Edge& e) const
+  {
+    Cell_circulator circ = incident_cells(e), done(circ);
+    do {
+      if(is_infinite(circ)){
+        return true;
+      }
+    }while(++circ != done);
+    return false;
+  }
+  
+  bool is_on_convex_hull(Vertex_handle v) const
+  {
+    std::vector<Cell_handle> cells;
+    cells.reseve(64);
+    incident_cells(v, std::back_inserter(cells));
+    BOOST_FOREACH(Cell_handle c, cells){
+      if(is_infinite(c)){
+        return true;
+      }
+    }
+    return false;
+  }
+    
   // QUERIES
   bool is_vertex(const Point& p, Vertex_handle& v) const;
   bool is_vertex(Vertex_handle v) const;

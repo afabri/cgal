@@ -380,15 +380,18 @@ polytope_volume(const PolygonMesh& pm)
 }
 
 
-template <class Dt>
-void
+template <class Dt, class OutputIterator>
+Triple< OutputIterator, typename Dt::Geom_traits::FT, bool >
 natural_neighbor_coordinates_3(const Dt& dt,
-                               const typename Dt::Geom_traits::Point_3& q)
+                               const typename Dt::Geom_traits::Point_3& q,
+                               OutputIterator out,
+                               typename Dt::Cell_handle start = typename Dt::Cell_handle())
 {
   typedef typename Dt::Geom_traits AK;
   typedef Exact_predicates_exact_constructions_kernel EK;
   typedef CGAL::Cartesian_converter<AK,EK> AK2EK;
 
+  typedef typename AK::FT      Coord_type;
   typedef typename AK::Point_3 Point_3;
   typedef typename EK::Point_3 ePoint_3;
   typedef typename EK::Plane_3 ePlane_3;
@@ -396,12 +399,35 @@ natural_neighbor_coordinates_3(const Dt& dt,
   typedef typename Dt::Cell_handle Cell_handle;
   typedef typename Dt::Vertex_handle Vertex_handle;
   typedef typename Dt::Facet Facet;
-
+  typedef typename Dt::Edge Edge;
+  
   AK2EK ak2ek;
 
   ePoint_3 eq = ak2ek(q);
-  Cell_handle ch = dt.locate(q);
+  typename Dt::Locate_type lt;
+  int li, lj;
+  Cell_handle ch = dt.locate(q, lt, li, lj, start);
 
+  if (lt == Dt::OUTSIDE_AFFINE_HULL || lt == Dt::OUTSIDE_CONVEX_HULL)
+  {
+    return make_triple(out, Coord_type(1), false);
+  }
+  
+  if (lt == Dt::VERTEX){
+    *out++= std::make_pair(ch->vertex(li), Coord_type(1));
+    return make_triple(out, Coord_type(1), true);
+  }
+  
+  if((lt == Dt::EDGE) && dt.is_on_convex_hull(Edge(ch,li, lj))){
+    std::cout << "to be done: interpolate on edge on convex hull" << std::endl;
+    return make_triple(out, Coord_type(1), false);
+  }
+
+  if((lt == Dt::FACET) && dt.is_on_convex_hull(Facet(ch,li))){
+    std::cout << "to be done: interpolate on face on convex hull" << std::endl;
+    return make_triple(out, Coord_type(1), false);     
+  }
+  
   std::vector<Facet> facets;
   std::set<Vertex_handle> vertices;
 
@@ -429,7 +455,8 @@ natural_neighbor_coordinates_3(const Dt& dt,
   std::ofstream mesh("cell.off");
   mesh << sm << std::endl;
 #endif
-  
+
+  double total_volume = 0;
   int i = 0;
   BOOST_FOREACH(Vertex_handle vh, vertices){
     Point_3 &p = vh->point();
@@ -450,7 +477,9 @@ natural_neighbor_coordinates_3(const Dt& dt,
     CGAL::halfspace_intersection_3(planes2.begin(), planes2.end(), sm);
 
     double pv = polytope_volume(sm);
-    std::cout << pv << std::endl;
+    total_volume += pv;
+    typename Dt::Geom_traits::FT fpv(pv);
+    *out++= std::make_pair(vh,fpv);
 
 #ifdef CGAL_NN3_DUMP_OFF
     CGAL::Polygon_mesh_processing::triangulate_faces(sm);    
@@ -460,6 +489,8 @@ natural_neighbor_coordinates_3(const Dt& dt,
     mesh << sm << std::endl;
 #endif
   }
+
+  return make_triple(out, typename Dt::Geom_traits::FT(total_volume), true);
 }
   
                                
