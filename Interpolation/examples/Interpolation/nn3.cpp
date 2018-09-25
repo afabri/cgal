@@ -1,5 +1,4 @@
-#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
-#define  CGAL_NO_CDT_2_WARNING
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Delaunay_triangulation_3.h>
 #include <CGAL/natural_neighbor_coordinates_3.h>
 #include <CGAL/point_generators_3.h>
@@ -12,7 +11,7 @@
 
 typedef double NT; //Number Type
 
-typedef CGAL::Exact_predicates_exact_constructions_kernel    K;
+typedef CGAL::Exact_predicates_inexact_constructions_kernel    K;
 
 typedef K::Point_3                                             Point3;
 typedef K::Vector_3                                            Vector3;
@@ -32,7 +31,7 @@ int main()
 {
   Dh triangulation;
 
-  CGAL::Random_points_in_sphere_3<Point3> rpg(1.0, CGAL::Random(0));
+  CGAL::Random_points_in_sphere_3<Point3> rpg(10.0, CGAL::Random(0));
 
   Point3 p, q(0,0,0);
   std::ofstream ps("points.xyz");

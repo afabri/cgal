@@ -31,9 +31,11 @@
 #include <CGAL/number_utils.h>
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/Convex_hull_3/dual/halfspace_intersection_3.h>
-#include <CGAL/Convex_hull_3/dual/halfspace_intersection_with_constructions_3.h>
-#include <CGAL/Concatenate_iterator.h>
+#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+
+#ifdef CGAL_NN3_DUMP_OFF
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
+#endif
 
 #include <boost/lexical_cast.hpp>
 
@@ -344,17 +346,60 @@ bool is_correct_natural_neighborhood(const Dt& /*dt*/,
           && (sum_z == norm_coeff*Q.z()));
 }
 
+template <typename PolygonMesh>
+double
+polytope_volume(const PolygonMesh& pm)
+{
+  typedef typename boost::graph_traits<PolygonMesh>::vertex_descriptor vertex_descriptor;
+  typedef typename boost::graph_traits<PolygonMesh>::face_descriptor face_descriptor;
+  typedef typename boost::graph_traits<PolygonMesh>::halfedge_descriptor halfedge_descriptor;
+
+  typedef typename boost::property_map<PolygonMesh,vertex_point_t>::type VPM;
+  VPM vpm = get(vertex_point,pm);
+  typedef typename boost::property_traits<VPM>::value_type Point_3;
+  Point_3 origin(0, 0, 0);
+
+  typename CGAL::Kernel_traits<Point_3>::Kernel::Compute_volume_3 cv3;
+
+  double volume=0;
+  BOOST_FOREACH(face_descriptor f, faces(pm)){
+    halfedge_descriptor h = halfedge(f, pm);
+    vertex_descriptor v = source(h, pm);
+    h = next(h, pm);
+    vertex_descriptor tv = target(h, pm);
+    while(tv != v){
+      volume += to_double(cv3(origin,
+                              get(vpm, v),
+                              get(vpm, source(h,pm)),
+                              get(vpm, target(h,pm))));
+      h = next(h, pm);
+      tv = target(h, pm);
+    }
+  }
+  return volume;
+}
+
 
 template <class Dt>
 void
 natural_neighbor_coordinates_3(const Dt& dt,
                                const typename Dt::Geom_traits::Point_3& q)
 {
-  typedef typename Dt::Geom_traits::Plane_3 Plane_3;
-  typedef typename Dt::Geom_traits::Point_3 Point_3;
+  typedef typename Dt::Geom_traits AK;
+  typedef Exact_predicates_exact_constructions_kernel EK;
+  typedef CGAL::Cartesian_converter<AK,EK> AK2EK;
+
+  typedef typename AK::Point_3 Point_3;
+  typedef typename EK::Point_3 ePoint_3;
+  typedef typename EK::Plane_3 ePlane_3;
+  
   typedef typename Dt::Cell_handle Cell_handle;
   typedef typename Dt::Vertex_handle Vertex_handle;
   typedef typename Dt::Facet Facet;
+
+  AK2EK ak2ek;
+
+  ePoint_3 eq = ak2ek(q);
   Cell_handle ch = dt.locate(q);
 
   std::vector<Facet> facets;
@@ -368,59 +413,52 @@ natural_neighbor_coordinates_3(const Dt& dt,
     }
   }
 
-  std::vector<Plane_3> planes;
+  std::vector<ePlane_3> planes;
   BOOST_FOREACH(Vertex_handle vh, vertices){
     Point_3 &p = vh->point();
-    Plane_3 plane = bisector(p, q);
-    planes.push_back(plane);
+    ePoint_3 ep = ak2ek(p);
+    ePlane_3 eplane = bisector(ep, eq);
+    planes.push_back(eplane);
   }
 
-  Surface_mesh<Point_3> sm;
-  std::cout << "construct cell " << std::flush;
-  CGAL::halfspace_intersection_with_constructions_3(planes.begin(), planes.end(), sm);
-  std::cout << "done" << std::endl;
+  Surface_mesh<ePoint_3> sm;
+
+#ifdef CGAL_NN3_DUMP_OFF  
+  CGAL::halfspace_intersection_3(planes.begin(), planes.end(), sm);
   CGAL::Polygon_mesh_processing::triangulate_faces(sm);
   std::ofstream mesh("cell.off");
   mesh << sm << std::endl;
-
+#endif
+  
   int i = 0;
   BOOST_FOREACH(Vertex_handle vh, vertices){
     Point_3 &p = vh->point();
+    ePoint_3 ep = ak2ek(p);
     std::vector<Vertex_handle> incident;
-    std::vector<Plane_3> planes2;
+    std::vector<ePlane_3> planes2;
     dt.incident_vertices(vh, std::back_inserter(incident));
     BOOST_FOREACH(Vertex_handle vh, incident){
-      if(dt.is_infinite(vh)){
-        std::cout << "skip infinite vertex"<< std::endl;
-      } else {
+      if(! dt.is_infinite(vh)){
         Point_3 &p2 = vh->point();
-        Plane_3 plane2 = bisector(p2, p);
+        ePoint_3 ep2 = ak2ek(p2);
+        ePlane_3 plane2 = bisector(ep2, ep);
         planes2.push_back(plane2);
       }
     }
     planes2.insert(planes2.end(), planes.begin(), planes.end());
     sm.clear();
-    std::cout << "Construct cell " << i << std::flush;
-    CGAL::halfspace_intersection_with_constructions_3(planes2.begin(), planes2.end(), sm);
-    std::cout << "done" << std::endl;
-    
-    CGAL::Polygon_mesh_processing::triangulate_faces(sm);
-    /*
-    typedef CGAL::Concatenate_iterator<std::vector<Plane_3>::iterator,std::vector<Plane_3>::iterator> CI;
-                                       
-    CGAL::halfspace_intersection_3(CI(planes.end(),
-                                      planes2.begin(),
-                                      planes.begin()),
-                                   CI(planes.end(),
-                                      planes2.begin(),
-                                      planes2.end(), 0),
-                                   sm);
-    */
-    
+    CGAL::halfspace_intersection_3(planes2.begin(), planes2.end(), sm);
+
+    double pv = polytope_volume(sm);
+    std::cout << pv << std::endl;
+
+#ifdef CGAL_NN3_DUMP_OFF
+    CGAL::Polygon_mesh_processing::triangulate_faces(sm);    
     std::string fn("cell-");
     fn = fn + boost::lexical_cast<std::string>(i++) + std::string(".off");
     std::ofstream mesh(fn.c_str());
     mesh << sm << std::endl;
+#endif
   }
 }
   
