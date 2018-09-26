@@ -47,19 +47,19 @@ struct Value_function
 int main()
 {
   Point_set input;
-  typename Point_set::Property_map<unsigned char> ired
+  Point_set::Property_map<unsigned char> ired
     = input.add_property_map<unsigned char>("red", 0).first;
-  typename Point_set::Property_map<unsigned char> igreen
+  Point_set::Property_map<unsigned char> igreen
     = input.add_property_map<unsigned char>("green", 0).first;
-  typename Point_set::Property_map<unsigned char> iblue
+  Point_set::Property_map<unsigned char> iblue
     = input.add_property_map<unsigned char>("blue", 0).first;
   
   Point_set output;
-  typename Point_set::Property_map<unsigned char> ored
+  Point_set::Property_map<unsigned char> ored
     = output.add_property_map<unsigned char>("red", 0).first;
-  typename Point_set::Property_map<unsigned char> ogreen
+  Point_set::Property_map<unsigned char> ogreen
     = output.add_property_map<unsigned char>("green", 0).first;
-  typename Point_set::Property_map<unsigned char> oblue
+  Point_set::Property_map<unsigned char> oblue
     = output.add_property_map<unsigned char>("blue", 0).first;
   
   Dh triangulation;
