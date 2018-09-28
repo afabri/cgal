@@ -30,8 +30,13 @@
 #include <CGAL/triangulation_assertions.h>
 #include <CGAL/number_utils.h>
 #include <CGAL/Surface_mesh.h>
+#include <CGAL/convex_hull_3.h>
+
+#ifdef CGAL_NN3_HSI
 #include <CGAL/Convex_hull_3/dual/halfspace_intersection_3.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#endif
+
 
 #ifdef CGAL_NN3_DUMP_OFF
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
@@ -388,22 +393,27 @@ natural_neighbor_coordinates_3(const Dt& dt,
                                typename Dt::Cell_handle start = typename Dt::Cell_handle())
 {
   typedef typename Dt::Geom_traits AK;
-  typedef Exact_predicates_exact_constructions_kernel EK;
-  typedef CGAL::Cartesian_converter<AK,EK> AK2EK;
-
+  
   typedef typename AK::FT      Coord_type;
   typedef typename AK::Point_3 Point_3;
-  typedef typename EK::Point_3 ePoint_3;
-  typedef typename EK::Plane_3 ePlane_3;
-  
+
   typedef typename Dt::Cell_handle Cell_handle;
   typedef typename Dt::Vertex_handle Vertex_handle;
   typedef typename Dt::Facet Facet;
   typedef typename Dt::Edge Edge;
-  
+
+#ifdef CGAL_NN3_HSI
+  typedef Exact_predicates_exact_constructions_kernel EK;
+  typedef CGAL::Cartesian_converter<AK,EK> AK2EK;
+
+  typedef typename EK::Point_3 ePoint_3;
+  typedef typename EK::Plane_3 ePlane_3;
+
   AK2EK ak2ek;
 
   ePoint_3 eq = ak2ek(q);
+#endif
+  
   typename Dt::Locate_type lt;
   int li, lj;
   Cell_handle ch = dt.locate(q, lt, li, lj, start);
@@ -430,15 +440,77 @@ natural_neighbor_coordinates_3(const Dt& dt,
   
   std::vector<Facet> facets;
   std::set<Vertex_handle> vertices;
+  std::vector<Cell_handle> cells;
+  std::set<Cell_handle> boundary_cells;
+  dt.find_conflicts(q, ch, std::back_inserter(facets), std::back_inserter(cells));
+  std::map<Vertex_handle,std::list<Point_3> > voronoi_cell_points;
+  std::array<Point_3,3> points;
+  std::array<Vertex_handle,3> fvertices;
 
-  dt.find_conflicts(q, ch, std::back_inserter(facets), Emptyset_iterator());
+  double total_volume = 0;
+  
   BOOST_FOREACH(Facet f, facets){
+    boundary_cells.insert(f.first);
     for(int i = 0; i < 3; i++){
       int j = Dt::vertex_triple_index(f.second,i);
-      vertices.insert(f.first->vertex(j));
+      Vertex_handle v = f.first->vertex(j);
+      vertices.insert(v);
+      points[i]=v->point();
+      fvertices[i] = v;
     }
+    Point_3 cc0 = circumcenter(points[0],points[1],points[2],q);
+    Point_3 cc1 = circumcenter(points[0],points[1],points[2],f.first->vertex(f.second)->point());
+    for(int i =0; i<3; i++){
+      voronoi_cell_points[fvertices[i]].push_back(cc0);
+      voronoi_cell_points[fvertices[i]].push_back(cc1);
+    }
+    voronoi_cell_points[f.first->vertex(f.second)].push_back(cc1);
   }
 
+  BOOST_FOREACH(Cell_handle ch, cells){
+    if(boundary_cells.find(ch)== boundary_cells.end()){
+      Point_3 cc = circumcenter(ch->vertex(0)->point(),
+                                ch->vertex(1)->point(),
+                                ch->vertex(2)->point(),
+                                ch->vertex(3)->point());
+      for(int i=0; i<4; i++){
+        voronoi_cell_points[ch->vertex(i)].push_back(cc);
+      }
+    }
+  }
+  
+#ifdef CGAL_NN3_DUMP_OFF  
+  std::ofstream pout("points.xyz");
+  BOOST_FOREACH(Vertex_handle v, vertices){
+    pout << v->point() << std::endl;
+  }
+#endif
+  
+  int i2 = 0;
+  for(std::map<Vertex_handle,std::list<Point_3> >::iterator it = voronoi_cell_points.begin();
+      it != voronoi_cell_points.end();
+        ++it){
+    std::list<Point_3>& list = it->second;
+
+    Surface_mesh<Point_3> sm;
+    convex_hull_3(list.begin(), list.end(),sm);
+
+    
+    double pv = polytope_volume(sm);
+    total_volume += pv;
+    typename Dt::Geom_traits::FT fpv(pv);
+    *out++= std::make_pair(it->first,fpv);
+      
+#ifdef CGAL_NN3_DUMP_OFF
+    CGAL::Polygon_mesh_processing::triangulate_faces(sm);    
+    std::string fn("cell-");
+    fn = fn + boost::lexical_cast<std::string>(i2++) + std::string(".off");
+    std::ofstream mesh(fn.c_str());
+    mesh << sm << std::endl;
+#endif    
+  }
+
+#ifdef CGAL_NN3_HSI
   std::vector<ePlane_3> planes;
   BOOST_FOREACH(Vertex_handle vh, vertices){
     Point_3 &p = vh->point();
@@ -456,7 +528,6 @@ natural_neighbor_coordinates_3(const Dt& dt,
   mesh << sm << std::endl;
 #endif
 
-  double total_volume = 0;
   int i = 0;
   BOOST_FOREACH(Vertex_handle vh, vertices){
     Point_3 &p = vh->point();
@@ -483,13 +554,15 @@ natural_neighbor_coordinates_3(const Dt& dt,
 
 #ifdef CGAL_NN3_DUMP_OFF
     CGAL::Polygon_mesh_processing::triangulate_faces(sm);    
-    std::string fn("cell-");
+    std::string fn("vcell-");
     fn = fn + boost::lexical_cast<std::string>(i++) + std::string(".off");
     std::ofstream mesh(fn.c_str());
     mesh << sm << std::endl;
 #endif
+    
   }
-
+#endif // CGAL_NN3_HSI
+  
   return make_triple(out, typename Dt::Geom_traits::FT(total_volume), true);
 }
   

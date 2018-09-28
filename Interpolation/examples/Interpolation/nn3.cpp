@@ -67,17 +67,20 @@ int main()
   CGAL::Random rng(0);
   CGAL::Random_points_in_sphere_3<Point_3> rpg(1.0,rng);
 
+  int N = 100000;
   Point_3 p;
-  for(int i=0; i < 10000; i++){
+  for(int i=0; i < N; i++){
     Point_3 p = *rpg++;
     Point_set::iterator it = input.insert(p);
+#ifdef CGAL_CHECK_DISTANCE
     ired[*it] = CGAL::sqrt(CGAL::squared_distance(Point_3(0,0,0), p)) *200;
-    triangulation.insert(p);
+#endif    
   }
+  triangulation.insert(input.points().begin(), input.points().end());
 
-  std::cout << "and now interpolate" << std::endl;
+  std::cout << "Start interpolation" << std::endl;
   Value_function<Vertex_handle> value_function;
-  for(int i=0; i < 1000; i++){
+  for(int i=0; i < 100000; i++){
     Point_3 q = *rpg++;
 
     typedef std::vector<std::pair<Vertex_handle, double> > Coords;
@@ -85,22 +88,25 @@ int main()
     CGAL::Triple<std::back_insert_iterator<Coords>, double, bool> result
       = CGAL::natural_neighbor_coordinates_3(triangulation, q, std::back_inserter(coords));
 
+    
     if(result.third){
       double norm = result.second;
       Point_set::iterator it = output.insert(q);
       double interpolation = CGAL::linear_interpolation(coords.begin(), coords.end(),
                                                         norm, value_function);
       ored[*it] = interpolation* 200;
-
+#ifdef CGAL_CHECK_DISTANCE
       double qdist =  CGAL::sqrt(CGAL::squared_distance(Point_3(0,0,0),q));
       if(qdist < 0.5 * interpolation){
         std::cout << "q = " << q << "  at distance " << qdist << "  and with interpolation " << interpolation << std::endl;
       }
+#endif      
     }else{
-      std::cout << "We cannot interpolate " << q << std::endl;
+      // std::cout << "We cannot interpolate " << q << std::endl;
     }
   }
 
+  /*
   {
     std::ofstream ofs("input.ply", std::ios::binary);
     CGAL::set_binary_mode(ofs);
@@ -111,6 +117,7 @@ int main()
     CGAL::set_binary_mode(ofs);
     ofs << output;
   }
+  */
   
   return 0;
 }
