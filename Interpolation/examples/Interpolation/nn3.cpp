@@ -67,7 +67,7 @@ int main()
   CGAL::Random rng(0);
   CGAL::Random_points_in_sphere_3<Point_3> rpg(1.0,rng);
 
-  int N = 100000;
+  int N = 10000;
   Point_3 p;
   for(int i=0; i < N; i++){
     Point_3 p = *rpg++;
@@ -80,7 +80,7 @@ int main()
 
   std::cout << "Start interpolation" << std::endl;
   Value_function<Vertex_handle> value_function;
-  for(int i=0; i < 100000; i++){
+  for(int i=0; i < N; i++){
     Point_3 q = *rpg++;
 
     typedef std::vector<std::pair<Vertex_handle, double> > Coords;

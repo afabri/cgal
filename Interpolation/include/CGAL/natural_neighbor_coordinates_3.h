@@ -493,7 +493,8 @@ natural_neighbor_coordinates_3(const Dt& dt,
     std::list<Point_3>& list = it->second;
 
     Surface_mesh<Point_3> sm;
-    convex_hull_3(list.begin(), list.end(),sm);
+    std::list<Point_3>::iterator it2 = std::unique(list.begin(), list.end());
+    convex_hull_3(list.begin(), it2, sm);
 
     
     double pv = polytope_volume(sm);
