@@ -32,12 +32,6 @@
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/convex_hull_3.h>
 
-#ifdef CGAL_NN3_HSI
-#include <CGAL/Convex_hull_3/dual/halfspace_intersection_3.h>
-#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
-#endif
-
-
 #ifdef CGAL_NN3_DUMP_OFF
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 #endif
@@ -384,7 +378,216 @@ polytope_volume(const PolygonMesh& pm)
   return volume;
 }
 
+template <class Dt, class OutputIterator>
+Triple< OutputIterator, typename Dt::Geom_traits::FT, bool >
+natural_neighbor_coordinates_3(const Dt& dt,
+                               const typename Dt::Geom_traits::Point_3& q,
+                               OutputIterator out,
+                               typename Dt::Cell_handle start = typename Dt::Cell_handle())
+{
+  typedef typename Dt::Geom_traits AK;
+  
+  typedef typename AK::FT      Coord_type;
+  typedef typename AK::Point_3 Point_3;
 
+  typedef typename Dt::Cell_handle Cell_handle;
+  typedef typename Dt::Vertex_handle Vertex_handle;
+  typedef typename Dt::Facet Facet;
+  typedef typename Dt::Edge Edge;
+  typedef typename Dt::Facet_circulator Facet_circulator;
+    typedef typename Dt::Cell_circulator Cell_circulator;
+
+  typename Dt::Locate_type lt;
+  int li, lj;
+  Cell_handle ch = dt.locate(q, lt, li, lj, start);
+
+  if (lt == Dt::OUTSIDE_AFFINE_HULL || lt == Dt::OUTSIDE_CONVEX_HULL)
+  {
+    return make_triple(out, Coord_type(1), false);
+  }
+  
+  if (lt == Dt::VERTEX){
+    *out++= std::make_pair(ch->vertex(li), Coord_type(1));
+    return make_triple(out, Coord_type(1), true);
+  }
+  
+  if((lt == Dt::EDGE) && dt.is_on_convex_hull(Edge(ch,li, lj))){
+    std::cout << "to be done: interpolate on edge on convex hull" << std::endl;
+    return make_triple(out, Coord_type(1), false);
+  }
+
+  if((lt == Dt::FACET) && dt.is_on_convex_hull(Facet(ch,li))){
+    std::cout << "to be done: interpolate on face on convex hull" << std::endl;
+    return make_triple(out, Coord_type(1), false);     
+  }
+  
+  std::vector<Facet> facets;
+  std::set<Vertex_handle> vertices;
+  std::set<Cell_handle> cells;
+  std::set<Cell_handle> boundary_cells;
+  dt.find_conflicts(q, ch, std::back_inserter(facets), std::inserter(cells, cells.end()));
+  std::map<Vertex_handle,std::list<Point_3> > voronoi_cell_points;
+  std::array<Point_3,3> points;
+  std::array<Vertex_handle,3> fvertices;
+  std::map<Vertex_handle,std::list<Facet> > vertex_facets;
+  std::set<std::pair<Vertex_handle,Vertex_handle> > boundary_edges;
+  
+  double total_volume = 0;
+
+  // For each vertex we collect its umbrella (= incident facets)
+  BOOST_FOREACH(Facet f, facets){
+    Vertex_handle v0 = f.first->vertex(Dt::vertex_triple_index(f.second,0));
+    Vertex_handle v1 = f.first->vertex(Dt::vertex_triple_index(f.second,1));
+    Vertex_handle v2 = f.first->vertex(Dt::vertex_triple_index(f.second,2));
+    vertex_facets[v0].push_back(f);
+    vertex_facets[v1].push_back(f);
+    vertex_facets[v2].push_back(f);
+    boundary_edges.insert((v0<v1)?std::make_pair(v0,v1):std::make_pair(v1,v0));
+    boundary_edges.insert((v1<v2)?std::make_pair(v1,v2):std::make_pair(v2,v1));
+    boundary_edges.insert((v0<v2)?std::make_pair(v0,v2):std::make_pair(v2,v0));
+  }
+
+  for(std::map<Vertex_handle,std::list<Facet> >::iterator it = vertex_facets.begin();
+      it != vertex_facets.end();
+      ++it){
+    Vertex_handle vh = it->first;
+    std::list<Facet>& list = it->second;
+    std::list<Facet> ordered;
+    std::map<Vertex_handle, Facet> halfedge_face_map;
+
+    // Order the faces in the umbrella
+    BOOST_FOREACH(Facet f, list){
+      int vhi=0;
+      for(int i=0; i<3;i++){
+        if(f.first->vertex(Dt::vertex_triple_index(f.second,i)) == vh){
+          vhi = i;
+          break;
+        }
+      }
+      
+      halfedge_face_map[f.first->vertex(Dt::vertex_triple_index(f.second, Dt::cw(vhi)))] = f; 
+    }
+    Facet f = list.front();
+    ordered.push_back(f);
+    do {
+      int vhi=0;
+      for(int i=0; i<3;i++){
+        if(f.first->vertex(Dt::vertex_triple_index(f.second,i)) == vh){
+          vhi = i;
+          break;
+        }
+      }
+      f = halfedge_face_map[f.first->vertex(Dt::vertex_triple_index(f.second, Dt::ccw(vhi)))];
+      ordered.push_back(f);
+    }while(f != ordered.front());
+
+    // todo: Compute the volume contribution of the Voronoi face
+
+    ordered.push_back(ordered.front());
+    std::cout << ordered.size()<< " " ;
+    BOOST_FOREACH (Facet f, ordered){
+      std::cout << " " << circumcenter(q,
+                                       f.first->vertex(Dt::vertex_triple_index(f.second,0))->point(),
+                                       f.first->vertex(Dt::vertex_triple_index(f.second,1))->point(),
+                                       f.first->vertex(Dt::vertex_triple_index(f.second,2))->point());
+    }
+    std::cout << std::endl;
+
+    // For each radial edge of the umbrella compute the clipped Voronoi face
+    BOOST_FOREACH (Facet f, ordered){
+      Cell_handle start = f.first->neighbor(f.second);
+      int vhi=0;
+      for(int i=0; i<3;i++){
+        if(f.first->vertex(Dt::vertex_triple_index(f.second,i)) == vh){
+          vhi = i;
+          break;
+        }
+      }
+
+      int vhs = start->index(f.first->vertex(Dt::vertex_triple_index(f.second, Dt::cw(vhi))));
+      int vht =  start->index(vh);
+
+      std::vector<Point_3> fpoints;
+      Point_3 vp = circumcenter(q,
+                                f.first->vertex(Dt::vertex_triple_index(f.second,0))->point(),
+                                f.first->vertex(Dt::vertex_triple_index(f.second,1))->point(),
+                                f.first->vertex(Dt::vertex_triple_index(f.second,2))->point());
+      fpoints.push_back(vp);
+
+      Facet_circulator fc = dt.incident_facets(start, vhs, vht), done(fc);
+      assert(*fc == dt.mirror_facet(f));
+      ++fc;
+      do {
+        assert(cells.find(fc->first) != cells.end());
+        vp = circumcenter(fc->first->vertex(0)->point(),
+                          fc->first->vertex(1)->point(),
+                          fc->first->vertex(2)->point(),
+                          fc->first->vertex(3)->point());
+        fpoints.push_back(vp);
+        ++fc;
+        if(cells.find(fc->first) == cells.end()){
+          break;
+        }
+      }while(fc != done);
+
+      --fc;
+      Facet ef = *fc;
+      assert(std::find(facets.begin(), facets.end(), ef) != facets.end());
+      fpoints.push_back(circumcenter(q,
+                                     ef.first->vertex(Dt::vertex_triple_index(ef.second,0))->point(),
+                                     ef.first->vertex(Dt::vertex_triple_index(ef.second,1))->point(),
+                                     ef.first->vertex(Dt::vertex_triple_index(ef.second,2))->point()));
+      fpoints.push_back(fpoints.front());
+
+      std::cout << fpoints.size();
+      for(int i=0; i< fpoints.size(); i++){
+        std::cout << " " << fpoints[i];
+      }
+      std::cout << std::endl;
+    }
+  }
+
+  // For each edge of a cell check if is an edge that is not on the boundary of the conflict zone
+  BOOST_FOREACH(Cell_handle c, cells){
+    CGAL::array<Vertex_handle,4> vertices;
+    for(int i = 0; i < 4; i++){
+      vertices[i]=c->vertex(i);
+    }
+    std::sort(vertices.begin(),vertices.end());
+    
+    for(int i = 0; i < 3; i++){
+      for(int j = i+1; j < 4; j++){
+        if(boundary_edges.find(std::make_pair(vertices[i],vertices[j])) == boundary_edges.end()){
+          int iv = c->index(vertices[i]);
+          int jv = c->index(vertices[j]);
+          Cell_circulator cc = dt.incident_cells(c, iv, jv), done(cc);
+          std::vector<Point_3> fpoints;
+          do{
+            Point_3 vp = circumcenter(cc->vertex(0)->point(),
+                                      cc->vertex(1)->point(),
+                                      cc->vertex(2)->point(),
+                                      cc->vertex(3)->point());
+            fpoints.push_back(vp);
+            ++cc;
+          }while(cc != done);
+          fpoints.push_back(fpoints.front());
+          std::cout << fpoints.size();
+          for(int i=0; i< fpoints.size(); i++){
+            std::cout << " " << fpoints[i];
+          }
+          std::cout << std::endl;
+        }
+      }
+    }
+  }
+  
+  return make_triple(out, total_volume, true);     
+}
+
+  
+
+#if 0
+  
 template <class Dt, class OutputIterator>
 Triple< OutputIterator, typename Dt::Geom_traits::FT, bool >
 natural_neighbor_coordinates_3(const Dt& dt,
@@ -402,18 +605,6 @@ natural_neighbor_coordinates_3(const Dt& dt,
   typedef typename Dt::Facet Facet;
   typedef typename Dt::Edge Edge;
 
-#ifdef CGAL_NN3_HSI
-  typedef Exact_predicates_exact_constructions_kernel EK;
-  typedef CGAL::Cartesian_converter<AK,EK> AK2EK;
-
-  typedef typename EK::Point_3 ePoint_3;
-  typedef typename EK::Plane_3 ePlane_3;
-
-  AK2EK ak2ek;
-
-  ePoint_3 eq = ak2ek(q);
-#endif
-  
   typename Dt::Locate_type lt;
   int li, lj;
   Cell_handle ch = dt.locate(q, lt, li, lj, start);
@@ -484,6 +675,7 @@ natural_neighbor_coordinates_3(const Dt& dt,
   BOOST_FOREACH(Vertex_handle v, vertices){
     pout << v->point() << std::endl;
   }
+  
 #endif
   
   int i2 = 0;
@@ -511,62 +703,11 @@ natural_neighbor_coordinates_3(const Dt& dt,
 #endif    
   }
 
-#ifdef CGAL_NN3_HSI
-  std::vector<ePlane_3> planes;
-  BOOST_FOREACH(Vertex_handle vh, vertices){
-    Point_3 &p = vh->point();
-    ePoint_3 ep = ak2ek(p);
-    ePlane_3 eplane = bisector(ep, eq);
-    planes.push_back(eplane);
-  }
-
-  Surface_mesh<ePoint_3> sm;
-
-#ifdef CGAL_NN3_DUMP_OFF  
-  CGAL::halfspace_intersection_3(planes.begin(), planes.end(), sm);
-  CGAL::Polygon_mesh_processing::triangulate_faces(sm);
-  std::ofstream mesh("cell.off");
-  mesh << sm << std::endl;
-#endif
-
-  int i = 0;
-  BOOST_FOREACH(Vertex_handle vh, vertices){
-    Point_3 &p = vh->point();
-    ePoint_3 ep = ak2ek(p);
-    std::vector<Vertex_handle> incident;
-    std::vector<ePlane_3> planes2;
-    dt.incident_vertices(vh, std::back_inserter(incident));
-    BOOST_FOREACH(Vertex_handle vh, incident){
-      if(! dt.is_infinite(vh)){
-        Point_3 &p2 = vh->point();
-        ePoint_3 ep2 = ak2ek(p2);
-        ePlane_3 plane2 = bisector(ep2, ep);
-        planes2.push_back(plane2);
-      }
-    }
-    planes2.insert(planes2.end(), planes.begin(), planes.end());
-    sm.clear();
-    CGAL::halfspace_intersection_3(planes2.begin(), planes2.end(), sm);
-
-    double pv = polytope_volume(sm);
-    total_volume += pv;
-    typename Dt::Geom_traits::FT fpv(pv);
-    *out++= std::make_pair(vh,fpv);
-
-#ifdef CGAL_NN3_DUMP_OFF
-    CGAL::Polygon_mesh_processing::triangulate_faces(sm);    
-    std::string fn("vcell-");
-    fn = fn + boost::lexical_cast<std::string>(i++) + std::string(".off");
-    std::ofstream mesh(fn.c_str());
-    mesh << sm << std::endl;
-#endif
-    
-  }
-#endif // CGAL_NN3_HSI
   
   return make_triple(out, typename Dt::Geom_traits::FT(total_volume), true);
 }
-  
+#endif
+ 
                                
 // ====================== Geometric Traits utilities =========================================
 // === Definitions

@@ -61,13 +61,15 @@ int main()
     = output.add_property_map<unsigned char>("green", 0).first;
   Point_set::Property_map<unsigned char> oblue
     = output.add_property_map<unsigned char>("blue", 0).first;
-  
+
   Dh triangulation;
 
   CGAL::Random rng(0);
   CGAL::Random_points_in_sphere_3<Point_3> rpg(1.0,rng);
 
   int N = 10000;
+
+  input.reserve(N);
   Point_3 p;
   for(int i=0; i < N; i++){
     Point_3 p = *rpg++;
@@ -78,16 +80,17 @@ int main()
   }
   triangulation.insert(input.points().begin(), input.points().end());
 
-  std::cout << "Start interpolation" << std::endl;
+  std::cerr << "Start interpolation" << std::endl;
   Value_function<Vertex_handle> value_function;
   for(int i=0; i < N; i++){
-    Point_3 q = *rpg++;
+    Point_3 q = Point_3(0,0,0); // *rpg++;
 
     typedef std::vector<std::pair<Vertex_handle, double> > Coords;
     Coords coords;
     CGAL::Triple<std::back_insert_iterator<Coords>, double, bool> result
       = CGAL::natural_neighbor_coordinates_3(triangulation, q, std::back_inserter(coords));
 
+    return 0;
     
     if(result.third){
       double norm = result.second;
