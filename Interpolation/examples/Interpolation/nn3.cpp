@@ -5,6 +5,7 @@
 #include <CGAL/point_generators_3.h>
 #include <CGAL/Point_set_3.h>
 #include <CGAL/Point_set_3/IO.h>
+#include <CGAL/Timer.h>
 
 #include <fstream>
 #include <iostream>
@@ -74,24 +75,26 @@ int main()
   for(int i=0; i < N; i++){
     Point_3 p = *rpg++;
     Point_set::iterator it = input.insert(p);
+#define CGAL_CHECK_DISTANCE
 #ifdef CGAL_CHECK_DISTANCE
     ired[*it] = CGAL::sqrt(CGAL::squared_distance(Point_3(0,0,0), p)) *200;
 #endif    
   }
   triangulation.insert(input.points().begin(), input.points().end());
 
+  CGAL::Timer t;
+  t.start();
+
+  std::cout.precision(17);
   std::cerr << "Start interpolation" << std::endl;
   Value_function<Vertex_handle> value_function;
   for(int i=0; i < N; i++){
-    Point_3 q = Point_3(0,0,0); // *rpg++;
-
+    Point_3 q = *rpg++;
     typedef std::vector<std::pair<Vertex_handle, double> > Coords;
     Coords coords;
     CGAL::Triple<std::back_insert_iterator<Coords>, double, bool> result
       = CGAL::natural_neighbor_coordinates_3(triangulation, q, std::back_inserter(coords));
-
-    return 0;
-    
+#if 1  
     if(result.third){
       double norm = result.second;
       Point_set::iterator it = output.insert(q);
@@ -103,13 +106,16 @@ int main()
       if(qdist < 0.5 * interpolation){
         std::cout << "q = " << q << "  at distance " << qdist << "  and with interpolation " << interpolation << std::endl;
       }
-#endif      
+#endif
+
     }else{
       // std::cout << "We cannot interpolate " << q << std::endl;
     }
+#endif
   }
+  std::cout << t.time() << " sec." << std::endl;
 
-  /*
+  
   {
     std::ofstream ofs("input.ply", std::ios::binary);
     CGAL::set_binary_mode(ofs);
@@ -120,7 +126,7 @@ int main()
     CGAL::set_binary_mode(ofs);
     ofs << output;
   }
-  */
+  
   
   return 0;
 }

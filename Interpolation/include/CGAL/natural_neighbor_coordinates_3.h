@@ -32,6 +32,7 @@
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/convex_hull_3.h>
 
+//#define CGAL_NN3_DUMP_OFF
 #ifdef CGAL_NN3_DUMP_OFF
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 #endif
@@ -378,6 +379,24 @@ polytope_volume(const PolygonMesh& pm)
   return volume;
 }
 
+  template <typename P>
+  double
+  volum(const P& p0, const P& p1, const P& p2, const P& p3)
+  {
+    static int i2=0;
+    std::string fn("tet-");
+    fn = fn + boost::lexical_cast<std::string>(i2++) + std::string(".off");
+    std::ofstream mesh(fn.c_str());
+    mesh << "OFF\n4 4 0\n" << p0  << std::endl<< p1  << std::endl<< p2  << std::endl<< p3  << std::endl;
+    mesh << "3 0 1 2\n";
+    mesh << "3 1 0 3\n";
+    mesh << "3 2 1 3\n";
+    mesh << "3 0 2 3\n";
+    
+    return CGAL::volume(p0,p1,p2,p3);
+  }
+
+  
 template <class Dt, class OutputIterator>
 Triple< OutputIterator, typename Dt::Geom_traits::FT, bool >
 natural_neighbor_coordinates_3(const Dt& dt,
@@ -395,7 +414,7 @@ natural_neighbor_coordinates_3(const Dt& dt,
   typedef typename Dt::Facet Facet;
   typedef typename Dt::Edge Edge;
   typedef typename Dt::Facet_circulator Facet_circulator;
-    typedef typename Dt::Cell_circulator Cell_circulator;
+  typedef typename Dt::Cell_circulator Cell_circulator;
 
   typename Dt::Locate_type lt;
   int li, lj;
@@ -422,19 +441,18 @@ natural_neighbor_coordinates_3(const Dt& dt,
   }
   
   std::vector<Facet> facets;
-  std::set<Vertex_handle> vertices;
   std::set<Cell_handle> cells;
   std::set<Cell_handle> boundary_cells;
   dt.find_conflicts(q, ch, std::back_inserter(facets), std::inserter(cells, cells.end()));
-  std::map<Vertex_handle,std::list<Point_3> > voronoi_cell_points;
-  std::array<Point_3,3> points;
-  std::array<Vertex_handle,3> fvertices;
+
   std::map<Vertex_handle,std::list<Facet> > vertex_facets;
+  std::map<Vertex_handle,double> vertex_volume;
   std::set<std::pair<Vertex_handle,Vertex_handle> > boundary_edges;
   
-  double total_volume = 0;
-
+  Point_3 origin(CGAL::ORIGIN);
+  
   // For each vertex we collect its umbrella (= incident facets)
+  // And we collect all edges on the boundary
   BOOST_FOREACH(Facet f, facets){
     Vertex_handle v0 = f.first->vertex(Dt::vertex_triple_index(f.second,0));
     Vertex_handle v1 = f.first->vertex(Dt::vertex_triple_index(f.second,1));
@@ -451,6 +469,7 @@ natural_neighbor_coordinates_3(const Dt& dt,
       it != vertex_facets.end();
       ++it){
     Vertex_handle vh = it->first;
+    vertex_volume[vh] = 0;
     std::list<Facet>& list = it->second;
     std::list<Facet> ordered;
     std::map<Vertex_handle, Facet> halfedge_face_map;
@@ -467,9 +486,10 @@ natural_neighbor_coordinates_3(const Dt& dt,
       
       halfedge_face_map[f.first->vertex(Dt::vertex_triple_index(f.second, Dt::cw(vhi)))] = f; 
     }
+    
     Facet f = list.front();
     ordered.push_back(f);
-    do {
+    for(;;){
       int vhi=0;
       for(int i=0; i<3;i++){
         if(f.first->vertex(Dt::vertex_triple_index(f.second,i)) == vh){
@@ -478,11 +498,34 @@ natural_neighbor_coordinates_3(const Dt& dt,
         }
       }
       f = halfedge_face_map[f.first->vertex(Dt::vertex_triple_index(f.second, Dt::ccw(vhi)))];
+      if(f == ordered.front()){
+        break;
+      }
       ordered.push_back(f);
-    }while(f != ordered.front());
+    }
 
-    // todo: Compute the volume contribution of the Voronoi face
+    // Compute the volume contribution of the Voronoi face
+    {
+      double volume = 0;
+      std::vector<Point_3> fpoints;
+      BOOST_FOREACH (Facet f, ordered){
+        fpoints.push_back(circumcenter(q,
+                                       f.first->vertex(Dt::vertex_triple_index(f.second,0))->point(),
+                                       f.first->vertex(Dt::vertex_triple_index(f.second,1))->point(),
+                                       f.first->vertex(Dt::vertex_triple_index(f.second,2))->point()));
+      }
 
+      for(int i=1, last= fpoints.size()-1; i < last; ++i){
+        double partial_volume =  CGAL::volume(fpoints[0], fpoints[i], fpoints[i+1], vh->point());
+        CGAL_assertion(partial_volume > 0);
+        volume += partial_volume;
+      }
+
+      // todo: check/fix sign
+      vertex_volume[vh] -= volume;
+    }
+      
+#ifdef CGAL_NN3_DUMP_OFF
     ordered.push_back(ordered.front());
     std::cout << ordered.size()<< " " ;
     BOOST_FOREACH (Facet f, ordered){
@@ -492,7 +535,8 @@ natural_neighbor_coordinates_3(const Dt& dt,
                                        f.first->vertex(Dt::vertex_triple_index(f.second,2))->point());
     }
     std::cout << std::endl;
-
+#endif
+    
     // For each radial edge of the umbrella compute the clipped Voronoi face
     BOOST_FOREACH (Facet f, ordered){
       Cell_handle start = f.first->neighbor(f.second);
@@ -503,9 +547,9 @@ natural_neighbor_coordinates_3(const Dt& dt,
           break;
         }
       }
-
-      int vhs = start->index(f.first->vertex(Dt::vertex_triple_index(f.second, Dt::cw(vhi))));
-      int vht =  start->index(vh);
+      Vertex_handle vs = f.first->vertex(Dt::vertex_triple_index(f.second, Dt::cw(vhi)));
+      int vhs = start->index(vs);
+      int vht = start->index(vh);
 
       std::vector<Point_3> fpoints;
       Point_3 vp = circumcenter(q,
@@ -518,7 +562,7 @@ natural_neighbor_coordinates_3(const Dt& dt,
       assert(*fc == dt.mirror_facet(f));
       ++fc;
       do {
-        assert(cells.find(fc->first) != cells.end());
+        CGAL_assertion(cells.find(fc->first) != cells.end());
         vp = circumcenter(fc->first->vertex(0)->point(),
                           fc->first->vertex(1)->point(),
                           fc->first->vertex(2)->point(),
@@ -537,6 +581,21 @@ natural_neighbor_coordinates_3(const Dt& dt,
                                      ef.first->vertex(Dt::vertex_triple_index(ef.second,0))->point(),
                                      ef.first->vertex(Dt::vertex_triple_index(ef.second,1))->point(),
                                      ef.first->vertex(Dt::vertex_triple_index(ef.second,2))->point()));
+
+      // Compute the volume contribution of the Voronoi face to its two Voronoi cells
+      {
+        double volume = 0;
+        for(int i = 1, last=fpoints.size()-1; i < last;i++){
+          double partial_volume = CGAL::volume(fpoints[0], fpoints[i], fpoints[i+1], vh->point());
+          CGAL_assertion(partial_volume > 0);
+          volume += partial_volume;
+        }
+        
+        vertex_volume[vh] += volume;
+        
+      }
+    
+#ifdef CGAL_NN3_DUMP_OFF      
       fpoints.push_back(fpoints.front());
 
       std::cout << fpoints.size();
@@ -544,10 +603,13 @@ natural_neighbor_coordinates_3(const Dt& dt,
         std::cout << " " << fpoints[i];
       }
       std::cout << std::endl;
+#endif
     }
   }
 
-  // For each edge of a cell check if is an edge that is not on the boundary of the conflict zone
+  std::set<std::pair<Vertex_handle, Vertex_handle> > treated;
+  
+  // For each edge of a cell check if it is NOT on the boundary of the conflict zone
   BOOST_FOREACH(Cell_handle c, cells){
     CGAL::array<Vertex_handle,4> vertices;
     for(int i = 0; i < 4; i++){
@@ -558,6 +620,9 @@ natural_neighbor_coordinates_3(const Dt& dt,
     for(int i = 0; i < 3; i++){
       for(int j = i+1; j < 4; j++){
         if(boundary_edges.find(std::make_pair(vertices[i],vertices[j])) == boundary_edges.end()){
+          if(! treated.insert(std::make_pair(vertices[i],vertices[j])).second){
+            continue; // we treated this edge already in another cell
+          }
           int iv = c->index(vertices[i]);
           int jv = c->index(vertices[j]);
           Cell_circulator cc = dt.incident_cells(c, iv, jv), done(cc);
@@ -570,15 +635,46 @@ natural_neighbor_coordinates_3(const Dt& dt,
             fpoints.push_back(vp);
             ++cc;
           }while(cc != done);
+          
+          // Compute the volume contribution of the Voronoi face to its two Voronoi cells
+          {
+            double volume_vi = 0;
+            double volume_vj = 0;
+            for(int ii = 1, last=fpoints.size()-1; ii < last; ii++){
+              double partial_volume_vi = CGAL::volume(fpoints[0], fpoints[ii], fpoints[ii+1], vertices[i]->point());
+              double partial_volume_vj = CGAL::volume(fpoints[0], fpoints[ii], fpoints[ii+1], vertices[j]->point());
+              CGAL_assertion(partial_volume_vi < 0);
+              CGAL_assertion(partial_volume_vj > 0);
+              volume_vi +=  partial_volume_vi;
+              volume_vj +=  partial_volume_vj;
+            }
+            // todo: check/fix sign
+            vertex_volume[vertices[i]] -= volume_vi;
+            vertex_volume[vertices[j]] += volume_vj;
+          }
+          
+#ifdef CGAL_NN3_DUMP_OFF
           fpoints.push_back(fpoints.front());
           std::cout << fpoints.size();
           for(int i=0; i< fpoints.size(); i++){
             std::cout << " " << fpoints[i];
           }
           std::cout << std::endl;
+#endif
         }
       }
     }
+  }
+
+  // Write the coordinates of each vertex of the conflict zone in the output iterator
+  // and sum the coordinates up
+  double total_volume = 0;
+  for(std::map<Vertex_handle,double>::iterator it = vertex_volume.begin();
+      it != vertex_volume.end();
+      ++it){
+    CGAL_assertion(it->second > 0);
+    *out++= std::make_pair(it->first, Coord_type(it->second));
+    total_volume += it->second;
   }
   
   return make_triple(out, total_volume, true);     
@@ -586,11 +682,11 @@ natural_neighbor_coordinates_3(const Dt& dt,
 
   
 
-#if 0
+#if 1
   
 template <class Dt, class OutputIterator>
 Triple< OutputIterator, typename Dt::Geom_traits::FT, bool >
-natural_neighbor_coordinates_3(const Dt& dt,
+natural_neighbor_coordinates_3V0(const Dt& dt,
                                const typename Dt::Geom_traits::Point_3& q,
                                OutputIterator out,
                                typename Dt::Cell_handle start = typename Dt::Cell_handle())
