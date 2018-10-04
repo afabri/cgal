@@ -504,10 +504,12 @@ natural_neighbor_coordinates_3(const Dt& dt,
       ordered.push_back(f);
     }
 
+    std::vector<Point_3> fpoints;  // used in two loops
+    fpoints.reserve(32);
+    
     // Compute the volume contribution of the Voronoi face
     {
       double volume = 0;
-      std::vector<Point_3> fpoints;
       BOOST_FOREACH (Facet f, ordered){
         fpoints.push_back(circumcenter(q,
                                        f.first->vertex(Dt::vertex_triple_index(f.second,0))->point(),
@@ -551,7 +553,7 @@ natural_neighbor_coordinates_3(const Dt& dt,
       int vhs = start->index(vs);
       int vht = start->index(vh);
 
-      std::vector<Point_3> fpoints;
+      fpoints.clear();
       Point_3 vp = circumcenter(q,
                                 f.first->vertex(Dt::vertex_triple_index(f.second,0))->point(),
                                 f.first->vertex(Dt::vertex_triple_index(f.second,1))->point(),
