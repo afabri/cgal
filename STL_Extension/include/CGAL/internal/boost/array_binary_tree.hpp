@@ -23,6 +23,7 @@
 #include <iterator>
 #include <functional>
 #include <boost/config.hpp>
+#include <CGAL/iterator.h>
 
 namespace CGAL { namespace internal {
 namespace boost_ {
@@ -52,7 +53,7 @@ public:
 
   struct children_type {
     struct iterator
-        : ::boost::iterator<std::forward_iterator_tag,
+      : public CGAL::cpp98::iterator<std::forward_iterator_tag,
             //JT: the iterator type is "forward" and not "bidirectional",
             //because it does not implement unary operator--
             ArrayBinaryTreeNode,

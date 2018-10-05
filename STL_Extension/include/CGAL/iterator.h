@@ -93,6 +93,27 @@ Iterator_range<Prevent_deref<I> > make_prevent_deref_range(const I& begin, const
   return Iterator_range<Prevent_deref<I> >(make_prevent_deref(begin), make_prevent_deref(end));
 }
 
+namespace cpp98 {
+
+template<typename Category, typename Tp, typename Distance = std::ptrdiff_t,
+         typename Pointer = Tp*, typename Reference = Tp&>
+struct iterator
+{
+  /// One of the iterator_tags tag types.
+  typedef Category  iterator_category;
+  /// The type "pointed to" by the iterator.
+  typedef Tp        value_type;
+  /// Distance between iterators is represented as this type.
+  typedef Distance  difference_type;
+  /// This type represents a pointer-to-value_type.
+  typedef Pointer   pointer;
+  /// This type represents a reference-to-value_type.
+  typedef Reference reference;
+};
+
+} // end namespace cpp98
+
+  
 // +----------------------------------------------------------------+
 // | Emptyset_iterator
 // +----------------------------------------------------------------+
