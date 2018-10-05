@@ -383,6 +383,19 @@ polytope_volume(const PolygonMesh& pm)
   double
   volum(const P& p0, const P& p1, const P& p2, const P& p3)
   {
+    const P ref(0.097046222793087528, -0.088675223082877452, 0.15405956376343966);
+    
+    std::set<P> sorted_pts;
+    sorted_pts.insert(p0);
+    sorted_pts.insert(p1);
+    sorted_pts.insert(p2);
+    sorted_pts.insert(p3);
+    static std::set<std::set<P> > unique;
+    assert(unique.insert(sorted_pts).second);
+
+    if(CGAL::squared_distance(p3, ref))
+      return CGAL::volume(p0, p1, p2, p3);
+    
     static int i2=0;
     std::string fn("tet-");
     fn = fn + boost::lexical_cast<std::string>(i2++) + std::string(".off");
@@ -448,9 +461,7 @@ natural_neighbor_coordinates_3(const Dt& dt,
   std::map<Vertex_handle,std::list<Facet> > vertex_facets;
   std::map<Vertex_handle,double> vertex_volume;
   std::set<std::pair<Vertex_handle,Vertex_handle> > boundary_edges;
-  
-  Point_3 origin(CGAL::ORIGIN);
-  
+    
   // For each vertex we collect its umbrella (= incident facets)
   // And we collect all edges on the boundary
   BOOST_FOREACH(Facet f, facets){
@@ -465,15 +476,20 @@ natural_neighbor_coordinates_3(const Dt& dt,
     boundary_edges.insert((v0<v2)?std::make_pair(v0,v2):std::make_pair(v2,v0));
   }
 
+  std::set<std::pair<Vertex_handle, Vertex_handle> > unique_edges;
   for(std::map<Vertex_handle,std::list<Facet> >::iterator it = vertex_facets.begin();
       it != vertex_facets.end();
       ++it){
+    std::cout << "treating new unbrella" << std::endl;
+    
     Vertex_handle vh = it->first;
     vertex_volume[vh] = 0;
     std::list<Facet>& list = it->second;
     std::list<Facet> ordered;
     std::map<Vertex_handle, Facet> halfedge_face_map;
 
+    std::cout << list.size() << " incident faces" << std::endl;
+    
     // Order the faces in the umbrella
     BOOST_FOREACH(Facet f, list){
       int vhi=0;
@@ -504,6 +520,8 @@ natural_neighbor_coordinates_3(const Dt& dt,
       ordered.push_back(f);
     }
 
+    CGAL_assertion(list.size() == ordered.size());
+
     std::vector<Point_3> fpoints;  // used in two loops
     fpoints.reserve(32);
     
@@ -517,13 +535,12 @@ natural_neighbor_coordinates_3(const Dt& dt,
                                        f.first->vertex(Dt::vertex_triple_index(f.second,2))->point()));
       }
 
-      for(int i=1, last= fpoints.size()-1; i < last; ++i){
-        double partial_volume =  CGAL::volume(fpoints[0], fpoints[i], fpoints[i+1], vh->point());
+      for(int i=1, last= static_cast<int>(fpoints.size())-1; i < last; ++i){
+        double partial_volume =  CGAL::volum(fpoints[0], fpoints[i], fpoints[i+1], vh->point());
         CGAL_assertion(partial_volume > 0);
         volume += partial_volume;
       }
 
-      // todo: check/fix sign
       vertex_volume[vh] -= volume;
     }
       
@@ -550,6 +567,12 @@ natural_neighbor_coordinates_3(const Dt& dt,
         }
       }
       Vertex_handle vs = f.first->vertex(Dt::vertex_triple_index(f.second, Dt::cw(vhi)));
+      if(vs < vh){
+        continue;
+      }
+      std::cout << "treat: " << vs->point() << " " << vh->point() << std::endl;
+      assert(unique_edges.insert(std::make_pair(vs, vh)).second);
+      
       int vhs = start->index(vs);
       int vht = start->index(vh);
 
@@ -586,15 +609,19 @@ natural_neighbor_coordinates_3(const Dt& dt,
 
       // Compute the volume contribution of the Voronoi face to its two Voronoi cells
       {
-        double volume = 0;
-        for(int i = 1, last=fpoints.size()-1; i < last;i++){
-          double partial_volume = CGAL::volume(fpoints[0], fpoints[i], fpoints[i+1], vh->point());
-          CGAL_assertion(partial_volume > 0);
-          volume += partial_volume;
+        double volume_vs = 0;
+        double volume_vh = 0;
+        for(int i = 1, last= static_cast<int>(fpoints.size())-1; i < last;i++){
+          double partial_volume_vh = CGAL::volum(fpoints[0], fpoints[i], fpoints[i+1], vh->point());
+          double partial_volume_vs = CGAL::volum(fpoints[0], fpoints[i], fpoints[i+1], vs->point());
+          CGAL_assertion(partial_volume_vh > 0);
+          CGAL_assertion(partial_volume_vs < 0);
+          volume_vh += partial_volume_vh;
+          volume_vs += partial_volume_vs;
         }
         
-        vertex_volume[vh] += volume;
-        
+        vertex_volume[vh] += volume_vh;
+        vertex_volume[vs] -= volume_vs;
       }
     
 #ifdef CGAL_NN3_DUMP_OFF      
@@ -625,6 +652,7 @@ natural_neighbor_coordinates_3(const Dt& dt,
           if(! treated.insert(std::make_pair(vertices[i],vertices[j])).second){
             continue; // we treated this edge already in another cell
           }
+       
           int iv = c->index(vertices[i]);
           int jv = c->index(vertices[j]);
           Cell_circulator cc = dt.incident_cells(c, iv, jv), done(cc);
@@ -642,9 +670,9 @@ natural_neighbor_coordinates_3(const Dt& dt,
           {
             double volume_vi = 0;
             double volume_vj = 0;
-            for(int ii = 1, last=fpoints.size()-1; ii < last; ii++){
-              double partial_volume_vi = CGAL::volume(fpoints[0], fpoints[ii], fpoints[ii+1], vertices[i]->point());
-              double partial_volume_vj = CGAL::volume(fpoints[0], fpoints[ii], fpoints[ii+1], vertices[j]->point());
+            for(int ii = 1, last= static_cast<int>(fpoints.size())-1; ii < last; ii++){
+              double partial_volume_vi = CGAL::volum(fpoints[0], fpoints[ii], fpoints[ii+1], vertices[i]->point());
+              double partial_volume_vj = CGAL::volum(fpoints[0], fpoints[ii], fpoints[ii+1], vertices[j]->point());
               CGAL_assertion(partial_volume_vi < 0);
               CGAL_assertion(partial_volume_vj > 0);
               volume_vi +=  partial_volume_vi;
@@ -674,6 +702,7 @@ natural_neighbor_coordinates_3(const Dt& dt,
   for(std::map<Vertex_handle,double>::iterator it = vertex_volume.begin();
       it != vertex_volume.end();
       ++it){
+    std::cout << it->first->point() << " has vol: " << it->second << std::endl; 
     CGAL_assertion(it->second > 0);
     *out++= std::make_pair(it->first, Coord_type(it->second));
     total_volume += it->second;

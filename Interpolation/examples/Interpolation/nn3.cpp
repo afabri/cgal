@@ -88,12 +88,21 @@ int main()
   std::cout.precision(17);
   std::cerr << "Start interpolation" << std::endl;
   Value_function<Vertex_handle> value_function;
-  for(int i=0; i < N; i++){
-    Point_3 q = *rpg++;
+  for(int i=0; i < 1; i++){
+    Point_3 q(0,0,0);// = *rpg++;
     typedef std::vector<std::pair<Vertex_handle, double> > Coords;
     Coords coords;
     CGAL::Triple<std::back_insert_iterator<Coords>, double, bool> result
       = CGAL::natural_neighbor_coordinates_3(triangulation, q, std::back_inserter(coords));
+    /*
+    Coords check;
+    CGAL::natural_neighbor_coordinates_3V0(triangulation, q, std::back_inserter(check));
+    for(int i=0;i <coords.size(); i++){
+      if(CGAL::abs(coords[i].second - check[i].second) > 0.0001){
+        std::cout << coords[i].first->point() << "  " << coords[i].second << "  "<<  check[i].second << std::endl;
+      }
+    }
+    */
 #if 1  
     if(result.third){
       double norm = result.second;
@@ -104,7 +113,7 @@ int main()
 #ifdef CGAL_CHECK_DISTANCE
       double qdist =  CGAL::sqrt(CGAL::squared_distance(Point_3(0,0,0),q));
       if(qdist < 0.5 * interpolation){
-        std::cout << "q = " << q << "  at distance " << qdist << "  and with interpolation " << interpolation << std::endl;
+        std::cerr << "q = " << q << "  at distance " << qdist << "  and with interpolation " << interpolation << std::endl;
       }
 #endif
 
@@ -113,7 +122,7 @@ int main()
     }
 #endif
   }
-  std::cout << t.time() << " sec." << std::endl;
+  std::cerr << t.time() << " sec." << std::endl;
 
   
   {
