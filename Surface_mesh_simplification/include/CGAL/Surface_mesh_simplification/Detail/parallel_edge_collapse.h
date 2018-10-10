@@ -477,7 +477,7 @@ int parallel_edge_collapse(TriangleMesh& sm,
     tasks.run(
       internal::Simplify<TriangleMesh, Stop, FacePartitionIDPmap, HIMap, VertexIndexMap, ECMap, UECMap, Placement, Cost>(
         sm, stop, partition_id_map, himap, vim, ecmap, uecmap, placement, cost, buffer_size, removed,
-        cc_edges[id], id, layers, dump, verbose, increase, &removal_mutex));
+        cc_edges[id], static_cast<int>(id), layers, dump, verbose, increase, &removal_mutex));
   }
   tasks.wait();
 
