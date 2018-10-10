@@ -76,7 +76,7 @@ void test(const char* fname)
     std::set<Mesh::Face_index> triangles;
     naive_all_triangles(h, m, triangles);
 
-    Profile profile(h, m, a, get(boost::vertex_point, m), a, true);
+    Profile profile(h, m, get(boost::vertex_point, m), true);
 
     if (CGAL::Euler::does_satisfy_link_condition(edge(h, m), m))
     {
