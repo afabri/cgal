@@ -4,14 +4,14 @@ namespace Surface_mesh_simplification {
 /*!
 \ingroup PkgSurfaceMeshSimplification
 
-Simplifies `surface_mesh` in-place by collapsing edges, and returns
+Simplify `tm` in-place by collapsing edges, and returns
 the number of edges effectively removed.
 
 @tparam TriangleMesh a model of the `MutableFaceGraph` and `HalfedgeListGraph` concepts.
 @tparam StopPolicy a model of `StopPredicate`
 @tparam NamedParameters a sequence of \ref sms_namedparameters "Named Parameters"
 
-@param surface_mesh a triangle mesh
+@param tm a triangle mesh
 @param should_stop the stop-condition policy
 @param np optional sequence of \ref sms_namedparameters "Named Parameters" among the ones listed below
 
@@ -52,7 +52,7 @@ the number of edges effectively removed.
 
 \cgalHeading{Semantics}
 
-The simplification process continues until the `should_stop` policy returns `true` 
+The simplification process continues until the `should_stop` predicate returns `true` 
 or the surface mesh cannot be simplified any further due to topological constraints. 
 
 `get_cost` and `get_placement` are the policies which control 
@@ -63,9 +63,45 @@ and the remaining vertex is re-positioned.
 are called at certain points in the simplification code. 
 */
 template<class TriangleMesh, class StopPolicy, class NamedParameters>
-int edge_collapse(TriangleMesh& surface_mesh,
+int edge_collapse(TriangleMesh& tm,
                   const StopPolicy& should_stop,
                   const NamedParameters& np);
+
+/*!
+\ingroup PkgSurfaceMeshSimplification
+
+Simplify the triangulated surface mesh `tm` in-place by iteratively collapsing edges in parallel
+and returns the number of edges effectively removed.
+
+The property map `fpm` associates a number between `0` and `partition_size-1` to each face
+which defines a partition of the faces in components. Each component is simplified
+with the sequential algorithm with a layer of edges incident to the boundary
+of the components being constrained. The simplification of components is done
+in parallel tasks. Once finished, two layers of edges incident to the boundary
+of the components are simplified with the sequential algorithm, while all other
+edges are constrained.
+
+\tparam TriangleMesh must be a model of the concept `EdgeCollapsableSurfaceMesh`
+\tparam StopPolicy must be a model of the concept `StopPredicate`
+\tparam FacePartionMap must be a model of `ReadablePropertyMap` with the key type
+`boost::graph_traits<EdgeCollapsableSurfaceMesh>::%face_descriptor`
+and the value type `boost::graph_traits<EdgeCollapsableSurfaceMesh>::%faces_size_type`
+\tparam NamedParameters a sequence of \ref sms_namedparameters "Named Parameters"
+
+\param tm is the mesh to simplify
+\param stop is the stop predicate
+\param fpm is the property map that associates to each face the component it is in
+\param partition_size must be the number of different values in `fpm`
+\param np optional sequence of \ref sms_namedparameters "Named Parameters".
+       These named parameters are the same as in `edge_collapse()`. Note that the
+       `halfedge_index_map()` parameter is not needed.
+*/
+template<class TriangleMesh, class Stop, class FacePartionMap, class NamedParameters>
+int parallel_edge_collapse(TriangleMesh& tm,
+                           const StopPolicy& stop,
+                           FacePartionMap fpm,
+                           int partition_size,
+                           const NamedParameters& np);
 
 } /* namespace Surface_mesh_simplification */
 } /* namespace CGAL */

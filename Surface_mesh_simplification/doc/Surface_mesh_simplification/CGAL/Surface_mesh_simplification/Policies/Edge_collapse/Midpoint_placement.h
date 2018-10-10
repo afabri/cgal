@@ -13,7 +13,7 @@ which  computes the placement as the midpoint position along the edge.
 \cgalModels `GetPlacement`
 
 */
-template< typename TriangleMesh >
+template <typename TriangleMesh>
 class Midpoint_placement {
 public:
 
@@ -23,7 +23,7 @@ public:
 /*!
 Default constructor 
 */ 
-Midpoint_placement<TriangleMesh>(); 
+Midpoint_placement<TriangleMesh>();
 
 /// @} 
 

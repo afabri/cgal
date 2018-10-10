@@ -25,7 +25,7 @@
 
 #include <boost/graph/graph_traits.hpp>
 #include <CGAL/boost/graph/properties.h>
-
+#include <CGAL/mutex.h>
 #include <CGAL/assertions.h>
 #include <CGAL/boost/graph/helpers.h>
 #include <CGAL/boost/graph/internal/helpers.h>
@@ -40,7 +40,8 @@ namespace EulerImpl {
 template<typename Graph>
 typename boost::graph_traits<Graph>::halfedge_descriptor
 join_face(typename boost::graph_traits<Graph>::halfedge_descriptor h,
-          Graph& g)
+          Graph& g,
+          CGAL_MUTEX* removal_mutex = NULL)
 {
  typedef typename boost::graph_traits<Graph> Traits;
   typedef typename Traits::halfedge_descriptor           halfedge_descriptor;
@@ -57,7 +58,12 @@ join_face(typename boost::graph_traits<Graph>::halfedge_descriptor h,
   internal::remove_tip(gprev, g);
 
   if(! is_border(hop,g)){
-    remove_face(f2, g);
+    if(removal_mutex){
+      CGAL_SCOPED_LOCK(*removal_mutex);
+      remove_face(f2, g);
+    } else {
+      remove_face(f2, g);
+    }
   }
   bool fnull = is_border(h,g);
 
@@ -75,7 +81,12 @@ join_face(typename boost::graph_traits<Graph>::halfedge_descriptor h,
   //  internal::set_constant_vertex_is_border(g, target(h, g));
   //  internal::set_constant_vertex_is_border(g, target(opposite(h, g), g));
 
-  remove_edge(edge(h, g), g);
+  if(removal_mutex){
+    CGAL_SCOPED_LOCK(*removal_mutex);
+    remove_edge(edge(h, g), g);
+  } else {
+    remove_edge(edge(h, g), g);
+  }
   return hprev;
 
 }
@@ -114,7 +125,8 @@ join_face(typename boost::graph_traits<Graph>::halfedge_descriptor h,
 template<typename Graph>
 typename boost::graph_traits<Graph>::halfedge_descriptor
 join_vertex(typename boost::graph_traits<Graph>::halfedge_descriptor h,
-            Graph& g)
+            Graph& g,
+            CGAL_MUTEX* removal_mutex = NULL)
 {
   typedef typename boost::graph_traits<Graph>              Traits;
   typedef typename Traits::halfedge_descriptor             halfedge_descriptor;
@@ -153,9 +165,16 @@ join_vertex(typename boost::graph_traits<Graph>::halfedge_descriptor h,
   if(! is_border(hprev,g)){
     set_halfedge(face(hprev,g),hprev,g);
   }
-  remove_edge(edge(h, g), g);
-  remove_vertex(v_to_remove, g);
-
+  {
+    if(removal_mutex){
+      CGAL_SCOPED_LOCK(*removal_mutex);
+      remove_edge(edge(h, g), g);
+      remove_vertex(v_to_remove, g);
+    } else {
+      remove_edge(edge(h, g), g);
+      remove_vertex(v_to_remove, g);
+    }
+  }
   return hprev;
 }
 
@@ -259,9 +278,10 @@ split_edge(typename boost::graph_traits<Graph>::halfedge_descriptor h, Graph& g)
 template<typename Graph>
 typename boost::graph_traits<Graph>::halfedge_descriptor
 join_face(typename boost::graph_traits<Graph>::halfedge_descriptor h,
-          Graph& g)
+          Graph& g,
+          CGAL_MUTEX* removal_mutex = NULL)
 {
-  return EulerImpl::join_face(h,g);
+  return EulerImpl::join_face(h,g,removal_mutex);
 }
 
 
@@ -868,7 +888,8 @@ add_center_vertex(typename boost::graph_traits<Graph>::halfedge_descriptor h,
 template<typename Graph>
 typename boost::graph_traits<Graph>::halfedge_descriptor
 remove_center_vertex(typename boost::graph_traits<Graph>::halfedge_descriptor h,
-                     Graph& g) 
+                     Graph& g,
+                     CGAL_MUTEX* removal_mutex = NULL)
 {
   typedef typename boost::graph_traits<Graph>              Traits;
   typedef typename Traits::halfedge_descriptor             halfedge_descriptor;
@@ -880,17 +901,29 @@ remove_center_vertex(typename boost::graph_traits<Graph>::halfedge_descriptor h,
     halfedge_descriptor gprev = prev(h2, g);
     internal::set_vertex_halfedge(gprev, g);
     internal::remove_tip(gprev, g);
-
-    remove_face(face(h2, g), g);
-
     halfedge_descriptor gnext = opposite(next(h2, g), g);
-    remove_edge(edge(h2,g), g);
+    
+    if(removal_mutex){
+      CGAL_SCOPED_LOCK(*removal_mutex);
+      remove_face(face(h2, g), g);
+      remove_edge(edge(h2,g), g);
+    }else{
+      remove_face(face(h2, g), g);
+      remove_edge(edge(h2,g), g);
+    }
+
     h2 = gnext;
   }
   internal::set_vertex_halfedge(hret, g);
   internal::remove_tip(hret, g);
-  remove_vertex(target(h, g), g);
-  remove_edge(edge(h, g), g);
+    if(removal_mutex){
+      CGAL_SCOPED_LOCK(*removal_mutex);
+      remove_vertex(target(h, g), g);
+      remove_edge(edge(h, g), g);
+    }else{
+      remove_vertex(target(h, g), g);
+      remove_edge(edge(h, g), g);
+    }
   internal::set_face_in_face_loop(hret, face(hret, g), g);
   set_halfedge(face(hret, g), hret, g);
   return hret;
@@ -943,7 +976,7 @@ add_vertex_and_face_to_border(typename boost::graph_traits<Graph>::halfedge_desc
   set_next(h2,ohe2,g);
   internal::set_border(he1,g);
   internal::set_border(he2,g);
-  
+
   CGAL::Halfedge_around_face_iterator<Graph> hafib,hafie;
   for(boost::tie(hafib, hafie) = halfedges_around_face(ohe1, g);
       hafib != hafie;
@@ -1101,7 +1134,7 @@ collapse_edge(typename boost::graph_traits<Graph>::edge_descriptor e,
       //                << q.idx() << "->V" << target(qb, g).idx() 
       //                << ") by joining bottom-right face" ) ;
 
-      join_face(qb,g);
+      join_face(qb, g);
     }
     else
     {
@@ -1158,7 +1191,8 @@ template<typename Graph, typename EdgeIsConstrainedMap>
 typename boost::graph_traits<Graph>::vertex_descriptor
 collapse_edge(typename boost::graph_traits<Graph>::edge_descriptor v0v1,
               Graph& g
-              , EdgeIsConstrainedMap Edge_is_constrained_map)
+              , EdgeIsConstrainedMap Edge_is_constrained_map
+              , CGAL_MUTEX* removal_mutex = NULL)
 {
   typedef boost::graph_traits< Graph > Traits;
   typedef typename Traits::vertex_descriptor          vertex_descriptor;
@@ -1225,20 +1259,33 @@ collapse_edge(typename boost::graph_traits<Graph>::edge_descriptor v0v1,
         // q will be removed, swap it with p
         internal::swap_vertices(p, q, g);
       }
-      remove_center_vertex(edge,g);
+
+      remove_center_vertex(edge, g, removal_mutex);
       return q;
     }
     else
     {
       if (!(is_border(edges_to_erase[0],g)))
-        join_face(edges_to_erase[0],g);
-      else
-        remove_face(opposite(edges_to_erase[0],g),g);
+        join_face(edges_to_erase[0],g, removal_mutex);
+      else{
+        if(removal_mutex){
+          CGAL_SCOPED_LOCK(*removal_mutex);
+          remove_face(opposite(edges_to_erase[0],g),g);
+        } else {
+          remove_face(opposite(edges_to_erase[0],g),g);
+        }
+      }
       if (!is_border(edges_to_erase[1],g))
-        join_face(edges_to_erase[1],g);
-      else
-        remove_face(opposite(edges_to_erase[1],g),g);
-      join_vertex(pq,g);
+        join_face(edges_to_erase[1],g, removal_mutex);
+      else{
+        if(removal_mutex){
+          CGAL_SCOPED_LOCK(*removal_mutex);
+          remove_face(opposite(edges_to_erase[1],g),g);
+        } else {
+          remove_face(opposite(edges_to_erase[1],g),g);
+        }
+      }
+      join_vertex(pq,g, removal_mutex);
       return q;
     }
   }
@@ -1247,32 +1294,46 @@ collapse_edge(typename boost::graph_traits<Graph>::edge_descriptor v0v1,
       if (lTopFaceExists)
       {
         if (!(is_border(edges_to_erase[0],g))){
-          join_face(edges_to_erase[0],g);
-          join_vertex(pq,g);
+          join_face(edges_to_erase[0],g, removal_mutex);
+          join_vertex(pq,g, removal_mutex);
           return q;
         }
+
         if( is_border(opposite(next(pq,g),g),g) )
         {
           // q will be removed, swap it with p
           internal::swap_vertices(p, q, g);
         }
-        remove_face(opposite(edges_to_erase[0],g),g);
+
+        if(removal_mutex){
+          CGAL_SCOPED_LOCK(*removal_mutex);
+          remove_face(opposite(edges_to_erase[0],g),g);
+        } else {
+          remove_face(opposite(edges_to_erase[0],g),g);
+        }
         return q;
       }
 
       if (! (is_border(edges_to_erase[0],g))){
         // q will be removed, swap it with p
         internal::swap_vertices(p, q, g);
-        join_face(edges_to_erase[0],g);
-        join_vertex(qp,g);
+        join_face(edges_to_erase[0], g, removal_mutex);
+        join_vertex(qp, g, removal_mutex);
         return q;
       }
+
       if(!is_border(opposite(next(qp,g),g),g))
       {
         // q will be removed, swap it with p
         internal::swap_vertices(p, q, g);
       }
-      remove_face(opposite(edges_to_erase[0],g),g);
+      if(removal_mutex){
+        CGAL_SCOPED_LOCK(*removal_mutex);
+        remove_face(opposite(edges_to_erase[0],g),g);
+      } else {
+        remove_face(opposite(edges_to_erase[0],g),g);
+      }
+
       return q;
   };
 }

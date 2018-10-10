@@ -27,9 +27,11 @@
 - `GetCost`
 - `GetPlacement`
 - `EdgeCollapseSimplificationVisitor`
+- `ParallelEdgeCollapseSimplificationVisitor`
 
 ## Functions ##
 - `CGAL::Surface_mesh_simplification::edge_collapse()`
+- `CGAL::Surface_mesh_simplification::parallel_edge_collapse()`
 
 ## Classes ##
 - `CGAL::Surface_mesh_simplification::Edge_collapse_visitor_base<TriangleMesh>`
@@ -41,7 +43,7 @@
 - `CGAL::Surface_mesh_simplification::Midpoint_placement<TriangleMesh>`
 - `CGAL::Surface_mesh_simplification::LindstromTurk_cost<TriangleMesh>`
 - `CGAL::Surface_mesh_simplification::LindstromTurk_placement<TriangleMesh>`
-- `CGAL::Surface_mesh_simplification::Constrained_placement<Placement,TriangleMesh>`
+- `CGAL::Surface_mesh_simplification::Constrained_placement<Placement, TriangleMesh>`
 - `CGAL::Surface_mesh_simplification::Bounded_normal_change_placement<Placement>`
 */
 

@@ -12,11 +12,12 @@ which returns `true` when the number of current edges drops below a certain thre
 
 \cgalModels `StopPredicate`
 
-\sa `CGAL::Surface_mesh_simplification::Count_ratio_stop_predicate<TriangleMesh>` 
+\sa `CGAL::Surface_mesh_simplification::Count_ratio_stop_predicate<TriangleMesh>`
 
 */
-template< typename TriangleMesh >
-class Count_stop_predicate {
+template <typename TriangleMesh>
+class Count_stop_predicate
+{
 public:
 
 /// \name Creation 
@@ -25,7 +26,7 @@ public:
 /*!
 Initializes the predicate establishing the `threshold` value. 
 */ 
-Count_stop_predicate<TriangleMesh>( size_type threshold ); 
+Count_stop_predicate<TriangleMesh>( size_type threshold );
 
 /// @} 
 

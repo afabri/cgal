@@ -27,7 +27,6 @@
 #include <CGAL/license/Surface_mesh.h>
 
 #include <CGAL/disable_warnings.h>
-
 #include <iterator>
 #include <algorithm>
 #include <utility>
@@ -285,7 +284,6 @@ namespace CGAL {
 template <typename P>
 class Surface_mesh
 {
-
     typedef Surface_mesh<P> Self;
 
     template<typename>
@@ -1015,8 +1013,8 @@ public:
     /// adjusting anything.
     void remove_vertex(Vertex_index v)
     {
-        vremoved_ = add_property_map<Vertex_index, bool>("v:removed", false).first;
-        vremoved_[v] = true; ++removed_vertices_; garbage_ = true;
+        vremoved_[v] = true;
+        ++removed_vertices_; garbage_ = true;
         vconn_[v].halfedge_ = Halfedge_index(vertices_freelist_);
         vertices_freelist_ = (size_type)v;
     }
@@ -1025,7 +1023,6 @@ public:
     /// adjusting anything.
     void remove_edge(Edge_index e)
     {
-        eremoved_ = add_property_map<Edge_index, bool>("e:removed", false).first;
         eremoved_[e] = true; ++removed_edges_; garbage_ = true;
         hconn_[Halfedge_index((size_type)e << 1)].next_halfedge_ = Halfedge_index(edges_freelist_ );
         edges_freelist_ = ((size_type)e << 1);
@@ -1036,7 +1033,6 @@ public:
 
     void remove_face(Face_index f)
     {
-        fremoved_ = add_property_map<Face_index, bool>("f:removed", false).first;
         fremoved_[f] = true; ++removed_faces_; garbage_ = true;
         fconn_[f].halfedge_ = Halfedge_index(faces_freelist_);
         faces_freelist_ = (size_type)f;

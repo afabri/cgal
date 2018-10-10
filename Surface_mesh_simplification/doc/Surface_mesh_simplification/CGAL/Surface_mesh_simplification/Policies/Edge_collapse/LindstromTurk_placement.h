@@ -14,10 +14,10 @@ a halfedge-collapse, following the Lindstrom-Turk strategy
 
 \cgalModels `GetPlacement`
 
-\sa `CGAL::Surface_mesh_simplification::LindstromTurk_cost<TriangleMesh>` 
+\sa `CGAL::Surface_mesh_simplification::LindstromTurk_cost<TriangleMesh>`
 
 */
-template< typename TriangleMesh >
+template <typename TriangleMesh>
 class LindstromTurk_placement {
 public:
 
@@ -28,7 +28,7 @@ public:
 Initializes the policy with the given <I>weighting unit factor</I>. 
 See \ref SurfaceMeshSimplificationLindstromTurkStrategy for details on the meaning of this factor. 
 */ 
-LindstromTurk_placement<TriangleMesh>( FT const& factor = FT(0.5) ); 
+LindstromTurk_placement<TriangleMesh>( FT const& factor = FT(0.5) );
 
 /// @} 
 

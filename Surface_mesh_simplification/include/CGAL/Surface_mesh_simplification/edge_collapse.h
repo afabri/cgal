@@ -18,156 +18,319 @@
 // Author(s)     : Fernando Cacciola <fernando.cacciola@geometryfactory.com>
 //
 #ifndef CGAL_SURFACE_MESH_SIMPLIFICATION_EDGE_COLLAPSE_H
-#define CGAL_SURFACE_MESH_SIMPLIFICATION_EDGE_COLLAPSE_H 1
+#define CGAL_SURFACE_MESH_SIMPLIFICATION_EDGE_COLLAPSE_H
 
 #include <CGAL/license/Surface_mesh_simplification.h>
-
-
-#include <CGAL/boost/graph/properties.h>
-#include <CGAL/boost/graph/named_function_params.h>
 
 #include <CGAL/Surface_mesh_simplification/Detail/Edge_collapse.h>
 #include <CGAL/Surface_mesh_simplification/Detail/Common.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/LindstromTurk.h>
+#include <CGAL/Default.h>
+
+#ifdef CGAL_LINKED_WITH_TBB
+#include <CGAL/Surface_mesh_simplification/Detail/parallel_edge_collapse.h>
+#endif
+
+#include <CGAL/use.h>
+
+#include <CGAL/boost/graph/properties.h>
+#include <CGAL/boost/graph/named_function_params.h>
+
+#include <CGAL/mutex.h>
+#include <CGAL/tags.h>
 
 namespace CGAL {
 
-namespace Surface_mesh_simplification
-{
+namespace Surface_mesh_simplification {
 
-template<class TM
-        ,class ShouldStop
-        ,class VertexIndexMap
-        ,class VertexPointMap
-        ,class EdgeIndexMap
-        ,class EdgeIsConstrainedMap
-        ,class GetCost
-        ,class GetPlacement
-        ,class Visitor
-        >
-int edge_collapse ( TM&                       aSurface
-                  , ShouldStop           const& aShould_stop
-                  // optional mesh information policies 
-                  , VertexIndexMap       const& aVertex_index_map     // defaults to get(vertex_index,aSurface)
-                  , VertexPointMap       const& aVertex_point_map     // defaults to get(vertex_point,aSurface)
-                  , EdgeIndexMap         const& aEdge_index_map       // defaults to get(edge_index,aSurface)
-                  , EdgeIsConstrainedMap const& aEdge_is_constrained_map   // defaults to No_constrained_edge_map<TM>()
-                  
+template<class TriangleMesh,
+         class ShouldStop,
+         class ConcurrencyTag,
+         class VertexIndexMap,
+         class VertexPointMap,
+         class EdgeIndexMap,
+         class EdgeIsConstrainedMap,
+         class GetCost,
+         class GetPlacement,
+         class Visitor>
+int edge_collapse(TriangleMesh& aSurface,
+                  const ShouldStop& aShould_stop,
+                  ConcurrencyTag aConcurrency_tag,
+                  CGAL_MUTEX* removal_mutex,
+
+                  // optional mesh information policies
+                  std::size_t current_num_edges,
+                  const VertexIndexMap& aVertex_index_map, // defaults to get(vertex_index,aSurface)
+                  const VertexPointMap& aVertex_point_map, // defaults to get(vertex_point,aSurface)
+                  const EdgeIndexMap& aEdge_index_map, // defaults to get(edge_index,aSurface)
+                  const EdgeIsConstrainedMap& aEdge_is_constrained_map, // defaults to No_constrained_edge_map<TriangleMesh>()
+
                   // optional strategy policies - defaults to LindstomTurk
-                  , GetCost              const& aGet_cost
-                  , GetPlacement         const& aGet_placement
-                  
-                  , Visitor                     aVisitor
-                  ) 
+                  const GetCost& aGet_cost,
+                  const GetPlacement& aGet_placement,
+                  Visitor aVisitor);
+
+
+template<class TriangleMesh,
+         class ShouldStop,
+         class VertexIndexMap,
+         class VertexPointMap,
+         class EdgeIndexMap,
+         class EdgeIsConstrainedMap,
+         class GetCost,
+         class GetPlacement,
+         class Visitor>
+int edge_collapse(TriangleMesh& aSurface,
+                  const ShouldStop& aShould_stop,
+                  Sequential_tag,
+                  CGAL_MUTEX* removal_mutex,
+
+                  // optional mesh information policies
+                  std::size_t current_num_edges,
+                  const VertexIndexMap& aVertex_index_map, // defaults to get(vertex_index, aSurface)
+                  const VertexPointMap& aVertex_point_map, // defaults to get(vertex_point, aSurface)
+                  const EdgeIndexMap& aEdge_index_map, // defaults to get(edge_index, aSurface)
+                  const EdgeIsConstrainedMap& aEdge_is_constrained_map, // defaults to No_constrained_edge_map<TriangleMesh>()
+
+                  // optional strategy policies - defaults to LindstomTurk
+                  const GetCost& aGet_cost,
+                  const GetPlacement& aGet_placement,
+                  Visitor aVisitor)
 {
-  typedef EdgeCollapse< TM
-                      , ShouldStop
-                      , VertexIndexMap
-                      , VertexPointMap
-                      , EdgeIndexMap
-                      , EdgeIsConstrainedMap
-                      , GetCost
-                      , GetPlacement
-                      , Visitor
-                      >
-                      Algorithm;
-                      
-  Algorithm algorithm( aSurface
-                     , aShould_stop
-                     , aVertex_index_map
-                     , aVertex_point_map
-                     , aEdge_index_map
-                     , aEdge_is_constrained_map
-                     , aGet_cost
-                     , aGet_placement
-                     , aVisitor
-                     ) ;
-                     
-  return algorithm.run();
-}                          
+  typedef EdgeCollapse<TriangleMesh, ShouldStop, VertexIndexMap, VertexPointMap, EdgeIndexMap,
+                       EdgeIsConstrainedMap, GetCost, GetPlacement, Visitor,
+                       Edge_profile<TriangleMesh, VertexPointMap> >           Algorithm;
+
+  Algorithm algorithm(aSurface, current_num_edges, aShould_stop, aVertex_index_map,
+                      aVertex_point_map, aEdge_index_map, aEdge_is_constrained_map,
+                      aGet_cost, aGet_placement, aVisitor);
+
+  return algorithm.run(removal_mutex);
+}
 
 
+template<class TriangleMesh,
+         class ShouldStop,
+         class VertexIndexMap,
+         class VertexPointMap,
+         class EdgeIndexMap,
+         class EdgeIsConstrainedMap,
+         class GetCost,
+         class GetPlacement,
+         class Visitor>
+int edge_collapse(TriangleMesh& aSurface,
+                  const ShouldStop& aShould_stop,
+                  Parallel_tag,
+                  CGAL_MUTEX* removal_mutex,
+
+                  // optional mesh information policies
+                  std::size_t current_num_edges,
+                  const VertexIndexMap& aVertex_index_map, // defaults to get(vertex_index,aSurface)
+                  const VertexPointMap& aVertex_point_map, // defaults to get(vertex_point,aSurface)
+                  const EdgeIndexMap& aEdge_index_map, // defaults to get(edge_index,aSurface)
+                  const EdgeIsConstrainedMap& aEdge_is_constrained_map, // defaults to No_constrained_edge_map<TriangleMesh>()
+
+                  // optional strategy policies - defaults to LindstomTurk
+                  const GetCost& aGet_cost,
+                  const GetPlacement& aGet_placement,
+                  Visitor aVisitor)
+{
+  typedef EdgeCollapse<TriangleMesh, ShouldStop, VertexIndexMap, VertexPointMap, EdgeIndexMap,
+                       EdgeIsConstrainedMap, GetCost, GetPlacement, Visitor,
+                       CG_Edge_profile<Edge_profile<TriangleMesh, VertexPointMap> > > Algorithm;
+
+  Algorithm algorithm(aSurface, current_num_edges, aShould_stop, aVertex_index_map,
+                      aVertex_point_map, aEdge_index_map, aEdge_is_constrained_map,
+                      aGet_cost, aGet_placement, aVisitor);
+
+  return algorithm.run(removal_mutex);
+}
+
+template <typename G>
 struct Dummy_visitor
 {
-  template<class TM>                                 void OnStarted( TM& ) const {} 
-  template<class TM>                                 void OnFinished ( TM& ) const {} 
-  template<class Profile>                             void OnStopConditionReached( Profile const& ) const {} 
-  template<class Profile, class OFT>                  void OnCollected( Profile const&, OFT const& ) const {}                
-  template<class Profile, class OFT, class Size_type> void OnSelected( Profile const&, OFT const&, Size_type, Size_type ) const {}                
-  template<class Profile, class OPoint>               void OnCollapsing(Profile const&, OPoint const& ) const {}                
-  template<class Profile, class VH>                   void OnCollapsed( Profile const&, VH ) const {}
-  template<class Profile>                             void OnNonCollapsable(Profile const& ) const {}                
-} ;
+  typedef typename boost::graph_traits<G>::edges_size_type   size_type;
 
-template<class TM, class ShouldStop, class P, class T, class R>
-int edge_collapse ( TM& aSurface
-                  , ShouldStop const& aShould_stop
-                  , cgal_bgl_named_params<P,T,R> const& aParams 
-                  ) 
+  template<class TriangleMesh>                              void OnStarted(TriangleMesh&) const {}
+  template<class TriangleMesh, class Stop, class Size_type> void OnParallelPassFinished(TriangleMesh&, Stop&, Size_type, Size_type) const {}
+  template<class TriangleMesh>                              void OnFinished(TriangleMesh&) const {}
+  template<class Profile>                                   void OnStopConditionReached(const Profile&) const {}
+  template<class Profile, class OFT>                        void OnCollected(const Profile&, const OFT&) const {}
+  template<class Profile, class OFT, class Size_type>       void OnSelected(const Profile&, const OFT&, Size_type, Size_type) const {}
+  template<class Profile, class OPoint>                     void OnCollapsing(const Profile&, const OPoint&) const {}
+  template<class Profile, class VH>                         void OnCollapsed(const Profile&, VH) const {}
+  template<class Profile>                                   void OnNonCollapsable(const Profile&) const {}
+};
+
+template<class TriangleMesh, class ShouldStop, class NamedParameters>
+int edge_collapse(TriangleMesh& aSurface,
+                  const ShouldStop& aShould_stop,
+                  Sequential_tag,
+                  CGAL_MUTEX* removal_mutex,
+                  const NamedParameters& aParams)
 {
-  using boost::choose_param ;
-  using boost::choose_const_pmap ;
-  using boost::get_param ;
-  
-  LindstromTurk_params lPolicyParams ;
-  
-  internal_np::graph_visitor_t vis = internal_np::graph_visitor_t() ;
+  using boost::choose_param;
+  using boost::choose_const_pmap;
+  using boost::get_param;
 
-  return edge_collapse(aSurface
-                      ,aShould_stop
-                      ,choose_const_pmap(get_param(aParams,internal_np::vertex_index),aSurface,boost::vertex_index)
-                      ,choose_pmap(get_param(aParams,internal_np::vertex_point),aSurface,boost::vertex_point)
-                      ,choose_const_pmap(get_param(aParams,internal_np::halfedge_index),aSurface,boost::halfedge_index)
-                       ,choose_param     (get_param(aParams,internal_np::edge_is_constrained),No_constrained_edge_map<TM>())
-                       ,choose_param     (get_param(aParams,internal_np::get_cost_policy), LindstromTurk_cost<TM>())
-                       ,choose_param     (get_param(aParams,internal_np::get_placement_policy), LindstromTurk_placement<TM>())
-                      ,choose_param     (get_param(aParams,vis), Dummy_visitor())
-                      );
+  typedef boost::graph_traits<TriangleMesh>                      GraphTraits;
+  typedef typename GraphTraits::edges_size_type                  size_type;
 
-}
-  template<class TM, class ShouldStop, class GT, class P, class T, class R>
-int edge_collapse ( TM& aSurface
-                  , ShouldStop const& aShould_stop
-                  , cgal_bgl_named_params<P,T,R> const& aParams 
-                  ) 
-{
-  using boost::choose_param ;
-  using boost::choose_const_pmap ;
-  using boost::get_param ;
-  
-  LindstromTurk_params lPolicyParams ;
-  
-  internal_np::graph_visitor_t vis = internal_np::graph_visitor_t() ;
-    
-  return edge_collapse(aSurface
-                      ,aShould_stop
-                      ,choose_const_pmap(get_param(aParams,internal_np::vertex_index),aSurface,boost::vertex_index)
-                      ,choose_const_pmap(get_param(aParams,internal_np::vertex_point),aSurface,boost::vertex_point)
-                      ,choose_const_pmap(get_param(aParams,internal_np::halfedge_index),aSurface,boost::halfedge_index)
-                      ,choose_param     (get_param(aParams,internal_np::edge_is_constrained),No_constrained_edge_map<TM>())
-                      ,choose_param     (get_param(aParams,internal_np::get_cost_policy), LindstromTurk_cost<TM>())
-                      ,choose_param     (get_param(aParams,internal_np::get_placement_policy), LindstromTurk_placement<TM>())
-                      ,choose_param     (get_param(aParams,vis), Dummy_visitor())
-                      );
-
+  internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
+   return edge_collapse(aSurface, aShould_stop, Sequential_tag(), removal_mutex,
+                        choose_param(get_param(aParams, internal_np::current_num_edges),
+                                     static_cast<size_type>(std::distance(boost::begin(edges(aSurface)),
+                                                                          boost::end(edges(aSurface))))),
+#ifdef CGAL_SURFACE_SIMPLIFICATION_ENABLE_TRACE
+                        choose_const_pmap(get_param(aParams, internal_np::vertex_index), aSurface, boost::vertex_index),
+#else
+                        Default(),// needed only for debug purpose
+#endif
+                        choose_pmap(get_param(aParams, internal_np::vertex_point), aSurface, boost::vertex_point),
+                        choose_const_pmap(get_param(aParams, internal_np::halfedge_index), aSurface, boost::halfedge_index),
+                        choose_param(get_param(aParams, internal_np::edge_is_constrained), No_constrained_edge_map<TriangleMesh>()),
+                        choose_param(get_param(aParams, internal_np::get_cost_policy), LindstromTurk_cost<TriangleMesh>()),
+                        choose_param(get_param(aParams, internal_np::get_placement_policy), LindstromTurk_placement<TriangleMesh>()),
+                        choose_param(get_param(aParams, vis), Dummy_visitor<TriangleMesh>()));
 }
 
-template<class TM, class ShouldStop>
-int edge_collapse ( TM& aSurface, ShouldStop const& aShould_stop ) 
+
+template<class TriangleMesh, class ShouldStop, class NamedParameters>
+int edge_collapse(TriangleMesh& aSurface,
+                  const ShouldStop& aShould_stop,
+                  Parallel_tag,
+                  CGAL_MUTEX* removal_mutex,
+                  const NamedParameters& aParams)
 {
-  return edge_collapse(aSurface,aShould_stop, CGAL::parameters::halfedge_index_map(get(boost::halfedge_index,aSurface)));
+  using boost::choose_param;
+  using boost::choose_const_pmap;
+  using boost::get_param;
+
+  typedef boost::graph_traits<TriangleMesh>                      GraphTraits;
+  typedef typename GraphTraits::edges_size_type                  size_type;
+
+  internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
+   return edge_collapse(aSurface, aShould_stop, Parallel_tag(), removal_mutex,
+                        choose_param(get_param(aParams, internal_np::current_num_edges),
+                                     static_cast<size_type>(std::distance(boost::begin(edges(aSurface)),
+                                                                          boost::end(edges(aSurface))))),
+#ifdef CGAL_SURFACE_SIMPLIFICATION_ENABLE_TRACE
+                        choose_const_pmap(get_param(aParams, internal_np::vertex_index), aSurface, boost::vertex_index),
+#else
+                        Default(),
+#endif
+                        choose_pmap(get_param(aParams, internal_np::vertex_point), aSurface, boost::vertex_point),
+                        choose_const_pmap(get_param(aParams, internal_np::halfedge_index), aSurface, boost::halfedge_index),
+                        choose_param(get_param(aParams, internal_np::edge_is_constrained), No_constrained_edge_map<TriangleMesh>()),
+                        choose_param(get_param(aParams, internal_np::get_cost_policy), LindstromTurk_cost<TriangleMesh>()),
+                        choose_param(get_param(aParams, internal_np::get_placement_policy), LindstromTurk_placement<TriangleMesh>()),
+                        choose_param(get_param(aParams, vis), Dummy_visitor<TriangleMesh>()));
 }
 
-  template<class TM, class ShouldStop, class GT>
-  int edge_collapse ( TM& aSurface, ShouldStop const& aShould_stop) 
+template<class TriangleMesh, class ShouldStop, class NamedParameters>
+int edge_collapse(TriangleMesh& aSurface,
+                  const ShouldStop& aShould_stop,
+                  Sequential_tag tag,
+                  const NamedParameters& aParams)
 {
-  return edge_collapse(aSurface,aShould_stop, CGAL::parameters::halfedge_index_map(get(boost::halfedge_index,aSurface)));
+  return edge_collapse(aSurface, aShould_stop, tag, NULL, aParams);
 }
 
-} // namespace Surface_mesh_simplification
+template<class TriangleMesh, class ShouldStop, class NamedParameters>
+int edge_collapse(TriangleMesh& aSurface,
+                  const ShouldStop& aShould_stop,
+                  const NamedParameters& aParams)
+{
+  return edge_collapse(aSurface, aShould_stop, Sequential_tag(), NULL, aParams);
+}
 
-} //namespace CGAL
+template<class TriangleMesh, class ShouldStop, class GT, class NamedParameters>
+int edge_collapse(TriangleMesh& aSurface,
+                  const ShouldStop& aShould_stop,
+                  const NamedParameters& aParams)
+{
+  using boost::choose_param;
+  using boost::choose_const_pmap;
+  using boost::get_param;
 
-#endif // CGAL_SURFACE_MESH_SIMPLIFICATION_EDGE_COLLAPSE_H //
-// EOF //
- 
+  typedef boost::graph_traits<TriangleMesh>                      GraphTraits;
+  typedef typename GraphTraits::edges_size_type                  size_type;
+
+  internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
+  return edge_collapse(aSurface, aShould_stop,
+                       choose_param(get_param(aParams, internal_np::current_num_edges),
+                                    static_cast<size_type>(std::distance(boost::begin(edges(aSurface)),
+                                                                         boost::end(edges(aSurface))))),
+#ifndef CGAL_SURFACE_SIMPLIFICATION_ENABLE_TRACE
+                       choose_const_pmap(get_param(aParams, internal_np::vertex_index), aSurface, boost::vertex_index),
+#else
+                       Default(),
+#endif
+                       choose_const_pmap(get_param(aParams, internal_np::vertex_point), aSurface, boost::vertex_point),
+                       choose_const_pmap(get_param(aParams, internal_np::halfedge_index), aSurface, boost::halfedge_index),
+                       choose_param(get_param(aParams, internal_np::edge_is_constrained), No_constrained_edge_map<TriangleMesh>()),
+                       choose_param(get_param(aParams, internal_np::get_cost_policy), LindstromTurk_cost<TriangleMesh>()),
+                       choose_param(get_param(aParams, internal_np::get_placement_policy), LindstromTurk_placement<TriangleMesh>()),
+                       choose_param(get_param(aParams, vis), Dummy_visitor<TriangleMesh>()));
+}
+
+
+template<class TriangleMesh, class ShouldStop>
+int edge_collapse(TriangleMesh& aSurface, const ShouldStop& aShould_stop)
+{
+  return edge_collapse(aSurface, aShould_stop, CGAL::parameters::halfedge_index_map(get(boost::halfedge_index, aSurface)));
+}
+
+template<class TriangleMesh, class ShouldStop, class GT>
+int edge_collapse(TriangleMesh& aSurface, const ShouldStop& aShould_stop)
+{
+  return edge_collapse(aSurface, aShould_stop, CGAL::parameters::halfedge_index_map(get(boost::halfedge_index, aSurface)));
+}
+
+template<class TriangleMesh, class ShouldStop, class FacePartionMap, class NamedParameters>
+int parallel_edge_collapse(TriangleMesh& aSurface,
+                           const ShouldStop& aShould_stop,
+                           int number_of_parts,
+                           FacePartionMap partition_id_map,
+                           const NamedParameters& aParams)
+{
+#ifndef CGAL_LINKED_WITH_TBB
+  std::cerr << "CGAL is not linked with TBB, the mesh will be simplified sequentially." << std::endl;
+  number_of_parts = 1;
+#endif
+
+  if(number_of_parts == 1)
+  {
+    return edge_collapse(aSurface, aShould_stop, Sequential_tag(), NULL, aParams);
+  }
+  else
+  {
+#ifdef CGAL_LINKED_WITH_TBB
+    using boost::choose_param;
+    using boost::get_param;
+
+    internal_np::graph_visitor_t vis = internal_np::graph_visitor_t();
+    return parallel_edge_collapse(aSurface,
+                                  aShould_stop,
+                                  number_of_parts,
+                                  partition_id_map,
+#ifndef CGAL_SURFACE_SIMPLIFICATION_ENABLE_TRACE
+                                  choose_const_pmap(get_param(aParams, internal_np::vertex_index), aSurface, boost::vertex_index),
+#else
+                                  Default(),
+#endif
+                                  choose_param(get_param(aParams, internal_np::edge_is_constrained), No_constrained_edge_map<TriangleMesh>()),
+                                  choose_param(get_param(aParams, internal_np::get_placement_policy), LindstromTurk_placement<TriangleMesh>()),
+                                  choose_param(get_param(aParams, internal_np::get_cost_policy), LindstromTurk_cost<TriangleMesh>()),
+                                  choose_param(get_param(aParams,vis), Dummy_visitor<TriangleMesh>()));
+#else
+    CGAL_USE(partition_id_map);
+#endif
+  }
+}
+
+} // end namespace Surface_mesh_simplification
+
+} // end namespace CGAL
+
+#endif // CGAL_SURFACE_MESH_SIMPLIFICATION_EDGE_COLLAPSE_H

@@ -22,52 +22,45 @@
 
 #include <CGAL/license/Surface_mesh_simplification.h>
 
-
 #include <CGAL/Surface_mesh_simplification/Detail/Common.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_profile.h>
 
 namespace CGAL {
 
-namespace Surface_mesh_simplification
-{
+namespace Surface_mesh_simplification {
 
-template<class TM_>
+template<class TriangleMesh_>
 struct Edge_collapse_visitor_base
 {
-  typedef TM_ TM ;
-  
-  typedef Edge_profile<TM> Profile ;
-  
-  typedef boost::graph_traits  <TM> GraphTraits ; 
-  
-  typedef typename GraphTraits::edges_size_type   size_type ;
-  typedef typename GraphTraits::vertex_descriptor vertex_descriptor ;
-  typedef typename boost::property_map<TM, CGAL::vertex_point_t>::type Vertex_point_pmap;
+  typedef TriangleMesh_                                                  TriangleMesh;
+  typedef Edge_profile<TriangleMesh>                                     Profile;
+  typedef boost::graph_traits<TriangleMesh>                              GraphTraits;
+
+  typedef typename GraphTraits::edges_size_type                          size_type;
+  typedef typename GraphTraits::vertex_descriptor                        vertex_descriptor;
+
+  typedef typename boost::property_map<TriangleMesh,
+                                       CGAL::vertex_point_t>::type       Vertex_point_pmap;
   typedef typename boost::property_traits<Vertex_point_pmap>::value_type Point;
-  typedef typename Kernel_traits<Point>::Kernel   Kernel ;
-  typedef typename Kernel::FT                     FT ;
-  
-  void OnStarted( TM& ) {}
-  
-  void OnFinished ( TM& ) {}
-  
-  void OnStopConditionReached( Profile const& ) {}
-  
-  void OnCollected( Profile const&, boost::optional<FT> const& ) {}
-  
-  void OnSelected( Profile const&, boost::optional<FT> const&, size_type, size_type ) {}
-  
-  void OnCollapsing(Profile const&, boost::optional<Point> const& ) {}
-  
-  void OnCollapsed( Profile const&, vertex_descriptor const& ) {}
+  typedef typename Kernel_traits<Point>::Kernel                          Kernel;
+  typedef typename Kernel::FT                                            FT;
 
-   void OnNonCollapsable(Profile const& ) {}                
-} ;
+  void OnStarted(TriangleMesh&) {}
 
-} // namespace Surface_mesh_simplification
+  template <typename StopPredicate>
+  void OnParallelPassFinished(TriangleMesh&, StopPredicate&, size_type /* initial */ , size_type /* current */) {}
 
-} //namespace CGAL
+  void OnFinished(TriangleMesh&) {}
+  void OnStopConditionReached(const Profile&) {}
+  void OnCollected(const Profile&, const boost::optional<FT>&) {}
+  void OnSelected(const Profile&, const boost::optional<FT>&, size_type /* initial */, size_type /* current */) {}
+  void OnCollapsing(const Profile&, const boost::optional<Point>&) {}
+  void OnCollapsed(const Profile&, const vertex_descriptor&) {}
+  void OnNonCollapsable(const Profile&) {}
+};
 
-#endif // CGAL_SURFACE_MESH_SIMPLIFICATION_EDGE_COLLAPSE_VISITOR_BASE_H //
-// EOF //
- 
+} // end namespace Surface_mesh_simplification
+
+} // end namespace CGAL
+
+#endif // CGAL_SURFACE_MESH_SIMPLIFICATION_EDGE_COLLAPSE_VISITOR_BASE_H

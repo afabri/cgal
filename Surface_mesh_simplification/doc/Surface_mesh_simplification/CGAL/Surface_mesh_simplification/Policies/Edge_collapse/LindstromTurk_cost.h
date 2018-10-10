@@ -12,10 +12,10 @@ It computes the collapse cost following the Lindstrom-Turk strategy
 
 \cgalModels `GetCost`
 
-\sa `CGAL::Surface_mesh_simplification::LindstromTurk_placement<TriangleMesh>` 
+\sa `CGAL::Surface_mesh_simplification::LindstromTurk_placement<TriangleMesh>`
 
 */
-template< typename TriangleMesh >
+template <typename TriangleMesh>
 class LindstromTurk_cost {
 public:
 
@@ -26,7 +26,7 @@ public:
 Initializes the policy with the given <I>weighting unit factor</I>. 
 See \ref SurfaceMeshSimplificationLindstromTurkStrategy for details on the meaning of this factor. 
 */ 
-LindstromTurk_cost<TriangleMesh>( FT const& factor = FT(0.5) ); 
+LindstromTurk_cost<TriangleMesh>( FT const& factor = FT(0.5) );
 
 /// @} 
 

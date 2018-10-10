@@ -22,14 +22,12 @@
 
 #include <CGAL/license/Surface_mesh_simplification.h>
 
-
 #include <CGAL/Surface_mesh_simplification/Detail/Common.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_profile.h>
 
 namespace CGAL {
 
-namespace Surface_mesh_simplification
-{
+namespace Surface_mesh_simplification {
 
 //*******************************************************************************************************************
 //                                -= stopping condition predicate =-
@@ -39,45 +37,34 @@ namespace Surface_mesh_simplification
 //
 //*******************************************************************************************************************
 
-// 
 // Stops when the number of edges left falls below a given number.
-//
-template<class TM_>    
+template<class TriangleMesh_>
 class Count_stop_predicate
 {
 public:
+  typedef TriangleMesh_                                                 TriangleMesh;
+//  typedef Edge_profile<TriangleMesh>                                  Profile;
+  typedef typename boost::graph_traits<TriangleMesh>::edges_size_type   size_type;
+//  typedef typename Kernel::FT                                         FT;
 
-  typedef TM_ TM ;
-
-  //  typedef Edge_profile<TM> Profile ;
-  
-  typedef typename boost::graph_traits<TM>::edges_size_type size_type ;
-  
-  // typedef typename Kernel::FT FT ;
-
-public :
-  
+public:
   Count_stop_predicate( std::size_t aThres ) : mThres(aThres) {}
-  
-  template <typename F, typename Profile> 
-  bool operator()( F const&         // aCurrentCost
-                 , Profile const& // aEdgeProfile
-                 , std::size_t    // aInitialCount
-                 , std::size_t       aCurrentCount
-                 ) const 
+
+  template <typename F, typename Profile>
+  bool operator()(const F& /*aCurrentCost*/,
+                  const Profile& /*aEdgeProfile*/,
+                  std::size_t /*aInitialCount*/,
+                  std::size_t aCurrentCount) const
   {
-    return aCurrentCount < mThres ;
+    return aCurrentCount < mThres;
   }
-  
+
 private:
-  
-  std::size_t mThres ;
-};    
+  std::size_t mThres;
+};
 
-} // namespace Surface_mesh_simplification
+} // end namespace Surface_mesh_simplification
 
-} //namespace CGAL
+} // end namespace CGAL
 
-#endif // CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_COUNT_STOP_PREDICATE_H //
-// EOF //
- 
+#endif // CGAL_SURFACE_MESH_SIMPLIFICATION_POLICIES_EDGE_COLLAPSE_COUNT_STOP_PREDICATE_H

@@ -13,7 +13,7 @@ which returns `true` when the relation between the initial and current number of
 
 \cgalModels `StopPredicate`
 
-\sa `CGAL::Surface_mesh_simplification::Count_stop_predicate<TriangleMesh>` 
+\sa `CGAL::Surface_mesh_simplification::Count_stop_predicate<TriangleMesh>`
 
 */
 template< typename TriangleMesh >
@@ -26,7 +26,7 @@ public:
 /*!
 Initializes the predicate establishing the `ratio`. 
 */ 
-Count_ratio_stop_predicate<TriangleMesh>( double ratio ); 
+Count_ratio_stop_predicate<TriangleMesh>( double ratio );
 
 /// @} 
 

@@ -24,7 +24,7 @@ public:
 /*!
 Default constructor 
 */ 
-Edge_length_cost<TriangleMesh>(); 
+Edge_length_cost<TriangleMesh>();
 
 /// @} 
 

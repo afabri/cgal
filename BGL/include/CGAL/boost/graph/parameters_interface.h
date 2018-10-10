@@ -83,13 +83,14 @@ CGAL_add_named_parameter(output_iterator_t, output_iterator, output_iterator)
 // List of named parameters that we use in the package 'Surface Mesh Simplification'
 CGAL_add_named_parameter(get_cost_policy_t, get_cost_policy, get_cost)
 CGAL_add_named_parameter(get_placement_policy_t, get_placement_policy, get_placement)
+CGAL_add_named_parameter(current_num_edges_t, current_num_edges, current_num_edges)
 
-//to be documented
+// to be documented
 CGAL_add_named_parameter(face_normal_t, face_normal, face_normal_map)
 CGAL_add_named_parameter(random_seed_t, random_seed, random_seed)
 CGAL_add_named_parameter(do_project_t, do_project, do_project)
 
-//internal
+// internal
 CGAL_add_named_parameter(weight_calculator_t, weight_calculator, weight_calculator)
 
 // List of named parameters used in the Point Set Processing package

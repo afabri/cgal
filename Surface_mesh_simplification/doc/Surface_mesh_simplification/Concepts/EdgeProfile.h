@@ -20,7 +20,7 @@ public:
 /*!
 The type of the surface mesh to simplify. Must be a model of the `MutableFaceGraph` and `HalfedgeListGraph` concepts.
 */ 
-typedef unspecified_type TriangleMesh; 
+typedef unspecified_type TriangleMesh;
 
 /*!
 The type of a property map that maps vertices on points.
@@ -30,12 +30,12 @@ typedef unspecified_type VertexPointMap;
 /*!
 A <span class="textsc">Bgl</span> vertex descriptor representing a vertex of the surface mesh. 
 */ 
-typename boost::graph_traits<TriangleMesh>::vertex_descriptor vertex_descriptor; 
+typename boost::graph_traits<TriangleMesh>::vertex_descriptor vertex_descriptor;
 
 /*!
 A <span class="textsc">Bgl</span> halfedge descriptor representing a haledge of the surface mesh. 
 */ 
-typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor; 
+typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
 
 /*!
 The point type for the surface mesh vertex. Must be a model of `Point_3`. 
