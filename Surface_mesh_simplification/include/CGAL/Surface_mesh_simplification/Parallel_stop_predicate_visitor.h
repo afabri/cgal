@@ -58,19 +58,7 @@ public:
     VisitorBase::OnParallelPassFinished(tm, pred, initial_num_edges, num_current_edges);
   }
 
-  // Specialization for the predicate 'Count_ratio_stop_predicate': adapt the ratio
-  // used in the second pass depending on the overall expected ratio and the results
-  // of the first pass.
-  void OnParallelPassFinished(TriangleMesh& tm,
-                              Count_ratio_stop_predicate<TriangleMesh>& pred,
-                              size_type initial_num_edges,
-                              size_type num_current_edges) const
-  {
-    // call the wrapped visitor's function
-    VisitorBase::OnParallelPassFinished(tm, pred, initial_num_edges, num_current_edges);
 
-    pred.set_ratio((std::min)(1.0, pred.ratio() * ((double)initial_num_edges / (double)num_current_edges)));
-  }
 };
 
 } // end namespace Surface_mesh_simplification

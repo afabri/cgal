@@ -2,7 +2,8 @@
 #include <CGAL/Surface_mesh.h>
 
 #include <CGAL/Surface_mesh_simplification/edge_collapse.h>
-#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Count_ratio_stop_predicate.h>
+#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_length_stop_predicate.h>
+#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_length_cost.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Bounded_normal_change_placement.h>
 
 #include <CGAL/Polygon_mesh_processing/partition.h>
@@ -22,7 +23,7 @@ typedef CGAL::Surface_mesh<Point_3>                                         Tria
 namespace SMS = CGAL::Surface_mesh_simplification;
 namespace PMP = CGAL::Polygon_mesh_processing;
 
-// Usage: ./parallel_edge_collapse input_mesh keep_ratio (default:0.25) number_of_tasks (default: 8)
+// Usage: ./parallel_edge_collapse input_mesh edge_length (default:0.01) number_of_tasks (default: 8)
 
 int main(int argc, char** argv)
 {
@@ -30,7 +31,7 @@ int main(int argc, char** argv)
   typedef boost::graph_traits<Triangle_mesh>::face_descriptor face_descriptor;
 
   std::ifstream in((argc>1) ? argv[1] : "data/elephant.off");
-  double ratio = (argc>2) ? boost::lexical_cast<double>(argv[2]) : 0.25;
+  double edge_length = (argc>2) ? boost::lexical_cast<double>(argv[2]) : 0.01;
   int number_of_parts = (argc>3) ? boost::lexical_cast<int>(argv[3]) : 8;
 
   CGAL::Real_timer t;
@@ -66,8 +67,8 @@ int main(int argc, char** argv)
 
   // Simplify the mesh
   SMS::Bounded_normal_change_placement<SMS::LindstromTurk_placement<Triangle_mesh> > placement;
-  SMS::LindstromTurk_cost<Triangle_mesh> cost;
-  SMS::Count_ratio_stop_predicate<Triangle_mesh> stop(ratio);
+  SMS::Edge_length_cost<Triangle_mesh> cost;
+  SMS::Edge_length_stop_predicate<double> stop(edge_length);
 
   SMS::parallel_edge_collapse(tm, stop, number_of_parts, fpmap,
                               CGAL::parameters::edge_is_constrained_map(ecmap)

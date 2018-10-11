@@ -345,7 +345,7 @@ struct Simplify
     if(verbose)
     {
       std::ostringstream oss;
-      oss << "[" << cc_index << "]\tratio = " << stop.ratio() << std::endl
+      oss << "[" << cc_index << "]" << std::endl
           << "\tRemoved " << results[cc_index] << std::endl
           << "\t|| done" << std::endl << std::ends;
       std::cerr << oss.str();
