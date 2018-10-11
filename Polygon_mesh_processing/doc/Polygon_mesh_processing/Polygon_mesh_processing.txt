@@ -51,7 +51,6 @@ mesh, which includes point location and self intersection tests.
 - \ref PMPSlicer : functor able to compute the intersections of a polygon mesh with arbitrary planes (slicer).
 - \ref PMPConnectedComponents : methods to deal with connected
   components of a polygon mesh (extraction, marks, removal, ...).
-- \ref PMPPartitioning : methods to split a mesh into subdomains, using the library METIS.
 
 ****************************************
 \section PMPMeshing Meshing
@@ -677,23 +676,26 @@ This package provides functions to enumerate and store
 the connected components of a polygon mesh.
 The connected components can be either closed and geometrically separated,
 or separated by border or user-specified \e constraint edges.
-The following functions are offered:
 
-- `CGAL::Polygon_mesh_processing::connected_component()`:
+First, the function `CGAL::Polygon_mesh_processing::connected_component()`
 collects all the faces that belong to the same connected component as
 the face that is given as a parameter.
-- `CGAL::Polygon_mesh_processing::connected_components()`:
+
+Then, `CGAL::Polygon_mesh_processing::connected_components()`
 collects all the connected components, and fills a property map
 with the indices of the different connected components.
-- `CGAL::Polygon_mesh_processing::keep_connected_components()`
-and `CGAL::Polygon_mesh_processing::remove_connected_components()`:
+
+The functions `CGAL::Polygon_mesh_processing::keep_connected_components()`
+and `CGAL::Polygon_mesh_processing::remove_connected_components()`
 enable the user to keep and remove only a selection of connected components,
 provided either as a range of faces that belong to the desired connected components
 or as a range of connected component ids (one or more per connected component).
-- `CGAL::Polygon_mesh_processing::keep_largest_connected_components()`:
+
+Finally, `CGAL::Polygon_mesh_processing::keep_largest_connected_components()`
 enables the user to keep only the largest connected components. This feature can
 for example be useful for noisy data were small connected components
 should be discarded in favour of major connected components.
+
 
 \subsection CCExample Connected Components Example
 
@@ -706,33 +708,12 @@ the propagation of a connected component index to cross it.
 
 \cgalExample{Polygon_mesh_processing/connected_components_example.cpp}
 
-The second example shows how to use the class template `CGAL::Face_filtered_graph`
+The second example shows how to use the class template `Face_filtered_graph`
 which enables to treat one or several connected components as a face graph.
 
 \cgalExample{Polygon_mesh_processing/face_filtered_graph_example.cpp}
 
-****************************************
-\section PMPPartitioning Mesh Partitioning
 
-For algorithms that operate locally, mesh partitioning is often an easy way to parallelize
-the algorithm at little cost.
-The function `CGAL::Polygon_mesh_processing::partition()` provides a wrapper to the graph partitioning
-library METIS \cgalCite{karypis1998fast}, allowing to split triangular
-meshes that are models of the concept `FaceListGraph` into a given number of
-subdomains.
-
-The following example shows how to read, partition, and write a mesh using
-`partition()`. The class template `CGAL::Face_filtered_graph`
-and the free function `copy_face_graph()` are used to create an independent mesh from one
-of the subdomains of the partition. Note that the copy is optional as writing
-can be done directly using `Face_filtered_graph`.
-
-Using \ref BGLNamedParameters you can set some of the many options of METIS
-as shown in \ref Polygon_mesh_processing/partition_example_adv.cpp "this example".
-
-\cgalExample{Polygon_mesh_processing/partition_example.cpp}
-
-****************************************
 \section PMPDistance Approximate Hausdorff Distance
 
 This package provides methods to compute (approximate) distances between meshes and point sets.
@@ -775,7 +756,6 @@ with the following code:
 
 \snippet Poisson_surface_reconstruction_3/poisson_reconstruction_example.cpp PMP_distance_snippet
 
-****************************************
 \section PMPDetectFeatures Feature Detection
 
 This package provides methods to detect some features of a polygon mesh.

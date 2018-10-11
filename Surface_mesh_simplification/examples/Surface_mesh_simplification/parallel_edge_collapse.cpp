@@ -6,7 +6,7 @@
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_length_cost.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Bounded_normal_change_placement.h>
 
-#include <CGAL/Polygon_mesh_processing/partition.h>
+#include <CGAL/boost/graph/partition.h>
 #include <CGAL/Real_timer.h>
 #include <CGAL/Polygon_mesh_processing/polygon_soup_to_polygon_mesh.h>
 
@@ -55,7 +55,8 @@ int main(int argc, char** argv)
   options[METIS_OPTION_CONTIG] = 1; // need to have contiguous subdomains
   options[METIS_OPTION_UFACTOR] = 1;
 
-  PMP::partition(tm, number_of_parts, fpmap, CGAL::parameters::METIS_options(&options));
+  CGAL::METIS::partition_dual_graph(tm, number_of_parts, CGAL::parameters::METIS_options(&options)
+                                                                          .face_partition_id_map(fpmap));
   std::cerr << "Built partition in " << t.time() << " sec."<< std::endl;
   t.reset();
 

@@ -71,7 +71,7 @@ private:
 
 
 template <typename K, typename VEF>
-class SM_index_pmap
+class SM_index_pmap : public boost::put_get_helper<boost::uint32_t, SM_index_pmap<K,VEF> >
 {
 public:
   typedef boost::readable_property_map_tag category;
@@ -83,15 +83,6 @@ public:
   {
     return vd;
   }
-
-  friend value_type get(const SM_index_pmap<K,VEF>& /*sm*/, const key_type& k)
-  {
-    return k;
-  }
-
-  friend void put(SM_index_pmap<K,VEF>& /*sm*/, const key_type&, const value_type&)
-  {}
-  
 };
 
 } // CGAL
