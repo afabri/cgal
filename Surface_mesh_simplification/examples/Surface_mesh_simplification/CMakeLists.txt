@@ -53,6 +53,7 @@ create_single_source_cgal_program( "edge_collapse_surface_mesh.cpp" )
 create_single_source_cgal_program( "edge_collapse_linear_cell_complex.cpp" )
 create_single_source_cgal_program( "edge_collapse_constrained_border_surface_mesh.cpp" )
 create_single_source_cgal_program( "edge_collapse_all_short_edges.cpp" )
+create_single_source_cgal_program( "edge_collapse_face_filtered_graph.cpp" )
 create_single_source_cgal_program( "edge_collapse_bounded_normal_change.cpp" )
 
 if(OpenMesh_FOUND)
