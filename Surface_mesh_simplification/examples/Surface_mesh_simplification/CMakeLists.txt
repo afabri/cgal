@@ -49,11 +49,12 @@ create_single_source_cgal_program( "edge_collapse_constrain_sharp_edges.cpp" )
 create_single_source_cgal_program( "edge_collapse_constrained_border_polyhedron.cpp" )
 create_single_source_cgal_program( "edge_collapse_enriched_polyhedron.cpp" )
 create_single_source_cgal_program( "edge_collapse_polyhedron.cpp" )
-create_single_source_cgal_program( "edge_collapse_surface_mesh.cpp" )
+
 create_single_source_cgal_program( "edge_collapse_linear_cell_complex.cpp" )
 create_single_source_cgal_program( "edge_collapse_constrained_border_surface_mesh.cpp" )
 create_single_source_cgal_program( "edge_collapse_all_short_edges.cpp" )
 create_single_source_cgal_program( "edge_collapse_bounded_normal_change.cpp" )
+create_single_source_cgal_program( "undo_edge_collapse_surface_mesh.cpp" )
 
 if(OpenMesh_FOUND)
   create_single_source_cgal_program( "edge_collapse_OpenMesh.cpp" )
