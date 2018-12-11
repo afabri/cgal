@@ -54,10 +54,12 @@ create_single_source_cgal_program( "edge_collapse_linear_cell_complex.cpp" )
 create_single_source_cgal_program( "edge_collapse_constrained_border_surface_mesh.cpp" )
 create_single_source_cgal_program( "edge_collapse_all_short_edges.cpp" )
 create_single_source_cgal_program( "edge_collapse_bounded_normal_change.cpp" )
-create_single_source_cgal_program( "undo_edge_collapse_surface_mesh.cpp" )
+
 
 if(OpenMesh_FOUND)
   create_single_source_cgal_program( "edge_collapse_OpenMesh.cpp" )
+create_single_source_cgal_program( "undo_edge_collapse_surface_mesh.cpp" )
 
   target_link_libraries( edge_collapse_OpenMesh PRIVATE ${OPENMESH_LIBRARIES} )
+  target_link_libraries( undo_edge_collapse_surface_mesh PRIVATE ${OPENMESH_LIBRARIES} )
 endif()

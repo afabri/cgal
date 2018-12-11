@@ -2,8 +2,12 @@
 #include <fstream>
 #include <string>
 #include <boost/lexical_cast.hpp>
-#include <CGAL/Simple_cartesian.h>
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Surface_mesh.h>
+
+#include <OpenMesh/Core/IO/MeshIO.hh>
+#include <OpenMesh/Core/Mesh/PolyMesh_ArrayKernelT.hh>
+#include <CGAL/boost/graph/graph_traits_PolyMesh_ArrayKernelT.h>
 
 // Simplification function
 #include <CGAL/Surface_mesh_simplification/edge_collapse.h>
@@ -16,13 +20,20 @@
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_length_cost.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Midpoint_placement.h>
 
-typedef CGAL::Simple_cartesian<double> Kernel;
+typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel;
 typedef Kernel::Point_3 Point_3;
 
 //
 // Setup an enriched polyhedron type which stores an id() field in the items
 //
-typedef CGAL::Surface_mesh<Point_3> Surface_mesh; 
+
+//#define CGAL_SM
+
+#ifdef CGAL_SM
+typedef CGAL::Surface_mesh<Point_3> Surface_mesh;
+#else
+typedef OpenMesh::PolyMesh_ArrayKernelT</* MyTraits*/> Surface_mesh;
+#endif
 
 typedef boost::graph_traits<Surface_mesh>::halfedge_descriptor halfedge_descriptor ;
 typedef boost::graph_traits<Surface_mesh>::edge_descriptor edge_descriptor ;
@@ -33,11 +44,13 @@ namespace SMS = CGAL::Surface_mesh_simplification ;
 typedef SMS::Edge_profile<Surface_mesh> Profile ;
 
 
+
 // The following is a Visitor that keeps track of the simplification process.
 
 
 struct Record {
-  vertex_descriptor v1;         // we store the vertex that survives the collapse_edge()
+  vertex_descriptor v0;         // the vertex that gets removed
+  vertex_descriptor v1;         // the vertex that survives the collapse_edge()
   vertex_descriptor oppa, oppb; // the vertices opposite to the edge to collapse
   Point_3 p0, p1;               // the original coordinates of the vertices 
 };
@@ -47,10 +60,15 @@ struct Stats
 {
   Stats(const Surface_mesh& sm) 
     : sm(sm) 
-  {} 
+  {
+    BOOST_FOREACH(vertex_descriptor vd, vertices(sm)){
+      v2v[vd]=vd;
+    }
+  } 
 
   const Surface_mesh& sm;
   std::vector<Record> records;
+  std::map<vertex_descriptor,vertex_descriptor> v2v;
 } ;
 
 struct My_visitor : SMS::Edge_collapse_visitor_base<Surface_mesh>
@@ -78,18 +96,19 @@ struct My_visitor : SMS::Edge_collapse_visitor_base<Surface_mesh>
   {
     if ( placement ){
       //std::cout << "collapse edge " << profile.v0_v1() << " " << << profile.v0()  << " " << profile.v1() << std::endl;
-      //std::cout << profile.v0() << " will get removed" << std::endl;
+      //std::cout << profile.v0() << " will get removed "  << profile.p0() << std::endl;
       Record record;
+      record.v0 = profile.v0();
       record.v1 = profile.v1();
       record.p0 = profile.p0();
       record.p1 = profile.p1();
       halfedge_descriptor hd = profile.v0_v1();
       
-      record.oppa = (! is_border(hd,stats->sm))
+      record.oppa = (! CGAL::is_border(hd,stats->sm))
         ? target(next(hd, stats->sm),stats->sm)
         : boost::graph_traits<Surface_mesh>::null_vertex();
 
-      record.oppb = (! is_border(opposite(hd, stats->sm),stats->sm))
+      record.oppb = (! CGAL::is_border(opposite(hd, stats->sm),stats->sm))
         ? target(next(opposite(hd, stats->sm), stats->sm),stats->sm)
         : boost::graph_traits<Surface_mesh>::null_vertex();
       
@@ -115,8 +134,13 @@ int main( int argc, char** argv )
 {
 
   Surface_mesh surface_mesh; 
+
+#ifdef CGAL_SM  
+  std::ifstream is(argv[1]) ; is >> surface_mesh;
+#else
+  OpenMesh::IO::read_mesh(surface_mesh, argv[1]);
+#endif
   
-  std::ifstream is(argv[1]) ; is >> surface_mesh ;
   if (!CGAL::is_triangle_mesh(surface_mesh)){
     std::cerr << "Input geometry is not triangulated." << std::endl;
     return EXIT_FAILURE;
@@ -159,30 +183,30 @@ int main( int argc, char** argv )
 #endif
   
   while(! stats.records.empty()){
-    std::cout << "undo collapse" << std::endl;
+    //    std::cout << "undo collapse" << std::endl;
     Record r = stats.records.back();
 
     stats.records.pop_back();
     halfedge_descriptor h0, h1;
     if(r.oppa != boost::graph_traits<Surface_mesh>::null_vertex()){
-      std::pair<halfedge_descriptor,bool> pa = halfedge(r.oppa, r.v1, surface_mesh);
+      std::pair<halfedge_descriptor,bool> pa = halfedge(stats.v2v[r.oppa], stats.v2v[r.v1], surface_mesh);
       assert(pa.second);
       h0 = pa.first;
     } else {
-      BOOST_FOREACH(halfedge_descriptor hd, CGAL::halfedges_around_target(halfedge(r.v1,surface_mesh), surface_mesh)){
-        if(is_border(hd,surface_mesh)){
+      BOOST_FOREACH(halfedge_descriptor hd, CGAL::halfedges_around_target(halfedge(stats.v2v[r.v1],surface_mesh), surface_mesh)){
+        if(CGAL::is_border(hd,surface_mesh)){
           h0 = hd;
           break;
         }
       }
     }
     if(r.oppb != boost::graph_traits<Surface_mesh>::null_vertex()){
-      std::pair<halfedge_descriptor,bool> pa = halfedge(r.oppb, r.v1, surface_mesh);
+      std::pair<halfedge_descriptor,bool> pa = halfedge(stats.v2v[r.oppb], stats.v2v[r.v1], surface_mesh);
       assert(pa.second);
       h1 = pa.first;
     } else {
-      BOOST_FOREACH(halfedge_descriptor hd, CGAL::halfedges_around_target(halfedge(r.v1,surface_mesh), surface_mesh)){
-        if(is_border(hd,surface_mesh)){
+      BOOST_FOREACH(halfedge_descriptor hd, CGAL::halfedges_around_target(halfedge(stats.v2v[r.v1],surface_mesh), surface_mesh)){
+        if(CGAL::is_border(hd,surface_mesh)){
           h1 = hd;
           break;
         }
@@ -190,16 +214,21 @@ int main( int argc, char** argv )
     }
 
     halfedge_descriptor hnew = CGAL::Euler::split_vertex(h1, h0, surface_mesh);
-    assert(target(hnew,surface_mesh) == r.v1);
+    assert(target(hnew,surface_mesh) == stats.v2v[r.v1]);
+    stats.v2v[r.v0] = source(hnew,surface_mesh);
     if(r.oppa != boost::graph_traits<Surface_mesh>::null_vertex()){
       CGAL::Euler::split_face(prev(h0,surface_mesh),next(h0, surface_mesh),surface_mesh);
     }
     if(r.oppb != boost::graph_traits<Surface_mesh>::null_vertex()){
       CGAL::Euler::split_face(prev(h1,surface_mesh),next(h1, surface_mesh),surface_mesh);
     }
+
     
-    surface_mesh.point(r.v1) = r.p1;
-    surface_mesh.point(source(hnew,surface_mesh)) = r.p0;
+    boost::property_map<Surface_mesh,boost::vertex_point_t>::type vpm = get(boost::vertex_point, surface_mesh);
+    
+    
+    put(vpm, stats.v2v[r.v1], r.p1);
+    put(vpm, source(hnew,surface_mesh), r.p0);
 
 #ifdef DUMP_MESH    
     {
@@ -213,9 +242,13 @@ int main( int argc, char** argv )
     }
 #endif
   }
-  
- 
+
+#ifdef CGAL_SM  
   std::ofstream os( argc > 2 ? argv[2] : "out.off" ) ; os << surface_mesh ;
+#else  
+  surface_mesh.garbage_collection();
+  OpenMesh::IO::write_mesh(surface_mesh, "out.off");
+#endif
 
   return EXIT_SUCCESS ;      
 }
