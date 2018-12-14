@@ -40,24 +40,41 @@ namespace SMS = CGAL::Surface_mesh_simplification ;
 typedef SMS::Edge_profile<Surface_mesh> Profile ;
 
 
+struct State {
+  Point_3 p;
+};
 
 struct My_visitor : public SMS::Edge_collapse_visitor_base<Surface_mesh>
 {
- void OnCollapsing(Profile const&          
-                   ,boost::optional<Point>  placement
-                   )
+  State& state;
+  Surface_mesh& sm;
+
+  My_visitor(State& state, Surface_mesh& sm)
+    : state(state), sm(sm)
+  {}
+  
+  void OnCollapsing(Profile const& profile          
+                    ,boost::optional<Point>  placement
+                    )
   {
     std::cout << "My_visitor::OnCollapsing()" << std::endl;
+    std::cout << profile.v0() << " will collapse into "<< profile.v1() << std::endl; 
   }
-
+  
+  // Called AFTER each edge has been collapsed
+  void OnCollapsed( Profile const&, vertex_descriptor )
+  {}
+  
   void OnSplitting(vertex_descriptor v, vertex_descriptor vL, vertex_descriptor vR)
   {
-    std::cout << "before split of vertex " << v << std::endl; 
+    std::cout << "before split of vertex " << v << std::endl;
+    state.p = sm.point(v);
   }
 
   void OnSplit(halfedge_descriptor hd)
   {
-    std::cout << "new halfedge "<< hd << std::endl;
+    std::cout << target(hd, sm) << " at " << state.p << " was split into " 
+              << hd << " at " <<  sm.point(source(hd,sm)) << " -> " << sm.point(target(hd,sm)) << std::endl;
   }
 };
 
@@ -83,12 +100,10 @@ int main( int argc, char** argv )
   // drops below 50% of the initial count
   SMS::Count_ratio_stop_predicate<Surface_mesh> stop(0.5);
 
- 
-  My_visitor mvis;
+  State state;
+  My_visitor mvis(state, surface_mesh);
 
   SMS::Edge_collapse_recorder<Surface_mesh,My_visitor> recorder(surface_mesh);
-
-
 
   int rem = SMS::edge_collapse
     (surface_mesh
@@ -98,16 +113,12 @@ int main( int argc, char** argv )
      .visitor(recorder.visitor(mvis))
      );
 
-  int i = 0;
 
 #ifdef CGAL_SMS_DUMP_MESH  
   {
     Surface_mesh sm;
     copy_face_graph(surface_mesh,sm);
-    std::string fn("collapse-");
-    fn += boost::lexical_cast<std::string>(i++) + ".off";
-    
-    std::ofstream out(fn.c_str());
+    std::ofstream out("collapse-0.off");
     out << sm;
   }
 #endif

@@ -165,6 +165,9 @@ public:
   
   void undo(UserVisitor user_visitor, std::size_t n)
   {
+#ifdef CGAL_SMS_DUMP_MESH    
+    int i = 1; // 0 can be printed in the .cpp
+#endif    
     if(n > records.size()){
       n = records.size();
     }
@@ -212,22 +215,21 @@ public:
       
       boost::property_map<Mesh,boost::vertex_point_t>::type vpm = get(boost::vertex_point, sm);
       
-      
       put(vpm, v2v[r.v1], r.p1);
       put(vpm, source(hnew, sm), r.p0);
 
       user_visitor.OnSplit(hnew);
       
 #ifdef CGAL_SMS_DUMP_MESH    
-      {
-        Mesh sm;
-      copy_face_graph(sm,sm);
+      
+      Mesh sm2;
+      copy_face_graph(sm,sm2);
       std::string fn("collapse-");
       fn += boost::lexical_cast<std::string>(i++) + ".off";
       
       std::ofstream out(fn.c_str());
-      out << sm;
-      }
+      out << sm2;
+      
 #endif
     }
   }
