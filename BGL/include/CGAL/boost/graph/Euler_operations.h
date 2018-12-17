@@ -60,7 +60,7 @@ join_face(typename boost::graph_traits<Graph>::halfedge_descriptor h,
   if(! is_border(hop,g)){
     if(removal_mutex){
       CGAL_SCOPED_LOCK(*removal_mutex);
-      remove_face(f2, g);
+      remove_face(f2, g,true);
     } else {
       remove_face(f2, g);
     }
@@ -83,7 +83,7 @@ join_face(typename boost::graph_traits<Graph>::halfedge_descriptor h,
 
   if(removal_mutex){
     CGAL_SCOPED_LOCK(*removal_mutex);
-    remove_edge(edge(h, g), g);
+    remove_edge(edge(h, g), g, true);
   } else {
     remove_edge(edge(h, g), g);
   }
@@ -168,8 +168,8 @@ join_vertex(typename boost::graph_traits<Graph>::halfedge_descriptor h,
   {
     if(removal_mutex){
       CGAL_SCOPED_LOCK(*removal_mutex);
-      remove_edge(edge(h, g), g);
-      remove_vertex(v_to_remove, g);
+      remove_edge(edge(h, g), g, true);
+      remove_vertex(v_to_remove, g, true);
     } else {
       remove_edge(edge(h, g), g);
       remove_vertex(v_to_remove, g);
@@ -526,7 +526,8 @@ split_loop(typename boost::graph_traits<Graph>::halfedge_descriptor h1,
  */
 template< typename Graph >
 void remove_face(typename boost::graph_traits<Graph>::halfedge_descriptor h,
-                 Graph& g)
+                 Graph& g,
+                 bool mark_only = false)
 {
   typedef typename boost::graph_traits<Graph>            Traits;
   typedef typename Traits::halfedge_descriptor           halfedge_descriptor;
@@ -543,9 +544,9 @@ void remove_face(typename boost::graph_traits<Graph>::halfedge_descriptor h,
     bool nh_bborder = is_border(opposite(nh, g),g);
 
     if(h_border && nh_bborder && next(opposite(nh, g), g) == opposite(h, g)) {
-      remove_vertex(target(h, g), g);
+      remove_vertex(target(h, g), g, mark_only);
       if(h != end)
-        remove_edge(edge(h, g), g);
+        remove_edge(edge(h, g), g, mark_only);
     } else {
       if(nh_bborder) {
         internal::set_vertex_halfedge(opposite(next(opposite(nh, g), g), g), g);
@@ -557,15 +558,15 @@ void remove_face(typename boost::graph_traits<Graph>::halfedge_descriptor h,
         internal::remove_tip(prev(opposite(h, g), g), g);
         //internal::set_constant_vertex_is_border(g, target(prev(opposite(h, g), g), g));
         if(h != end)
-          remove_edge(edge(h, g), g);
+          remove_edge(edge(h, g), g, mark_only);
       }
     }
     h = nh;
   } while(h != end);
-  remove_face(f, g);
+  remove_face(f, g, mark_only);
 
   if(is_border(opposite(h, g),g))
-    remove_edge(edge(h, g), g);
+    remove_edge(edge(h, g), g, mark_only);
 }
 
 /**
@@ -905,8 +906,8 @@ remove_center_vertex(typename boost::graph_traits<Graph>::halfedge_descriptor h,
     
     if(removal_mutex){
       CGAL_SCOPED_LOCK(*removal_mutex);
-      remove_face(face(h2, g), g);
-      remove_edge(edge(h2,g), g);
+      remove_face(face(h2, g), g,true);
+      remove_edge(edge(h2,g), g,true);
     }else{
       remove_face(face(h2, g), g);
       remove_edge(edge(h2,g), g);
@@ -918,8 +919,8 @@ remove_center_vertex(typename boost::graph_traits<Graph>::halfedge_descriptor h,
   internal::remove_tip(hret, g);
     if(removal_mutex){
       CGAL_SCOPED_LOCK(*removal_mutex);
-      remove_vertex(target(h, g), g);
-      remove_edge(edge(h, g), g);
+      remove_vertex(target(h, g), g,true);
+      remove_edge(edge(h, g), g,true);
     }else{
       remove_vertex(target(h, g), g);
       remove_edge(edge(h, g), g);
@@ -1270,7 +1271,7 @@ collapse_edge(typename boost::graph_traits<Graph>::edge_descriptor v0v1,
       else{
         if(removal_mutex){
           CGAL_SCOPED_LOCK(*removal_mutex);
-          remove_face(opposite(edges_to_erase[0],g),g);
+          remove_face(opposite(edges_to_erase[0],g),g, true);
         } else {
           remove_face(opposite(edges_to_erase[0],g),g);
         }
@@ -1280,7 +1281,7 @@ collapse_edge(typename boost::graph_traits<Graph>::edge_descriptor v0v1,
       else{
         if(removal_mutex){
           CGAL_SCOPED_LOCK(*removal_mutex);
-          remove_face(opposite(edges_to_erase[1],g),g);
+          remove_face(opposite(edges_to_erase[1],g),g,true);
         } else {
           remove_face(opposite(edges_to_erase[1],g),g);
         }
@@ -1307,7 +1308,7 @@ collapse_edge(typename boost::graph_traits<Graph>::edge_descriptor v0v1,
 
         if(removal_mutex){
           CGAL_SCOPED_LOCK(*removal_mutex);
-          remove_face(opposite(edges_to_erase[0],g),g);
+          remove_face(opposite(edges_to_erase[0],g),g,true);
         } else {
           remove_face(opposite(edges_to_erase[0],g),g);
         }
@@ -1329,7 +1330,7 @@ collapse_edge(typename boost::graph_traits<Graph>::edge_descriptor v0v1,
       }
       if(removal_mutex){
         CGAL_SCOPED_LOCK(*removal_mutex);
-        remove_face(opposite(edges_to_erase[0],g),g);
+        remove_face(opposite(edges_to_erase[0],g),g,true);
       } else {
         remove_face(opposite(edges_to_erase[0],g),g);
       }

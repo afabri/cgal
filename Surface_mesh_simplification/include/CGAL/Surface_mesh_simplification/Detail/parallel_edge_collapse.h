@@ -471,6 +471,8 @@ int parallel_edge_collapse(TriangleMesh& sm,
   }
   tasks.wait();
 
+  sm.remove_marked();
+  
   int result = 0;
   for(std::size_t i=0; i<removed.size(); ++i)
     result += removed[i];

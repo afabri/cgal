@@ -1,4 +1,5 @@
 #include <CGAL/Simple_cartesian.h>
+#include <CGAL/Timer.h>
 #include <CGAL/Surface_mesh.h>
 
 #include <CGAL/Surface_mesh_simplification/edge_collapse.h>

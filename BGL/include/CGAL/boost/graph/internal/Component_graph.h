@@ -194,25 +194,28 @@ next(typename boost::graph_traits<G>::halfedge_descriptor h,
 template <typename G, typename ECMap>
 void
 remove_vertex(typename boost::graph_traits<G>::vertex_descriptor v,
-     Component_graph<G,ECMap>& cg)
+              Component_graph<G,ECMap>& cg,
+              bool mark_only = false)
 {
-  remove_vertex(v, cg.g);
+  remove_vertex(v, cg.g, mark_only);
 }
 
 template <typename G, typename ECMap>
 void
 remove_edge(typename boost::graph_traits<G>::edge_descriptor e,
-     Component_graph<G,ECMap>& cg)
+     Component_graph<G,ECMap>& cg,
+              bool mark_only = false)
 {
-  return remove_edge(e, cg.g);
+  return remove_edge(e, cg.g, mark_only);
 }
 
 template <typename G, typename ECMap>
 void
 remove_face(typename boost::graph_traits<G>::face_descriptor f,
-     Component_graph<G,ECMap>& cg)
+            Component_graph<G,ECMap>& cg,
+            bool mark_only = false)
 {
-  return remove_face(f, cg.g);
+  return remove_face(f, cg.g, mark_only);
 }
 
 template <typename G, typename ECMap>

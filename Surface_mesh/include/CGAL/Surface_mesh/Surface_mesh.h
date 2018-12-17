@@ -1012,35 +1012,65 @@ public:
 
     /// removes vertex `v` from the halfedge data structure without
     /// adjusting anything.
-    void remove_vertex(Vertex_index v)
+  void remove_vertex(Vertex_index v, bool mark_only = false)
     {
-        vremoved_ = add_property_map<Vertex_index, bool>("v:removed", false).first;
-        vremoved_[v] = true; ++removed_vertices_; garbage_ = true;
-        vconn_[v].halfedge_ = Halfedge_index(vertices_freelist_);
-        vertices_freelist_ = (size_type)v;
+        vremoved_ = add_property_map<Vertex_index, char>("v:removed", false).first;
+        vremoved_[v] = true;
+        if(! mark_only){
+          ++removed_vertices_; garbage_ = true;
+          vconn_[v].halfedge_ = Halfedge_index(vertices_freelist_);
+          vertices_freelist_ = (size_type)v;
+        }
     }
-
+  
     /// removes the two halfedges corresponding to `e` from the halfedge data structure without
     /// adjusting anything.
-    void remove_edge(Edge_index e)
+    void remove_edge(Edge_index e, bool mark_only = false)
     {
-        eremoved_ = add_property_map<Edge_index, bool>("e:removed", false).first;
-        eremoved_[e] = true; ++removed_edges_; garbage_ = true;
-        hconn_[Halfedge_index((size_type)e << 1)].next_halfedge_ = Halfedge_index(edges_freelist_ );
-        edges_freelist_ = ((size_type)e << 1);
+        eremoved_ = add_property_map<Edge_index, char>("e:removed", false).first;
+        eremoved_[e] = true;
+        if(! mark_only){
+          ++removed_edges_; garbage_ = true;
+          hconn_[Halfedge_index((size_type)e << 1)].next_halfedge_ = Halfedge_index(edges_freelist_ );
+          edges_freelist_ = ((size_type)e << 1);
+        }
     }
 
     /// removes  face `f` from the halfedge data structure without
     /// adjusting anything.
 
-    void remove_face(Face_index f)
+    void remove_face(Face_index f, bool mark_only = false)
     {
-        fremoved_ = add_property_map<Face_index, bool>("f:removed", false).first;
-        fremoved_[f] = true; ++removed_faces_; garbage_ = true;
-        fconn_[f].halfedge_ = Halfedge_index(faces_freelist_);
-        faces_freelist_ = (size_type)f;
+        fremoved_ = add_property_map<Face_index, char>("f:removed", false).first;
+        fremoved_[f] = true;
+        if(! mark_only){
+          ++removed_faces_; garbage_ = true;
+          fconn_[f].halfedge_ = Halfedge_index(faces_freelist_);
+          faces_freelist_ = (size_type)f;
+        }
     }
 
+  void remove_marked()
+  {
+    Timer t;
+    t.start();
+    BOOST_FOREACH(Vertex_index v, vertices()){
+      if(vremoved_[v]){
+        remove_vertex(v);
+      }
+    }
+    BOOST_FOREACH(Edge_index e, edges()){
+      if(eremoved_[e]){
+        remove_edge(e);
+      }
+    }
+    BOOST_FOREACH(Face_index f, faces()){
+      if(fremoved_[f]){
+        remove_face(f);
+      }
+    }
+    std::cout << t.time() << " sec"<< std::endl;
+  }
 
     ///@}
 
@@ -1979,9 +2009,9 @@ private: //------------------------------------------------------- private data
     Property_map<Halfedge_index, Halfedge_connectivity>  hconn_;
     Property_map<Face_index, Face_connectivity>          fconn_;
 
-    Property_map<Vertex_index, bool>  vremoved_;
-    Property_map<Edge_index, bool>    eremoved_;
-    Property_map<Face_index, bool>    fremoved_;
+    Property_map<Vertex_index, char>  vremoved_;
+    Property_map<Edge_index, char>    eremoved_;
+    Property_map<Face_index, char>    fremoved_;
 
     Property_map<Vertex_index, Point>   vpoint_;
 
@@ -2258,9 +2288,9 @@ Surface_mesh()
     hconn_    = add_property_map<Halfedge_index, Halfedge_connectivity>("h:connectivity").first;
     fconn_    = add_property_map<Face_index, Face_connectivity>("f:connectivity").first;
     vpoint_   = add_property_map<Vertex_index, Point>("v:point").first;
-    vremoved_ = add_property_map<Vertex_index, bool>("v:removed", false).first;
-    eremoved_ = add_property_map<Edge_index, bool>("e:removed", false).first;
-    fremoved_ = add_property_map<Face_index, bool>("f:removed", false).first;
+    vremoved_ = add_property_map<Vertex_index, char>("v:removed", false).first;
+    eremoved_ = add_property_map<Edge_index, char>("e:removed", false).first;
+    fremoved_ = add_property_map<Face_index, char>("f:removed", false).first;
 
     removed_vertices_ = removed_edges_ = removed_faces_ = 0;
     vertices_freelist_ = edges_freelist_ = faces_freelist_ = (std::numeric_limits<size_type>::max)();
@@ -2287,9 +2317,9 @@ operator=(const Surface_mesh<P>& rhs)
         vconn_    = property_map<Vertex_index, Vertex_connectivity>("v:connectivity").first;
         hconn_    = property_map<Halfedge_index, Halfedge_connectivity>("h:connectivity").first;
         fconn_    = property_map<Face_index, Face_connectivity>("f:connectivity").first;
-        vremoved_ = property_map<Vertex_index, bool>("v:removed").first;
-        eremoved_ = property_map<Edge_index, bool>("e:removed").first;
-        fremoved_ = property_map<Face_index, bool>("f:removed").first;
+        vremoved_ = property_map<Vertex_index, char>("v:removed").first;
+        eremoved_ = property_map<Edge_index, char>("e:removed").first;
+        fremoved_ = property_map<Face_index, char>("f:removed").first;
         vpoint_   = property_map<Vertex_index, P>("v:point").first;
 
         // how many elements are removed?
@@ -2326,9 +2356,9 @@ assign(const Surface_mesh<P>& rhs)
         hconn_    = add_property_map<Halfedge_index, Halfedge_connectivity>("h:connectivity").first;
         fconn_    = add_property_map<Face_index, Face_connectivity>("f:connectivity").first;
         vpoint_   = add_property_map<Vertex_index, P>("v:point").first;
-        vremoved_ = add_property_map<Vertex_index, bool>("v:removed", false).first;
-        eremoved_ = add_property_map<Edge_index, bool>("e:removed", false).first;
-        fremoved_ = add_property_map<Face_index, bool>("f:removed", false).first;
+        vremoved_ = add_property_map<Vertex_index, char>("v:removed", false).first;
+        eremoved_ = add_property_map<Edge_index, char>("e:removed", false).first;
+        fremoved_ = add_property_map<Face_index, char>("f:removed", false).first;
 
         // copy properties from other mesh
         vconn_.array()     = rhs.vconn_.array();

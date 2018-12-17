@@ -25,7 +25,8 @@
 #ifdef CGAL_CAN_USE_CXX11_MUTEX
 #include <mutex>
 #define CGAL_MUTEX std::mutex
-#define CGAL_SCOPED_LOCK(M) std::unique_lock<std::mutex> scoped_lock(M)
+//#define CGAL_SCOPED_LOCK(M) std::unique_lock<std::mutex> scoped_lock(M)
+#define CGAL_SCOPED_LOCK(M)
 #else
 #include <boost/thread/mutex.hpp>
 #define CGAL_MUTEX boost::mutex
