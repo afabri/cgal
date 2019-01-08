@@ -35,7 +35,10 @@ else()
   message(STATUS "Examples that use OpenMesh will not be compiled.")
 endif()
 
+# find_package ( draco )
 
+include_directories ( "c:/3rdPartyLibs/draco/src" )
+include_directories ( "c:/3rdPartyLibs/draco/VC2017" )
 
 # include for local package
 
@@ -46,6 +49,13 @@ if(OpenMesh_FOUND)
   create_single_source_cgal_program( "graph_concept_OpenMesh.cpp" )
   target_link_libraries( graph_concept_OpenMesh PRIVATE ${OPENMESH_LIBRARIES} )
 endif()
+
+
+# if(draco_FOUND)
+  create_single_source_cgal_program( "test_draco.cpp" )
+  target_link_libraries( test_draco PRIVATE "c:/3rdPartyLibs/draco/VC2017/draco.lib" )
+# endif()
+
 
 create_single_source_cgal_program( "next.cpp" )
 
