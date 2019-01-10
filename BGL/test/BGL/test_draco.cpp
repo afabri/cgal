@@ -5,10 +5,14 @@
 #include <draco/mesh/mesh_misc_functions.h>
 
 #include <CGAL/boost/graph/graph_traits_draco.h>
+#include <CGAL/Polygon_mesh_processing/connected_components.h>
 
 typedef CGAL::Simple_cartesian<double>                       Kernel;
 typedef Kernel::Point_3                                      Point;
 typedef CGAL::Surface_mesh<Point>                            Mesh;
+
+namespace PMP = CGAL::Polygon_mesh_processing;
+
 
 int main(int argc, char **argv)
 {
@@ -76,6 +80,7 @@ int main(int argc, char **argv)
     assert(vd == vd2);
 
     hd2 = opposite(hd,dm);
+    std::cout << hd2.ci << "  " << draco::kInvalidCornerIndex << std::endl;
     assert(hd == opposite(hd2,dm));
 
     boost::property_map<CGAL::dMesh,boost::vertex_point_t>::type vpm = get(boost::vertex_point,dm);
@@ -84,6 +89,15 @@ int main(int argc, char **argv)
     }
   }
 
+  /*
+  // WIP as it needs edge_descriptors
+
+  std::vector<face_descriptor> cc;
+  face_descriptor fd = *faces(dm).first;
+  PMP::connected_component(fd,
+                           dm,
+                           std::back_inserter(cc));
+  */
   
   /*
     Mesh sm;

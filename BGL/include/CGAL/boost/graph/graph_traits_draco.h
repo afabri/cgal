@@ -82,6 +82,7 @@ namespace boost {
   struct graph_traits<CGAL::dMesh> {
     typedef draco::VertexIndex vertex_descriptor;
     typedef draco::FaceIndex face_descriptor;
+    
     struct halfedge_descriptor {
       halfedge_descriptor()
       {}
@@ -93,6 +94,10 @@ namespace boost {
         : ci(ci), border(false)
       {}
 
+      halfedge_descriptor(draco::CornerIndex ci, bool border)
+        : ci(ci), border(border)
+      {}
+      
       bool operator==(const halfedge_descriptor& other) const
       {
         return ci == other.ci && border == other.border;
@@ -102,6 +107,8 @@ namespace boost {
       bool border;
     };
 
+    typedef halfedge_descriptor edge_descriptor;  // @todo fix this
+    
     typedef boost::counting_iterator<vertex_descriptor, std::random_access_iterator_tag,int> vertex_iterator;
     typedef boost::counting_iterator<face_descriptor, std::random_access_iterator_tag,int> face_iterator;
 
@@ -109,6 +116,11 @@ namespace boost {
     typedef int edges_size_type;
     typedef int halfedges_size_type;
     typedef int faces_size_type;
+
+    
+    static vertex_descriptor   null_vertex() { return draco::kInvalidVertexIndex; }
+    static face_descriptor     null_face()   { return draco::kInvalidFaceIndex; }
+    static halfedge_descriptor null_halfedge()   { return draco::kInvalidCornerIndex; }
   };
 
   
@@ -214,7 +226,15 @@ namespace CGAL {
   next(boost::graph_traits<dMesh>::halfedge_descriptor hd,
        const dMesh& dm)
   {
-    return dm.ctable.Next(hd.ci);
+    typedef boost::graph_traits<dMesh>::halfedge_descriptor halfedge_descriptor;
+    if(! hd.border){
+      return dm.ctable.Next(hd.ci);
+    }
+    hd = opposite(hd,dm);
+    while(face(hd,dm) != boost::graph_traits<dMesh>::null_face()){
+      hd = opposite(prev(hd,dm),dm);
+    }
+    return hd;
   }
 
   
@@ -223,7 +243,15 @@ namespace CGAL {
   prev(boost::graph_traits<dMesh>::halfedge_descriptor hd,
        const dMesh& dm)
   {
-    return dm.ctable.Previous(hd.ci);
+    typedef boost::graph_traits<dMesh>::halfedge_descriptor halfedge_descriptor;
+    if(! hd.border){
+      return dm.ctable.Previous(hd.ci);
+    }
+    hd = opposite(hd,dm);
+    while(face(hd,dm) != boost::graph_traits<dMesh>::null_face()){
+      hd = opposite(next(hd,dm),dm);
+    }
+    return hd;
   }
 
   
@@ -232,7 +260,16 @@ namespace CGAL {
   opposite(boost::graph_traits<dMesh>::halfedge_descriptor hd,
            const dMesh& dm)
   {
-    return dm.ctable.Previous(dm.ctable.Opposite(dm.ctable.Next(hd.ci)));
+    typedef boost::graph_traits<dMesh>::halfedge_descriptor halfedge_descriptor;
+    
+    if(hd.border){
+      return halfedge_descriptor(hd.ci,false);
+    }
+    draco::CornerIndex ci = dm.ctable.Previous(dm.ctable.Opposite(dm.ctable.Next(hd.ci)));
+    if(ci == draco::kInvalidCornerIndex){
+      return halfedge_descriptor(hd.ci,true);
+    }
+    return halfedge_descriptor(ci,false);
   }
 
   
@@ -241,6 +278,9 @@ namespace CGAL {
   face(boost::graph_traits<dMesh>::halfedge_descriptor hd,
        const dMesh& dm)
   {
+    if(hd.border){
+      return draco::kInvalidFaceIndex;
+    }
     return dm.ctable.Face(hd.ci);
   }
 
@@ -250,6 +290,9 @@ namespace CGAL {
   source(boost::graph_traits<dMesh>::halfedge_descriptor hd,
          const dMesh& dm)
   {
+    if(hd.border){
+      return dm.ctable.Vertex(hd.ci);
+    }
     return dm.ctable.Vertex(dm.ctable.Previous(hd.ci));
   }
 
@@ -259,6 +302,9 @@ namespace CGAL {
   target(boost::graph_traits<dMesh>::halfedge_descriptor hd,
          const dMesh& dm)
   {
+    if(hd.border){
+      return dm.ctable.Vertex(dm.ctable.Previous(hd.ci)); 
+    }
     return dm.ctable.Vertex(hd.ci);
   }
 
