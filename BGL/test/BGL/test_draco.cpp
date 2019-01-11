@@ -66,10 +66,10 @@ int main(int argc, char **argv)
   std::unique_ptr<draco::CornerTable> in_ct = draco::CreateCornerTableFromPositionAttribute(mesh);
   draco::CornerTable& ct = *(in_ct.get());
 
-  CGAL::dMesh dm(*mesh,ct);
-  typedef boost::graph_traits<CGAL::dMesh>::face_descriptor face_descriptor;
-  typedef boost::graph_traits<CGAL::dMesh>::halfedge_descriptor halfedge_descriptor;
-  typedef boost::graph_traits<CGAL::dMesh>::vertex_descriptor vertex_descriptor;
+  CGAL::dMesh<Point> dm(*mesh,ct);
+  typedef boost::graph_traits<CGAL::dMesh<Point> >::face_descriptor face_descriptor;
+  typedef boost::graph_traits<CGAL::dMesh<Point> >::halfedge_descriptor halfedge_descriptor;
+  typedef boost::graph_traits<CGAL::dMesh<Point> >::vertex_descriptor vertex_descriptor;
   std::cout << "# faces = " << num_vertices(dm) << std::endl;
   BOOST_FOREACH(face_descriptor fd, faces(dm)){
     std::cout << fd << std::endl;
@@ -83,11 +83,18 @@ int main(int argc, char **argv)
     std::cout << hd2.ci << "  " << draco::kInvalidCornerIndex << std::endl;
     assert(hd == opposite(hd2,dm));
 
-    boost::property_map<CGAL::dMesh,boost::vertex_point_t>::type vpm = get(boost::vertex_point,dm);
+    boost::property_map<CGAL::dMesh<Point> ,boost::vertex_point_t>::type vpm = get(boost::vertex_point,dm);
     BOOST_FOREACH(halfedge_descriptor hd, CGAL::halfedges_around_face(halfedge(fd,dm),dm)){
       std::cout << "hd: " << hd.ci << "  " << get(vpm, target(hd,dm))<< std::endl;
     }
+
+    BOOST_FOREACH(halfedge_descriptor hd, CGAL::halfedges(dm)){
+      std::cout << "hd: " << hd.ci << "  " << get(vpm, target(hd,dm))<< std::endl;
+    }
+    
   }
+
+
 
   /*
   // WIP as it needs edge_descriptors

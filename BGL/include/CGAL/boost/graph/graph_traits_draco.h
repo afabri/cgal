@@ -27,11 +27,13 @@
 #include <draco/mesh/corner_table.h>
 #include <draco/mesh/mesh_misc_functions.h>
 #include <boost/iterator/counting_iterator.hpp>
+//#include <boost/iterator/iterator_facade.hpp>
 
 namespace CGAL {
 
+  template <typename P>
   struct dMesh {
-    typedef CGAL::Simple_cartesian<double>::Point_3 Point_3;  // AF: maybe a template parameter?
+    typedef P Point_3;
     
   draco::Mesh& mesh;
   draco::CornerTable& ctable;
@@ -42,21 +44,21 @@ namespace CGAL {
       {}
   };
 
-  
+  template <typename P>
   struct dMesh_vertex_pmap {
-    const dMesh& dm;
+    const dMesh<P>& dm;
     const draco::PointAttribute *const att;
     
-    dMesh_vertex_pmap(const dMesh& dm)
+    dMesh_vertex_pmap(const dMesh<P>& dm)
       : dm(dm), att(dm.mesh.GetNamedAttribute(draco::GeometryAttribute::POSITION))
     {}
 
-    friend dMesh::Point_3 get(const dMesh_vertex_pmap& pm, draco::VertexIndex vi)
+    friend typename dMesh<P>::Point_3 get(const dMesh_vertex_pmap<P>& pm, draco::VertexIndex vi)
     {
       draco::AttributeValueIndex i(vi.value()); 
       std::array<float, 3> value;
       pm.att->ConvertValue<float, 3>(i, &value[0]);
-      return dMesh::Point_3(value[0], value[1], value[2]);
+      return typename dMesh<P>::Point_3(value[0], value[1], value[2]);
     }
   };
 
@@ -78,10 +80,10 @@ namespace CGAL {
 
 namespace boost {
 
-  template <>
-  struct graph_traits<CGAL::dMesh> {
-    typedef draco::VertexIndex vertex_descriptor;
-    typedef draco::FaceIndex face_descriptor;
+  template <typename P>
+  struct graph_traits<CGAL::dMesh<P> > {
+    typedef typename draco::VertexIndex vertex_descriptor;
+    typedef typename draco::FaceIndex face_descriptor;
     
     struct halfedge_descriptor {
       halfedge_descriptor()
@@ -112,6 +114,52 @@ namespace boost {
     typedef boost::counting_iterator<vertex_descriptor, std::random_access_iterator_tag,int> vertex_iterator;
     typedef boost::counting_iterator<face_descriptor, std::random_access_iterator_tag,int> face_iterator;
 
+    // We store an index, and a bool when the iterator is on a border halfedge
+
+    class halfedge_iterator
+      : public boost::iterator_facade<halfedge_iterator, halfedge_descriptor, std::bidirectional_iterator_tag>
+    {
+      halfedge_descriptor hd;
+      const CGAL::dMesh<P>* dm;
+      
+      friend class boost::iterator_core_access;
+
+    public:
+      halfedge_iterator()
+      {}
+
+      halfedge_iterator(halfedge_descriptor hd, const CGAL::dMesh<P>& dm)
+        : hd(hd), dm(&dm)
+      {}
+    private:
+      // when the opposite halfedge is border, we keep the index and set the bool to true
+      // when it is not a border we increment the index
+      void increment()
+      {
+        halfedge_descriptor opp = opposite(hd,*dm);
+        if(opp.border){
+          hd = opp;
+        }else{
+          hd.ci += 1;
+          hd.border = false;
+        }
+      }
+      
+      void decrement()
+      {}
+      
+      bool equal(const halfedge_iterator& other) const
+      {
+        return hd == other.hd;
+      }
+      
+      halfedge_descriptor& dereference() const
+      {
+        return const_cast<halfedge_descriptor&>(hd);
+      }
+    };
+
+    
     typedef int vertices_size_type;
     typedef int edges_size_type;
     typedef int halfedges_size_type;
@@ -124,33 +172,34 @@ namespace boost {
   };
 
   
-  template <>
-  struct property_map<CGAL::dMesh, CGAL::vertex_point_t >
+  template <typename P>
+  struct property_map<CGAL::dMesh<P>, CGAL::vertex_point_t >
   {
-    typedef CGAL::dMesh_vertex_pmap type;
+    typedef CGAL::dMesh_vertex_pmap<P> type;
     typedef type const_type;
   };
 
   
-  inline
-  CGAL::dMesh_vertex_pmap
-  get(boost::vertex_point_t, const CGAL::dMesh& dm)
+
+  template <typename P>
+  CGAL::dMesh_vertex_pmap<P>
+  get(boost::vertex_point_t, const CGAL::dMesh<P>& dm)
   {
-    return CGAL::dMesh_vertex_pmap(dm);
+    return CGAL::dMesh_vertex_pmap<P>(dm);
   }
 
   
-  inline
+  template <typename P>
   CGAL::dMesh_vertexi_pmap
-  get(boost::vertex_index_t, const CGAL::dMesh&)
+  get(boost::vertex_index_t, const CGAL::dMesh<P>&)
   {
     return CGAL::dMesh_vertexi_pmap();
   }
 
   
-  inline
+  template <typename P>
   CGAL::dMesh_facei_pmap
-  get(boost::face_index_t, const CGAL::dMesh&)
+  get(boost::face_index_t, const CGAL::dMesh<P>&)
   {
     return CGAL::dMesh_facei_pmap();
   }
@@ -158,109 +207,119 @@ namespace boost {
 
 namespace CGAL {
   
-  inline
-  typename boost::graph_traits<dMesh>::vertices_size_type
-  num_vertices(const dMesh& dm)
+  template <typename P>
+  typename boost::graph_traits< dMesh<P> >::vertices_size_type
+  num_vertices(const dMesh<P>& dm)
   {
     return dm.ctable.num_vertices();
   }
 
   
-  inline
-  typename boost::graph_traits<dMesh>::vertices_size_type
-  num_faces(const dMesh& dm)
+  template <typename P>
+  typename boost::graph_traits<dMesh<P> >::vertices_size_type
+  num_faces(const dMesh<P>& dm)
   {
     return dm.ctable.num_faces();
   }
 
   
   //  @todo fix for border
-  inline
-  typename boost::graph_traits<dMesh>::halfedges_size_type
-  num_halfedges(const dMesh& dm)
+  template <typename P>
+  typename boost::graph_traits<dMesh<P> >::halfedges_size_type
+  num_halfedges(const dMesh<P>& dm)
   {
     return dm.ctable.num_corners();
   }
 
   
-  inline
-  std::pair<boost::graph_traits<dMesh>::face_iterator,
-            boost::graph_traits<dMesh>::face_iterator>
-  faces(const dMesh& dm)
+  template <typename P>
+  std::pair<typename boost::graph_traits<dMesh<P> >::face_iterator,
+            typename boost::graph_traits<dMesh<P> >::face_iterator>
+  faces(const dMesh<P>& dm)
 {
-  return std::make_pair(boost::graph_traits<dMesh>::face_iterator(boost::graph_traits<dMesh>::face_descriptor(0)),
-                        boost::graph_traits<dMesh>::face_iterator(boost::graph_traits<dMesh>::face_descriptor(dm.ctable.num_faces())));
+  return std::make_pair(typename boost::graph_traits<dMesh<P> >::face_iterator(typename boost::graph_traits<dMesh<P> >::face_descriptor(0)),
+                        typename boost::graph_traits<dMesh<P> >::face_iterator(typename boost::graph_traits<dMesh<P> >::face_descriptor(dm.ctable.num_faces())));
+}
+
+
+  template <typename P>
+  std::pair<typename boost::graph_traits<dMesh<P> >::halfedge_iterator,
+            typename boost::graph_traits<dMesh<P> >::halfedge_iterator>
+  halfedges(const dMesh<P>& dm)
+  { 
+  return std::make_pair(typename boost::graph_traits<dMesh<P> >::halfedge_iterator(typename boost::graph_traits<dMesh<P> >::halfedge_descriptor(draco::CornerIndex(0)),dm),
+                        typename boost::graph_traits<dMesh<P> >::halfedge_iterator(typename boost::graph_traits<dMesh<P> >::halfedge_descriptor(draco::CornerIndex(dm.ctable.num_corners())),dm));
 }
 
   
-  inline
-  std::pair<boost::graph_traits<dMesh>::vertex_iterator,
-            boost::graph_traits<dMesh>::vertex_iterator>
-  vertices(const dMesh& dm)
+  template <typename P>
+  std::pair<typename boost::graph_traits<dMesh<P> >::vertex_iterator,
+            typename boost::graph_traits<dMesh<P> >::vertex_iterator>
+  vertices(const dMesh<P>& dm)
 {
-  return std::make_pair(boost::graph_traits<dMesh>::vertex_iterator(boost::graph_traits<dMesh>::vertex_descriptor(0)),
-                        boost::graph_traits<dMesh>::vertex_iterator(boost::graph_traits<dMesh>::vertex_descriptor(dm.ctable.num_vertices())));
+  return std::make_pair(typename boost::graph_traits<dMesh<P> >::vertex_iterator(typename boost::graph_traits<dMesh<P> >::vertex_descriptor(0)),
+                        typename boost::graph_traits<dMesh<P> >::vertex_iterator(typename boost::graph_traits<dMesh<P> >::vertex_descriptor(dm.ctable.num_vertices())));
 }
 
   
-  inline
-  boost::graph_traits<dMesh>::halfedge_descriptor
-  halfedge(boost::graph_traits<dMesh>::face_descriptor fd,
-           const dMesh& dm)
+  template <typename P>
+  typename boost::graph_traits<dMesh<P> >::halfedge_descriptor
+  halfedge(typename boost::graph_traits<dMesh<P> >::face_descriptor fd,
+           const dMesh<P>& dm)
   {
     return dm.ctable.FirstCorner(fd);
   }
 
   
-  inline
-  boost::graph_traits<dMesh>::halfedge_descriptor
-  halfedge(boost::graph_traits<dMesh>::vertex_descriptor vd,
-           const dMesh& dm)
+  template <typename P>
+  typename boost::graph_traits<dMesh<P> >::halfedge_descriptor
+  halfedge(typename boost::graph_traits<dMesh<P> >::vertex_descriptor vd,
+           const dMesh<P>& dm)
   {
     return dm.ctable.LeftMostCorner(vd);
   }
 
   
- inline
-  boost::graph_traits<dMesh>::halfedge_descriptor
-  next(boost::graph_traits<dMesh>::halfedge_descriptor hd,
-       const dMesh& dm)
-  {
-    typedef boost::graph_traits<dMesh>::halfedge_descriptor halfedge_descriptor;
-    if(! hd.border){
-      return dm.ctable.Next(hd.ci);
-    }
+ template <typename P>
+ typename boost::graph_traits<dMesh<P> >::halfedge_descriptor
+ next(typename boost::graph_traits<dMesh<P> >::halfedge_descriptor hd,
+      const dMesh<P>& dm)
+ {
+   typedef typename boost::graph_traits<dMesh<P> >::halfedge_descriptor halfedge_descriptor;
+   if(! hd.border){
+     return dm.ctable.Next(hd.ci);
+   }
     hd = opposite(hd,dm);
-    while(face(hd,dm) != boost::graph_traits<dMesh>::null_face()){
+    while(face(hd,dm) != boost::graph_traits<dMesh<P> >::null_face()){
       hd = opposite(prev(hd,dm),dm);
     }
     return hd;
-  }
-
+ }
   
- inline
-  boost::graph_traits<dMesh>::halfedge_descriptor
-  prev(boost::graph_traits<dMesh>::halfedge_descriptor hd,
-       const dMesh& dm)
+  
+  template <typename P>
+  typename boost::graph_traits<dMesh<P> >::halfedge_descriptor
+  prev(typename boost::graph_traits<dMesh<P> >::halfedge_descriptor hd,
+       const dMesh<P>& dm)
   {
-    typedef boost::graph_traits<dMesh>::halfedge_descriptor halfedge_descriptor;
+    typedef typename boost::graph_traits<dMesh<P> >::halfedge_descriptor halfedge_descriptor;
     if(! hd.border){
       return dm.ctable.Previous(hd.ci);
     }
     hd = opposite(hd,dm);
-    while(face(hd,dm) != boost::graph_traits<dMesh>::null_face()){
+    while(face(hd,dm) != boost::graph_traits<dMesh<P> >::null_face()){
       hd = opposite(next(hd,dm),dm);
     }
     return hd;
   }
 
   
-  inline
-  boost::graph_traits<dMesh>::halfedge_descriptor
-  opposite(boost::graph_traits<dMesh>::halfedge_descriptor hd,
-           const dMesh& dm)
+  template <typename P>
+  typename boost::graph_traits<dMesh<P> >::halfedge_descriptor
+  opposite(typename boost::graph_traits<dMesh<P> >::halfedge_descriptor hd,
+           const dMesh<P>& dm)
   {
-    typedef boost::graph_traits<dMesh>::halfedge_descriptor halfedge_descriptor;
+    typedef typename boost::graph_traits<dMesh<P> >::halfedge_descriptor halfedge_descriptor;
     
     if(hd.border){
       return halfedge_descriptor(hd.ci,false);
@@ -273,10 +332,10 @@ namespace CGAL {
   }
 
   
- inline
-  boost::graph_traits<dMesh>::face_descriptor
-  face(boost::graph_traits<dMesh>::halfedge_descriptor hd,
-       const dMesh& dm)
+  template <typename P>
+  typename boost::graph_traits<dMesh<P> >::face_descriptor
+  face(typename boost::graph_traits<dMesh<P> >::halfedge_descriptor hd,
+       const dMesh<P>& dm)
   {
     if(hd.border){
       return draco::kInvalidFaceIndex;
@@ -285,10 +344,10 @@ namespace CGAL {
   }
 
   
-  inline
-  boost::graph_traits<dMesh>::vertex_descriptor
-  source(boost::graph_traits<dMesh>::halfedge_descriptor hd,
-         const dMesh& dm)
+  template <typename P>
+  typename boost::graph_traits<dMesh<P> >::vertex_descriptor
+  source(typename boost::graph_traits<dMesh<P> >::halfedge_descriptor hd,
+         const dMesh<P>& dm)
   {
     if(hd.border){
       return dm.ctable.Vertex(hd.ci);
@@ -297,10 +356,10 @@ namespace CGAL {
   }
 
   
-  inline
-  boost::graph_traits<dMesh>::vertex_descriptor
-  target(boost::graph_traits<dMesh>::halfedge_descriptor hd,
-         const dMesh& dm)
+  template <typename P>
+  typename boost::graph_traits<dMesh<P> >::vertex_descriptor
+  target(typename boost::graph_traits<dMesh<P> >::halfedge_descriptor hd,
+         const dMesh<P>& dm)
   {
     if(hd.border){
       return dm.ctable.Vertex(dm.ctable.Previous(hd.ci)); 
@@ -309,10 +368,10 @@ namespace CGAL {
   }
 
   
-  inline
+  template <typename P>
   int
-  degree(boost::graph_traits<dMesh>::vertex_descriptor vd,
-         const dMesh& dm)
+  degree(typename boost::graph_traits<dMesh<P> >::vertex_descriptor vd,
+         const dMesh<P>& dm)
   {
     return dm.ctable.Valence(vd);
   }
