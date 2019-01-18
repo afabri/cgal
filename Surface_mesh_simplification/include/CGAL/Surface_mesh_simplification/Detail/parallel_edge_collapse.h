@@ -573,7 +573,8 @@ int parallel_edge_collapse(TriangleMesh& sm,
                             .current_num_edges(current_num_edges)
                             .get_placement(constrained_placement)
                             .get_cost(cost)
-                            .edge_is_constrained_map(ormap));
+                            .edge_is_constrained_map(ormap)
+                            .visitor(pvis));
   }
   else
   {
@@ -586,7 +587,8 @@ int parallel_edge_collapse(TriangleMesh& sm,
                             .current_num_edges(current_num_edges)
                             .get_placement(placement)
                             .get_cost(cost)
-                            .edge_is_constrained_map(ormap));
+                            .edge_is_constrained_map(ormap)
+                            .visitor(pvis));
   }
 
   if(verbose)
