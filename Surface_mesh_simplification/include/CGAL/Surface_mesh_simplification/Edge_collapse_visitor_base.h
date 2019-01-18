@@ -48,7 +48,7 @@ struct Edge_collapse_visitor_base
   void OnStarted(TriangleMesh&) {}
 
   template <typename StopPredicate>
-  void OnParallelPassFinished(TriangleMesh&, StopPredicate&, size_type /* initial */ , size_type /* current */) {}
+  void OnParallelPassFinished(TriangleMesh&, StopPredicate&, size_type /* initial */ , size_type /* current */) const {}
 
   void OnFinished(TriangleMesh&) {}
   void OnStopConditionReached(const Profile&) {}
