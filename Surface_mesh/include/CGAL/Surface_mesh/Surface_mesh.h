@@ -1052,8 +1052,6 @@ public:
 
   void remove_marked()
   {
-    Timer t;
-    t.start();
     BOOST_FOREACH(Vertex_index v, vertices()){
       if(vremoved_[v]){
         remove_vertex(v);
@@ -1069,7 +1067,6 @@ public:
         remove_face(f);
       }
     }
-    std::cout << t.time() << " sec"<< std::endl;
   }
 
     ///@}
