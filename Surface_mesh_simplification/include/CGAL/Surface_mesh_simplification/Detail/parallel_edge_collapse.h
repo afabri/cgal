@@ -178,7 +178,8 @@ struct In_same_component_map
 
 // The parallel task
 template <typename TriangleMesh, typename Stop, typename CCMap, typename HIMap,
-          typename VIpmap, typename ECMap, typename UECMap, typename Placement, typename Cost>
+          typename VIpmap, typename ECMap, typename UECMap, typename Placement, typename Cost,
+          typename Visitor>
 struct Simplify
 {
   typedef typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
@@ -201,6 +202,7 @@ struct Simplify
   unsigned int layers;
   bool dump, verbose, increase;
   CGAL_MUTEX* removal_mutex;
+  Visitor& visitor;
 
   Simplify(TriangleMesh& sm,
            Stop stop,
@@ -219,7 +221,8 @@ struct Simplify
            bool dump,
            bool verbose,
            bool increase,
-           CGAL_MUTEX* removal_mutex)
+           CGAL_MUTEX* removal_mutex,
+           Visitor& visitor)
     :
       sm(sm),
       stop(stop),
@@ -238,7 +241,8 @@ struct Simplify
       dump(dump),
       verbose(verbose),
       increase(increase),
-      removal_mutex(removal_mutex)
+      removal_mutex(removal_mutex),
+      visitor(visitor)
   { }
 
   void operator()() const
@@ -324,7 +328,8 @@ struct Simplify
                         .get_placement(constrained_placement)
                         .get_cost(cost)
                         .edge_is_constrained_map(ormap)
-                        .vertex_point_map(get(CGAL::vertex_point, sm)));
+                        .vertex_point_map(get(CGAL::vertex_point, sm))
+                        .visitor(visitor));
     }
     else
     {
@@ -339,7 +344,8 @@ struct Simplify
                         .get_placement(placement)
                         .get_cost(cost)
                         .edge_is_constrained_map(ormap)
-                        .vertex_point_map(get(CGAL::vertex_point, sm)));
+                        .vertex_point_map(get(CGAL::vertex_point, sm))
+                        .visitor(visitor));
     }
 
     if(verbose)
@@ -475,9 +481,9 @@ int parallel_edge_collapse(TriangleMesh& sm,
   for(std::size_t id=0; id<number_of_parts; ++id)
   {
     tasks.run(
-      internal::Simplify<TriangleMesh, Stop, FacePartitionIDPmap, HIMap, VertexIndexMap, ECMap, UECMap, Placement, Cost>(
+      internal::Simplify<TriangleMesh, Stop, FacePartitionIDPmap, HIMap, VertexIndexMap, ECMap, UECMap, Placement, Cost, Visitor>(
         sm, stop, partition_id_map, himap, vim, ecmap, uecmap, placement, cost, buffer_size, removed,
-        cc_edges[id], static_cast<int>(id), layers, dump, verbose, increase, &removal_mutex));
+        cc_edges[id], static_cast<int>(id), layers, dump, verbose, increase, &removal_mutex, pvis));
   }
   tasks.wait();
 

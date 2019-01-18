@@ -45,18 +45,26 @@ struct Edge_collapse_visitor_base
   typedef typename Kernel_traits<Point>::Kernel                          Kernel;
   typedef typename Kernel::FT                                            FT;
 
-  void OnStarted(TriangleMesh&) {}
+  template <class TM>
+  void OnStarted(TM&) {}
 
   template <typename StopPredicate>
   void OnParallelPassFinished(TriangleMesh&, StopPredicate&, size_type /* initial */ , size_type /* current */) const {}
 
-  void OnFinished(TriangleMesh&) {}
-  void OnStopConditionReached(const Profile&) {}
-  void OnCollected(const Profile&, const boost::optional<FT>&) {}
-  void OnSelected(const Profile&, const boost::optional<FT>&, size_type /* initial */, size_type /* current */) {}
-  void OnCollapsing(const Profile&, const boost::optional<Point>&) {}
-  void OnCollapsed(const Profile&, const vertex_descriptor&) {}
-  void OnNonCollapsable(const Profile&) {}
+  template <class TM>
+  void OnFinished(TM&) {}
+  template <class Profile_>
+  void OnStopConditionReached(const Profile_&) {}
+  template <class Profile_>
+  void OnCollected(const Profile_&, const boost::optional<FT>&) {}
+  template <class Profile_>
+  void OnSelected(const Profile_&, const boost::optional<FT>&, size_type /* initial */, size_type /* current */) {}
+  template <class Profile_>
+  void OnCollapsing(const Profile_&, const boost::optional<Point>&) {}
+  template <class Profile_>
+  void OnCollapsed(const Profile_&, const vertex_descriptor&) {}
+  template <class Profile_>
+  void OnNonCollapsable(const Profile_&) {}
 };
 
 } // end namespace Surface_mesh_simplification
