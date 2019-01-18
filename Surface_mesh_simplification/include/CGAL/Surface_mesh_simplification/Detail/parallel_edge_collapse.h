@@ -314,39 +314,23 @@ struct Simplify
     typedef internal::Or_map<ECMap, UECMap> OrMap;
     OrMap ormap(ecmap, uecmap);
 
-    if(increase)
-    {
-      Constrained_placement<Placement, OrMap> constrained_placement(ormap, placement);
-      results[cc_index]
-        = edge_collapse(cg,
-                        stop,
-                        Parallel_tag(),
-                        removal_mutex,
-                        parameters::vertex_index_map(vim)
-                        .current_num_edges(num_unconstrained_edges - int(double(buffer_edges_count)/0.75))
-                        .halfedge_index_map(himap)
-                        .get_placement(constrained_placement)
-                        .get_cost(cost)
-                        .edge_is_constrained_map(ormap)
-                        .vertex_point_map(get(CGAL::vertex_point, sm))
-                        .visitor(visitor));
-    }
-    else
-    {
-      results[cc_index]
-        = edge_collapse(cg,
-                        stop,
-                        Parallel_tag(),
-                        removal_mutex,
-                        parameters::vertex_index_map(vim)
-                        .current_num_edges(num_unconstrained_edges)
-                        .halfedge_index_map(himap)
-                        .get_placement(placement)
-                        .get_cost(cost)
-                        .edge_is_constrained_map(ormap)
-                        .vertex_point_map(get(CGAL::vertex_point, sm))
-                        .visitor(visitor));
-    }
+    Constrained_placement<Placement, OrMap> constrained_placement(ormap, placement);
+    const std::size_t curr_num_edges = increase
+                                     ? num_unconstrained_edges - int(double(buffer_edges_count)/0.75)
+                                     : num_unconstrained_edges;
+    results[cc_index]
+      = edge_collapse(cg,
+                      stop,
+                      Parallel_tag(),
+                      removal_mutex,
+                      parameters::vertex_index_map(vim)
+                      .current_num_edges(curr_num_edges)
+                      .halfedge_index_map(himap)
+                      .get_placement(constrained_placement)
+                      .get_cost(cost)
+                      .edge_is_constrained_map(ormap)
+                      .vertex_point_map(get(CGAL::vertex_point, sm))
+                      .visitor(visitor));
 
     if(verbose)
     {
@@ -561,35 +545,19 @@ int parallel_edge_collapse(TriangleMesh& sm,
   if(verbose)
     std::cerr << "#removed edges = " << result << std::endl;
 
-  if(increase)
-  {
-    Constrained_placement <Placement, OrMap> constrained_placement (ormap, placement);
-    result += edge_collapse(sm,
-                            stop,
-                            Sequential_tag(),
-                            NULL,
-                            parameters::vertex_index_map(vim)
-                            .halfedge_index_map(himap)
-                            .current_num_edges(current_num_edges)
-                            .get_placement(constrained_placement)
-                            .get_cost(cost)
-                            .edge_is_constrained_map(ormap)
-                            .visitor(pvis));
-  }
-  else
-  {
-    result += edge_collapse(sm,
-                            stop,
-                            Sequential_tag(),
-                            NULL,
-                            parameters::vertex_index_map(vim)
-                            .halfedge_index_map(himap)
-                            .current_num_edges(current_num_edges)
-                            .get_placement(placement)
-                            .get_cost(cost)
-                            .edge_is_constrained_map(ormap)
-                            .visitor(pvis));
-  }
+  Constrained_placement <Placement, OrMap> constrained_placement (ormap, placement);
+  result += edge_collapse(sm,
+                          stop,
+                          Sequential_tag(),
+                          NULL,
+                          parameters::vertex_index_map(vim)
+                          .halfedge_index_map(himap)
+                          .current_num_edges(current_num_edges)
+                          .get_placement(constrained_placement)
+                          .get_cost(cost)
+                          .edge_is_constrained_map(ormap)
+                          .visitor(pvis));
+
 
   if(verbose)
   {
