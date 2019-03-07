@@ -5,6 +5,7 @@
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_length_stop_predicate.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_length_cost.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Bounded_normal_change_placement.h>
+#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Constrained_placement.h>
 
 #include <CGAL/boost/graph/Face_filtered_graph.h>
 
@@ -23,7 +24,7 @@ typedef CGAL::Simple_cartesian<double>                                      Kern
 
 typedef Kernel::Point_3                                                     Point_3;
 typedef CGAL::Surface_mesh<Point_3>                                         Triangle_mesh;
- 
+
 
 namespace SMS = CGAL::Surface_mesh_simplification;
 namespace PMP = CGAL::Polygon_mesh_processing;
@@ -50,19 +51,22 @@ struct Simplify
   Simplify()
     :tm_ptr(NULL), edge_length(0)
   {}
-  
+
   Simplify(Triangle_mesh& tm, double edge_length)
     : tm_ptr(&tm), edge_length(edge_length)
   {}
 
   void operator()() const
   {
-    SMS::Bounded_normal_change_placement<SMS::LindstromTurk_placement<Triangle_mesh> > placement;
+
+
     SMS::Edge_length_cost<Triangle_mesh> cost;
     SMS::Edge_length_stop_predicate<double> stop(edge_length);
     Border_is_constrained_edge_map eicm(*tm_ptr);
-    
-    
+    SMS::Constrained_placement<
+      SMS::Bounded_normal_change_placement<SMS::LindstromTurk_placement<Triangle_mesh> >,
+      Border_is_constrained_edge_map > placement(eicm);
+
     SMS::edge_collapse(*tm_ptr, stop,
                        CGAL::parameters::edge_is_constrained_map(eicm)
                         .get_placement(placement)
@@ -152,7 +156,7 @@ int main(int argc, char** argv)
   // final pass
   SMS::parallel_edge_collapse(final_mesh, stop, number_of_parts, fpmap,
                               CGAL::parameters::get_placement(placement)
-                              .get_cost(cost));  
+                              .get_cost(cost));
   final_mesh.collect_garbage();
 
   std::cerr << "  Total time: " << t.time() << " sec.\n"
@@ -181,7 +185,7 @@ int main(int argc, char** argv)
 
   std::ofstream("simplified_v2_mesh.off") << tm;
   std::cerr << "Writing result in " << t.time() << " sec." << std::endl;
-  
+
   return EXIT_SUCCESS;
 }
 
