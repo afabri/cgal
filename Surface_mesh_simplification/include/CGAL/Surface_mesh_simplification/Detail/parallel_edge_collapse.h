@@ -359,7 +359,7 @@ int parallel_edge_collapse(TriangleMesh& sm,
                            Visitor pvis,
                            unsigned int layers = 1,
                            bool increase = true, // whether to increase the buffer by one more layer
-                           bool verbose = false,
+                           bool verbose = true,
                            bool dump = false)
 {
   typedef typename boost::graph_traits<TriangleMesh>::halfedge_descriptor halfedge_descriptor;
