@@ -154,9 +154,9 @@ int main(int argc, char** argv)
   std::cerr << "  Total time with mesh reassembly:" << t.time() << "s."<< std::endl;
 
   // final pass
-  SMS::parallel_edge_collapse(final_mesh, stop, number_of_parts, fpmap,
-                              CGAL::parameters::get_placement(placement)
-                              .get_cost(cost));
+  SMS::edge_collapse(final_mesh, stop,
+                      CGAL::parameters::get_placement(placement)
+                      .get_cost(cost));
   final_mesh.collect_garbage();
 
   std::cerr << "  Total time: " << t.time() << " sec.\n"
