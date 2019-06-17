@@ -27,9 +27,9 @@
 
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_face_graph_triangle_primitive.h>
-#include <CGAL/internal/Surface_mesh_segmentation/AABB_traversal_traits.h>
-#include <CGAL/internal/Surface_mesh_segmentation/AABB_traits.h>
-#include <CGAL/internal/Surface_mesh_segmentation/Disk_samplers.h>
+#include <CGAL/Surface_mesh_segmentation/internal/AABB_traversal_traits.h>
+#include <CGAL/Surface_mesh_segmentation/internal/AABB_traits.h>
+#include <CGAL/Surface_mesh_segmentation/internal/Disk_samplers.h>
 #include <CGAL/constructions/kernel_ftC3.h>
 #include <vector>
 #include <algorithm>

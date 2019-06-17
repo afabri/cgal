@@ -61,7 +61,7 @@
 #else
 namespace MaxFlow
 {
-#include <CGAL/internal/auxiliary/graph.h>
+#include <CGAL/Surface_mesh_segmentation/auxiliary/graph.h>
 }
 #endif
 

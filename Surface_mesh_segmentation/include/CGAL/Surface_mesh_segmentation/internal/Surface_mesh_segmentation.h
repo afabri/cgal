@@ -25,10 +25,10 @@
 #include <CGAL/license/Surface_mesh_segmentation.h>
 
 
-#include <CGAL/internal/Surface_mesh_segmentation/Expectation_maximization.h>
-#include <CGAL/internal/Surface_mesh_segmentation/Filters.h>
-#include <CGAL/internal/Surface_mesh_segmentation/Alpha_expansion_graph_cut.h>
-#include <CGAL/internal/Surface_mesh_segmentation/SDF_calculation.h>
+#include <CGAL/Surface_mesh_segmentation/internal/Expectation_maximization.h>
+#include <CGAL/Surface_mesh_segmentation/internal/Filters.h>
+#include <CGAL/Surface_mesh_segmentation/internal/Alpha_expansion_graph_cut.h>
+#include <CGAL/Surface_mesh_segmentation/internal/SDF_calculation.h>
 
 #include <CGAL/Kernel/global_functions_3.h>
 

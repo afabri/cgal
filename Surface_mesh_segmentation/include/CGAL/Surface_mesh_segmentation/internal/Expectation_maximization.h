@@ -30,7 +30,7 @@
 #include <algorithm>
 #include <limits>
 
-#include <CGAL/internal/Surface_mesh_segmentation/K_means_clustering.h>
+#include <CGAL/Surface_mesh_segmentation/internal/K_means_clustering.h>
 #include <CGAL/assertions.h>
 #include <CGAL/Random.h>
 
