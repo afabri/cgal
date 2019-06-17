@@ -26,7 +26,7 @@
 
 #include <CGAL/license/Periodic_3_triangulation_3.h>
 
-#include <CGAL/internal/Periodic_3_triangulation_filtered_traits_3.h>
+#include <CGAL/Periodic_3_triangulation_3/internal/Periodic_3_triangulation_filtered_traits_3.h>
 #include <CGAL/Periodic_3_Delaunay_triangulation_traits_3.h>
 
 #include <CGAL/basic.h>
@@ -172,7 +172,7 @@ class Periodic_3_Delaunay_triangulation_filtered_traits_3;
 
 } //namespace CGAL
 
-#include <CGAL/internal/Periodic_3_Delaunay_triangulation_statically_filtered_traits_3.h>
+#include <CGAL/Periodic_3_triangulation_3/internal/Periodic_3_Delaunay_triangulation_statically_filtered_traits_3.h>
 
 namespace CGAL {
 

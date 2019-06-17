@@ -29,7 +29,7 @@
 
 #include <CGAL/license/Periodic_3_triangulation_3.h>
 
-#include <CGAL/internal/Functor_with_offset_points_adaptor_3.h>
+#include <CGAL/Periodic_3_triangulation_3/internal/Functor_with_offset_points_adaptor_3.h>
 
 namespace CGAL {
 

@@ -160,7 +160,7 @@ class Periodic_3_triangulation_filtered_traits_3;
 
 } //namespace CGAL
 
-#include <CGAL/internal/Periodic_3_triangulation_statically_filtered_traits_3.h>
+#include <CGAL/Periodic_3_triangulation_3/internal/Periodic_3_triangulation_statically_filtered_traits_3.h>
 
 namespace CGAL {
 

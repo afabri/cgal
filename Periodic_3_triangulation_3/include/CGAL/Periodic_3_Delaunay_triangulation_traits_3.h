@@ -26,8 +26,8 @@
 
 #include <CGAL/license/Periodic_3_triangulation_3.h>
 
-#include <CGAL/internal/Periodic_3_construct_point_3.h>
-#include <CGAL/internal/Functor_with_offset_points_adaptor_3.h>
+#include <CGAL/Periodic_3_triangulation_3/internal/Periodic_3_construct_point_3.h>
+#include <CGAL/Periodic_3_triangulation_3/internal/Functor_with_offset_points_adaptor_3.h>
 #include <CGAL/Periodic_3_offset_3.h>
 #include <CGAL/Periodic_3_triangulation_traits_3.h>
 
@@ -124,7 +124,7 @@ class Periodic_3_Delaunay_triangulation_traits_3;
 } //namespace CGAL
 
 // Partial specialization for kernels with filtered predicates
-#include <CGAL/internal/Periodic_3_Delaunay_triangulation_filtered_traits_3.h>
+#include <CGAL/Periodic_3_triangulation_3/internal/Periodic_3_Delaunay_triangulation_filtered_traits_3.h>
 
 namespace CGAL {
 

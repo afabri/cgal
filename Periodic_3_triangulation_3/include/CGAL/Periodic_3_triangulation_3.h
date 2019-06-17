@@ -35,7 +35,7 @@
 #include <boost/random/uniform_smallint.hpp>
 #include <boost/random/variate_generator.hpp>
 #include <boost/unordered_map.hpp>
-#include <CGAL/internal/Periodic_3_triangulation_iterators_3.h>
+#include <CGAL/Periodic_3_triangulation_3/internal/Periodic_3_triangulation_iterators_3.h>
 #include <CGAL/Periodic_3_triangulation_ds_cell_base_3.h>
 #include <CGAL/Periodic_3_triangulation_ds_vertex_base_3.h>
 #include <CGAL/Periodic_3_triangulation_traits_3.h>
@@ -43,7 +43,7 @@
 #include <CGAL/Triangulation_cell_base_3.h>
 #include <CGAL/Triangulation_vertex_base_3.h>
 #include <CGAL/triangulation_assertions.h>
-#include <CGAL/internal/canonicalize_helper.h>
+#include <CGAL/Periodic_3_triangulation_3/internal/canonicalize_helper.h>
 
 #include <CGAL/array.h>
 #include <CGAL/internal/Exact_type_selector.h>
@@ -2773,7 +2773,7 @@ Periodic_3_triangulation_3<GT,TDS>::create_initial_triangulation(const Point& p)
   return vir_vertices[0][0][0];
 }
 #define CGAL_INCLUDE_FROM_PERIODIC_3_TRIANGULATION_3_H
-#include <CGAL/internal/Periodic_3_triangulation_dummy_36.h>
+#include <CGAL/Periodic_3_triangulation_3/internal/Periodic_3_triangulation_dummy_36.h>
 #undef CGAL_INCLUDE_FROM_PERIODIC_3_TRIANGULATION_3_H
 
 /** finds all cells that are in conflict with the currently added point
