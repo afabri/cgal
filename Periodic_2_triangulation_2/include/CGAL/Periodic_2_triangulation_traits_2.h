@@ -24,8 +24,8 @@
 
 #include <CGAL/license/Periodic_2_triangulation_2.h>
 
-#include <CGAL/internal/Periodic_2_construct_point_2.h>
-#include <CGAL/internal/Functor_with_offset_points_adaptor_2.h>
+#include <CGAL/Periodic_2_triangulation_2/internal/Periodic_2_construct_point_2.h>
+#include <CGAL/Periodic_2_triangulation_2/internal/Functor_with_offset_points_adaptor_2.h>
 #include <CGAL/Periodic_2_offset_2.h>
 
 #include <CGAL/internal/Has_boolean_tags.h>
@@ -131,7 +131,7 @@ class Periodic_2_triangulation_traits_2;
 } // namespace CGAL
 
 // Partial specialization for Filtered_kernel<CK>.
-#include <CGAL/internal/Periodic_2_triangulation_filtered_traits_2.h>
+#include <CGAL/Periodic_2_triangulation_2/internal/Periodic_2_triangulation_filtered_traits_2.h>
 
 namespace CGAL
 {

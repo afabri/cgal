@@ -32,7 +32,7 @@
 
 #include <CGAL/license/Periodic_2_triangulation_2.h>
 
-#include <CGAL/internal/Periodic_2_triangulation_filtered_traits_2.h>
+#include <CGAL/Periodic_2_triangulation_2/internal/Periodic_2_triangulation_filtered_traits_2.h>
 #include <CGAL/internal/Static_filters/Periodic_2_orientation_2.h>
 
 namespace CGAL {
