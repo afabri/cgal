@@ -39,7 +39,7 @@
 #include <boost/graph/copy.hpp>
 
 // For debugging macro
-#include <CGAL/internal/Surface_mesh_skeletonization/Debug.h>
+#include <CGAL/Surface_mesh_skeletonization/internal/Debug.h>
 
 namespace CGAL {
 namespace internal {

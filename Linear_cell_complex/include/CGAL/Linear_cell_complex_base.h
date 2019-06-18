@@ -22,7 +22,7 @@
 #define CGAL_LINEAR_CELL_COMPLEX_BASE_H 1
 
 #include <CGAL/Combinatorial_map_functors.h>
-#include <CGAL/internal/Combinatorial_map_internal_functors.h>
+#include <CGAL/Combinatorial_map/internal/Combinatorial_map_internal_functors.h>
 #include <CGAL/Linear_cell_complex_operations.h>
 #include <CGAL/Origin.h>
 
