@@ -22,7 +22,7 @@
 #define CGAL_COMBINATORIAL_MAP_FUNCTORS_H
 
 #include <CGAL/Dart_const_iterators.h>
-#include <CGAL/internal/Combinatorial_map_internal_functors.h>
+#include <CGAL/Combinatorial_map/internal/Combinatorial_map_internal_functors.h>
 #include <vector>
 #include <boost/mpl/has_xxx.hpp>
 
@@ -32,7 +32,7 @@
  * Foreach_enabled_attributes to iterate through all the non void attribs.
  * Functors allowing to group/ungroup attributes are defined in
  * Combinatorial_map_group_functors.h. Some internal functors are defined
- * in internal/Combinatorial_map_internal_functors.h.
+ * in CGAL/Combinatorial_map/internal/Combinatorial_map_internal_functors.h.
  *
  * Reserve_mark_functor<CMap> to reserve one mark, used with
  *   Foreach_enabled_attributes to reserve a mark for each non void attribute.

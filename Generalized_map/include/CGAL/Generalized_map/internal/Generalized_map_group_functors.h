@@ -22,7 +22,7 @@
 #define CGAL_GENERALIZED_MAP_GROUP_FUNCTORS_H 1
 
 #include <CGAL/Unique_hash_map.h>
-#include <CGAL/internal/Generalized_map_internal_functors.h>
+#include <CGAL/Generalized_map/internal/Generalized_map_internal_functors.h>
 #include <CGAL/GMap_dart_iterators.h>
 #include <CGAL/Combinatorial_map_functors.h>
 

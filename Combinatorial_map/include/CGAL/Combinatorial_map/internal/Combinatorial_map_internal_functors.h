@@ -32,7 +32,7 @@
  * done at compiling time). Some of these functors are used with
  * Foreach_enabled_attributes to iterate through all the non void attribs.
  * Functors allowing to group/ungroup attributes are defined in
- * internal/Combinatorial_map_group_functors.h. Public functions are defined
+ * CGAL/Combinatorial_map/internal/Combinatorial_map_group_functors.h. Public functions are defined
  * in Combinatorial_map_functors.h.
  *
  * internal::Swap_attributes_functor<CMap> to swap the i-attributes between

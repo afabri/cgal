@@ -21,7 +21,7 @@
 #ifndef CGAL_COMBINATORIAL_MAP_COPY_FUNCTORS_H
 #define CGAL_COMBINATORIAL_MAP_COPY_FUNCTORS_H
 
-#include <CGAL/internal/Combinatorial_map_utility.h>
+#include <CGAL/Combinatorial_map/internal/Combinatorial_map_utility.h>
 #include <CGAL/Combinatorial_map_functors.h>
 #include <CGAL/Dimension.h>
 #include <CGAL/Kernel_traits.h>

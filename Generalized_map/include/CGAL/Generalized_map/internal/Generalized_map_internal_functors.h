@@ -31,7 +31,7 @@
  *
  */
 
-#include <CGAL/internal/Combinatorial_map_internal_functors.h>
+#include <CGAL/Combinatorial_map/internal/Combinatorial_map_internal_functors.h>
 
 namespace CGAL
 {
