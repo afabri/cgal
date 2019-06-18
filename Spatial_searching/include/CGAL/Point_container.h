@@ -32,7 +32,7 @@
 #include <functional>
 #include <algorithm>
 #include <CGAL/Kd_tree_rectangle.h>
-#include <CGAL/internal/Get_dimension_tag.h>
+#include <CGAL/Spatial_searching/internal/Get_dimension_tag.h>
 
 #include <boost/optional.hpp>
 

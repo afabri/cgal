@@ -33,7 +33,7 @@
 #include <CGAL/algorithm.h>
 #include <CGAL/Kd_tree_node.h>
 #include <CGAL/Splitters.h>
-#include <CGAL/internal/Get_dimension_tag.h>
+#include <CGAL/Spatial_searching/internal/Get_dimension_tag.h>
 
 #include <deque>
 #include <boost/container/deque.hpp>

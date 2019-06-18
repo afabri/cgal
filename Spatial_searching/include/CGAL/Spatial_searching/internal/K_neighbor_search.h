@@ -32,7 +32,7 @@
 #include <CGAL/Kd_tree.h>
 #include <CGAL/Euclidean_distance.h>
 #include <CGAL/Splitters.h>
-#include <CGAL/internal/bounded_priority_queue.h>
+#include <CGAL/Spatial_searching/internal/bounded_priority_queue.h>
 #include <CGAL/boost/iterator/transform_iterator.hpp>
 
 namespace CGAL {

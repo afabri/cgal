@@ -26,8 +26,8 @@
 
 #include <CGAL/disable_warnings.h>
 
-#include <CGAL/internal/K_neighbor_search.h>
-#include <CGAL/internal/Get_dimension_tag.h>
+#include <CGAL/Spatial_searching/internal/K_neighbor_search.h>
+#include <CGAL/Spatial_searching/internal/Get_dimension_tag.h>
 
 
 

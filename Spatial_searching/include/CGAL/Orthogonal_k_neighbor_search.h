@@ -26,7 +26,7 @@
 
 #include <CGAL/disable_warnings.h>
 
-#include <CGAL/internal/K_neighbor_search.h>
+#include <CGAL/Spatial_searching/internal/K_neighbor_search.h>
 
 namespace CGAL {
 

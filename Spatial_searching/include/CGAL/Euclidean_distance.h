@@ -1,3 +1,4 @@
+\
 // Copyright (c) 2002,2011 Utrecht University (The Netherlands).
 // All rights reserved.
 //
@@ -28,7 +29,7 @@
 
 #include <CGAL/Kd_tree_rectangle.h>
 #include <CGAL/number_utils.h>
-#include <CGAL/internal/Get_dimension_tag.h>
+#include <CGAL/Spatial_searching/internal/Get_dimension_tag.h>
 #include <vector>
 
 namespace CGAL {
