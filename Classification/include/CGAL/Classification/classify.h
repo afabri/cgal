@@ -24,7 +24,7 @@
 
 #include <CGAL/license/Classification.h>
 
-#include <CGAL/internal/Surface_mesh_segmentation/Alpha_expansion_graph_cut.h>
+#include <CGAL/Surface_mesh_segmentation/internal/Alpha_expansion_graph_cut.h>
 #include <CGAL/Bbox_3.h>
 #include <CGAL/Classification/Label_set.h>
 
