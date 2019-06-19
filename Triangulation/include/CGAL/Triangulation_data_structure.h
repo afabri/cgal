@@ -33,8 +33,8 @@
 #include <CGAL/Triangulation_ds_vertex.h>
 #include <CGAL/Triangulation_ds_full_cell.h>
 #include <CGAL/internal/Combination_enumerator.h>
-#include <CGAL/internal/Triangulation/utilities.h>
-#include <CGAL/internal/Triangulation/Triangulation_ds_iterators.h>
+#include <CGAL/Triangulation/internal/utilities.h>
+#include <CGAL/Triangulation/internal/Triangulation_ds_iterators.h>
 
 #include <algorithm>
 #include <vector>
