@@ -2084,7 +2084,7 @@ is_valid(Cell_handle c, bool verbose, int level) const
 
 } //namespace CGAL
 
-#include <CGAL/internal/Delaunay_triangulation_hierarchy_3.h>
+#include <CGAL/Triangulation_3/internal/Delaunay_triangulation_hierarchy_3.h>
 
 #include <CGAL/enable_warnings.h>
 
