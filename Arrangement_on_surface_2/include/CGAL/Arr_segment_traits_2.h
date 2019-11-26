@@ -459,7 +459,8 @@ public:
 
       if (! cv.is_vertical()) {
         // Compare p with the segment's supporting line.
-        return (kernel.compare_y_at_x_2_object()(p, cv.line()));
+        //        return (kernel.compare_y_at_x_2_object()(p, cv.line()));
+        return orientation(cv.left(), cv.right(), p);
       }
       else {
         // Compare with the vertical segment's end-points.

@@ -48,6 +48,7 @@
 #endif // NOT CGAL_NO_EQUAL_3_STATIC_FILTERS
 
 #ifndef CGAL_NO_COMPARE_X_2_STATIC_FILTERS
+//#  include <CGAL/internal/Static_filters/Compare_xy_2.h>
 #  include <CGAL/internal/Static_filters/Compare_x_2.h>
 #  include <CGAL/internal/Static_filters/Compare_y_2.h>
 #endif // NOT CGAL_NO_COMPARE_X_2_STATIC_FILTERS
@@ -103,6 +104,7 @@ public:
 #endif // NOT CGAL_NO_EQUAL_3_STATIC_FILTERS
 
 #ifndef CGAL_NO_COMPARE_X_2_STATIC_FILTERS
+  //  typedef Static_filters_predicates::Compare_xy_2<K_base>                    Compare_xy_2;
   typedef Static_filters_predicates::Compare_x_2<K_base>                    Compare_x_2;
   typedef Static_filters_predicates::Compare_y_2<K_base>                    Compare_y_2;
 #endif // NOT CGAL_NO_COMPARE_X_2_STATIC_FILTERS

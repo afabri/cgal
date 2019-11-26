@@ -34,6 +34,9 @@
 
 #include <CGAL/function_objects.h>
 #include <CGAL/use.h>
+#include <CGAL/Interval_skip_list_interval_with_handle.h>
+#include <CGAL/Interval_skip_list.h>
+#include <CGAL/Timer.h>
 
 namespace CGAL {
 
@@ -3146,6 +3149,56 @@ _relocate_inner_ccbs_in_new_face(DHalfedge* new_he)
 
   CGAL_assertion(new_face != old_face);
 
+  // ------------------------------------------------------------------------
+  typedef Interval_skip_list_interval_with_handle<double,DHalfedge*> Interval;
+  typedef Interval_skip_list<Interval> Interval_skip_list;
+  std::vector<Interval> intervals;
+
+  Timer t;
+  t.start();
+  DHalfedge *he = new_he;
+  DHalfedge* done = he;
+
+  // Store the halfedges of the outer boundary in an interval skip list
+  do {
+    std::pair<double,double> ihe = m_topol_traits.interval(he);
+   
+    Interval iwh(he,
+                 ihe.first,
+                 ihe.second);
+    intervals.push_back(iwh);
+    he = he->next();
+  }while(he != done);
+
+  std::random_shuffle(intervals.begin(), intervals.end());
+  Interval_skip_list isl(intervals.begin(), intervals.end());
+
+  // query for one vertex of each inner ccb to find all halfedges below and above the point
+ 
+  DInner_ccb_iter iccb_it = old_face->inner_ccbs_begin();
+
+  int count = 0;
+  while (iccb_it != old_face->inner_ccbs_end()) {
+
+    if (opp_on_inner_ccb && ((*iccb_it)->inner_ccb() == opp_he->inner_ccb())) {
+      ++iccb_it;
+      continue;
+    }
+    std::vector<Interval> cover;
+    //std::cout << "find intervals for " << to_double((*iccb_it)->vertex()->point().x()) << std::endl;
+    isl.find_intervals(to_double((*iccb_it)->vertex()->point().x()), std::back_inserter(cover));
+    for(int i = 0; i < cover.size(); i++){
+      DHalfedge *dh = cover[i].handle();
+      count++;
+      //std::cout << to_double(dh->vertex()->point().x()) << " -- " << to_double(dh->opposite()->vertex()->point().x()) << std::endl;
+    }
+    ++iccb_it;
+  }
+  
+  std::cout << count << " "  << t.time() << " sec." << std::endl;
+  // ------------------------------------------------------------------------
+
+  
   // Examine the inner CCBs inside the existing old face and move the relevant
   // ones into the new face.
   DInner_ccb_iter ic_it = old_face->inner_ccbs_begin();

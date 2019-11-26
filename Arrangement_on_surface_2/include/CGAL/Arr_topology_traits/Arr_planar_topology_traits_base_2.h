@@ -219,6 +219,8 @@ public:
    */
   virtual Comparison_result compare_y_at_x(const Point_2& p,
                                            const Halfedge* he) const = 0;
+
+  virtual std::pair<double,double> interval(const Halfedge* he) const = 0;
   //@}
 };
 
@@ -355,6 +357,7 @@ is_in_face(const Face* f, const Point_2& p, const Vertex* v) const
   // ray we shoot from it intersects the boundary an odd number of time.
   return ((n_ray_intersections % 2) != 0);
 }
+
 
 } // namespace CGAL
 

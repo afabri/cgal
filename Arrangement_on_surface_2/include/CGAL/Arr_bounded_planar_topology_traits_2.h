@@ -32,6 +32,7 @@
 #include <CGAL/Arr_topology_traits/Arr_bounded_planar_batched_pl_helper.h>
 #include <CGAL/Arr_topology_traits/Arr_bounded_planar_vert_decomp_helper.h>
 #include <CGAL/Arr_topology_traits/Arr_inc_insertion_zone_visitor.h>
+
 #include <CGAL/use.h>
 
 namespace CGAL {
@@ -460,6 +461,20 @@ public:
   virtual Comparison_result compare_y_at_x(const Point_2& p,
                                            const Halfedge* he) const
   { return (this->m_geom_traits->compare_y_at_x_2_object()(p, he->curve())); }
+
+  
+  
+  virtual std::pair<double,double> interval(const Halfedge* he) const
+{
+  const Point_2& t = he->vertex()->point();
+  const Point_2& s = he->opposite()->vertex()->point();
+  if(this->m_geom_traits->compare_x_2_object()(s,t) != LARGER){
+    return std::pair<double,double>(to_interval(s.x()).first,
+                                    to_interval(t.x()).second);
+  }
+  return std::pair<double,double>(to_interval(t.x()).first,
+                                  to_interval(s.x()).second);
+}
   //@}
 };
 
