@@ -3177,7 +3177,7 @@ _relocate_inner_ccbs_in_new_face(DHalfedge* new_he)
  
   DInner_ccb_iter iccb_it = old_face->inner_ccbs_begin();
 
-  int count = 0;
+  int n_ray_intersections = 0;
   while (iccb_it != old_face->inner_ccbs_end()) {
 
     if (opp_on_inner_ccb && ((*iccb_it)->inner_ccb() == opp_he->inner_ccb())) {
@@ -3189,45 +3189,62 @@ _relocate_inner_ccbs_in_new_face(DHalfedge* new_he)
     isl.find_intervals(to_double((*iccb_it)->vertex()->point().x()), std::back_inserter(cover));
     for(int i = 0; i < cover.size(); i++){
       DHalfedge *dh = cover[i].handle();
-      count++;
-      //std::cout << to_double(dh->vertex()->point().x()) << " -- " << to_double(dh->opposite()->vertex()->point().x()) << std::endl;
-    }
-    ++iccb_it;
-  }
-  
-  std::cout << count << " "  << t.time() << " sec." << std::endl;
-  // ------------------------------------------------------------------------
 
-  
-  // Examine the inner CCBs inside the existing old face and move the relevant
-  // ones into the new face.
-  DInner_ccb_iter ic_it = old_face->inner_ccbs_begin();
-  while (ic_it != old_face->inner_ccbs_end()) {
-    // In case the new edge represents the current component in the old face
-    // (note we take the opposite halfedge, as it is incident to the old face),
-    // then the new face already forms a hole in the old face, and we do not
-    // need to move it.
-    CGAL_assertion((*ic_it)->is_on_inner_ccb());
-
-    if (opp_on_inner_ccb && ((*ic_it)->inner_ccb() == opp_he->inner_ccb())) {
-      ++ic_it;
-      continue;
+      Comparison_result res_y_at_x = 
+        m_topol_traits.compare_y_at_x((*iccb_it)->vertex()->point(), dh);
+      
+      if (res_y_at_x == SMALLER)
+        ++n_ray_intersections;
+      else 
+        if (res_y_at_x == EQUAL)
+        {
+          n_ray_intersections=0;
+          break;
+        }
     }
 
-    // Check whether the current inner CCB is inside new face (we actually
-    // check if a representative vertex is located in the new face).
-    if (m_topol_traits.is_in_face(new_face, (*ic_it)->vertex()->point(),
-                                  (*ic_it)->vertex()))
+    if ( n_ray_intersections % 2 != 0 )
     {
-      // We store the current iterator which get then incremented before it
-      // gets moved, as the move operation invalidates the iterator.
-      DInner_ccb_iter ic_to_move = ic_it;
-      ++ic_it;
+      DInner_ccb_iter ic_to_move = iccb_it;
+      ++iccb_it;
       _move_inner_ccb(old_face, new_face, *ic_to_move); // move the hole
     }
     else
-      ++ic_it;
+      ++iccb_it; 
   }
+  
+  // ------------------------------------------------------------------------
+
+  
+  //~ // Examine the inner CCBs inside the existing old face and move the relevant
+  //~ // ones into the new face.
+  //~ DInner_ccb_iter ic_it = old_face->inner_ccbs_begin();
+  //~ while (ic_it != old_face->inner_ccbs_end()) {
+    //~ // In case the new edge represents the current component in the old face
+    //~ // (note we take the opposite halfedge, as it is incident to the old face),
+    //~ // then the new face already forms a hole in the old face, and we do not
+    //~ // need to move it.
+    //~ CGAL_assertion((*ic_it)->is_on_inner_ccb());
+
+    //~ if (opp_on_inner_ccb && ((*ic_it)->inner_ccb() == opp_he->inner_ccb())) {
+      //~ ++ic_it;
+      //~ continue;
+    //~ }
+
+    //~ // Check whether the current inner CCB is inside new face (we actually
+    //~ // check if a representative vertex is located in the new face).
+    //~ if (m_topol_traits.is_in_face(new_face, (*ic_it)->vertex()->point(),
+                                  //~ (*ic_it)->vertex()))
+    //~ {
+      //~ // We store the current iterator which get then incremented before it
+      //~ // gets moved, as the move operation invalidates the iterator.
+      //~ DInner_ccb_iter ic_to_move = ic_it;
+      //~ ++ic_it;
+      //~ _move_inner_ccb(old_face, new_face, *ic_to_move); // move the hole
+    //~ }
+    //~ else
+      //~ ++ic_it;
+  //~ }
 }
 
 //-----------------------------------------------------------------------------

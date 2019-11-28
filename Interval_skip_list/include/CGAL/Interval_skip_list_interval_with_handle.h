@@ -28,6 +28,7 @@ namespace CGAL {
   {
   public:
     typedef Value_ Value;
+    typedef Interval_skip_list_interval<Value_> Base;
 
   private:
     H handle_;
@@ -38,24 +39,24 @@ namespace CGAL {
   public:
 
     Interval_skip_list_interval_with_handle()
-      : Interval_skip_list_interval()
+      : Base()
     {}
-    
+
     Interval_skip_list_interval_with_handle(H handle,
                                             const Value& inf_,
                                             const Value& sup_,
                                             bool lb = true,
                                             bool rb = true)
-      : Interval_skip_list_interval(inf_, sup_,lb,rb), handle_(handle)
+      : Base(inf_, sup_,lb,rb), handle_(handle)
     {}
 
     H handle() const { return handle_;}
-    
+
     bool operator==(const Interval_skip_list_interval_with_handle& I) const
     {
       return ( (handle() == I.handle()) &&
-               (inf() == I.inf()) && (sup() == I.sup()) &&
-	       (inf_closed() == I.inf_closed()) && (sup_closed() == I.sup_closed()) );
+               (this->inf() == I.inf()) && (this->sup() == I.sup()) &&
+	       (this->inf_closed() == I.inf_closed()) && (this->sup_closed() == I.sup_closed()) );
     }
 
     bool operator!=(const Interval_skip_list_interval_with_handle& I) const
@@ -63,10 +64,6 @@ namespace CGAL {
       return ! (*this == I);
     }
   };
-
-
-
-
 } // namespace CGAL
 
 #endif // CGAL_INTERVAL_SKIP_LIST_INTERVAL_WITH_HANDLE_H
