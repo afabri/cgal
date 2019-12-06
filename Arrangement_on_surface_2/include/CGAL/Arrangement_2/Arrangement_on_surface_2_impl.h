@@ -3150,7 +3150,7 @@ _relocate_inner_ccbs_in_new_face(DHalfedge* new_he)
   CGAL_assertion(new_face != old_face);
 
   // ------------------------------------------------------------------------
-  typedef Interval_skip_list_interval_with_handle<double,DHalfedge*> Interval;
+  typedef Interval_skip_list_interval_with_handle<typename GeomTraits::FT,DHalfedge*> Interval;
   typedef Interval_skip_list<Interval> Interval_skip_list;
   std::vector<Interval> intervals;
 
@@ -3161,7 +3161,7 @@ _relocate_inner_ccbs_in_new_face(DHalfedge* new_he)
 
   // Store the halfedges of the outer boundary in an interval skip list
   do {
-    std::pair<double,double> ihe = m_topol_traits.interval(he);
+    std::pair<typename GeomTraits::FT,typename GeomTraits::FT> ihe = m_topol_traits.interval(he);
    
     Interval iwh(he,
                  ihe.first,
@@ -3186,7 +3186,7 @@ _relocate_inner_ccbs_in_new_face(DHalfedge* new_he)
     }
     std::vector<Interval> cover;
     //std::cout << "find intervals for " << to_double((*iccb_it)->vertex()->point().x()) << std::endl;
-    isl.find_intervals(to_double((*iccb_it)->vertex()->point().x()), std::back_inserter(cover));
+    isl.find_intervals((*iccb_it)->vertex()->point().x(), std::back_inserter(cover));
     for(int i = 0; i < cover.size(); i++){
       DHalfedge *dh = cover[i].handle();
 

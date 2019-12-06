@@ -464,16 +464,15 @@ public:
 
   
   
-  virtual std::pair<double,double> interval(const Halfedge* he) const
+  virtual std::pair<typename GeometryTraits_2::FT,typename GeometryTraits_2::FT>
+  interval(const Halfedge* he) const
   {
     const Point_2& t = he->vertex()->point();
     const Point_2& s = he->opposite()->vertex()->point();
     if(this->m_geom_traits->compare_x_2_object()(s,t) != LARGER){
-      return std::pair<double,double>(to_interval(s.x()).first,
-                                      to_interval(t.x()).second);
+      return std::make_pair(s.x(),t.x());
     }
-    return std::pair<double,double>(to_interval(t.x()).first,
-                                    to_interval(s.x()).second);
+    return std::make_pair(t.x(), s.x());
   }
   //@}
 };

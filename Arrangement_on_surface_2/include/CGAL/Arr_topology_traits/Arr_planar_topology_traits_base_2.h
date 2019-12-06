@@ -220,7 +220,7 @@ public:
   virtual Comparison_result compare_y_at_x(const Point_2& p,
                                            const Halfedge* he) const = 0;
 
-  virtual std::pair<double,double> interval(const Halfedge* he) const = 0;
+  virtual std::pair<typename Geometry_traits_2::FT,typename Geometry_traits_2::FT> interval(const Halfedge* he) const = 0;
   //@}
 };
 
