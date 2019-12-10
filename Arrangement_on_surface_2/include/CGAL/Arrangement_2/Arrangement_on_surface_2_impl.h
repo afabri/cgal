@@ -36,7 +36,6 @@
 #include <CGAL/use.h>
 #include <CGAL/Interval_skip_list_interval_with_handle.h>
 #include <CGAL/Interval_skip_list.h>
-#include <CGAL/Timer.h>
 
 namespace CGAL {
 
@@ -3153,8 +3152,6 @@ _relocate_inner_ccbs_in_new_face(DHalfedge* new_he)
   typedef Interval_skip_list<Interval> Interval_skip_list;
   std::vector<Interval> intervals;
 
-  Timer t;
-  t.start();
   DHalfedge *he = new_he;
   DHalfedge* done = he;
 
@@ -3178,10 +3175,19 @@ _relocate_inner_ccbs_in_new_face(DHalfedge* new_he)
 
   while (iccb_it != old_face->inner_ccbs_end()) {
 
+    // In case the new edge represents the current component in the old face
+    // (note we take the opposite halfedge, as it is incident to the old face),
+    // then the new face already forms a hole in the old face, and we do not
+    // need to move it.
+    CGAL_assertion((*iccb_it)->is_on_inner_ccb());
+
     if (opp_on_inner_ccb && ((*iccb_it)->inner_ccb() == opp_he->inner_ccb())) {
       ++iccb_it;
       continue;
     }
+
+    // Check whether the current inner CCB is inside new face (we actually
+    // check if a representative vertex is located in the new face).
     std::vector<Interval> cover;
     //std::cout << "find intervals for " << to_double((*iccb_it)->vertex()->point().x()) << std::endl;
     isl.find_intervals((*iccb_it)->vertex()->point().x(), std::back_inserter(cover));
@@ -3191,7 +3197,7 @@ _relocate_inner_ccbs_in_new_face(DHalfedge* new_he)
 
       Comparison_result res_y_at_x = 
         m_topol_traits.compare_y_at_x((*iccb_it)->vertex()->point(), dh);
-      
+
       if (res_y_at_x == SMALLER)
         ++n_ray_intersections;
       else 
@@ -3204,6 +3210,8 @@ _relocate_inner_ccbs_in_new_face(DHalfedge* new_he)
 
     if ( n_ray_intersections % 2 != 0 )
     {
+      // We store the current iterator which get then incremented before it
+      // gets moved, as the move operation invalidates the iterator.
       DInner_ccb_iter ic_to_move = iccb_it;
       ++iccb_it;
       _move_inner_ccb(old_face, new_face, *ic_to_move); // move the hole
@@ -3221,6 +3229,8 @@ template <typename GeomTraits, typename TopTraits>
 void Arrangement_on_surface_2<GeomTraits, TopTraits>::
 _relocate_isolated_vertices_in_new_face(DHalfedge* new_he)
 {
+  // TODO: copy what is done in _relocate_inner_ccbs_in_new_face
+
   // The given halfedge points to the new face, while its twin points to the
   // old face (the one that has just been split).
   DFace* new_face = (new_he->is_on_inner_ccb()) ?
