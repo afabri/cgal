@@ -3176,7 +3176,6 @@ _relocate_inner_ccbs_in_new_face(DHalfedge* new_he)
  
   DInner_ccb_iter iccb_it = old_face->inner_ccbs_begin();
 
-  int n_ray_intersections = 0;
   while (iccb_it != old_face->inner_ccbs_end()) {
 
     if (opp_on_inner_ccb && ((*iccb_it)->inner_ccb() == opp_he->inner_ccb())) {
@@ -3186,6 +3185,7 @@ _relocate_inner_ccbs_in_new_face(DHalfedge* new_he)
     std::vector<Interval> cover;
     //std::cout << "find intervals for " << to_double((*iccb_it)->vertex()->point().x()) << std::endl;
     isl.find_intervals((*iccb_it)->vertex()->point().x(), std::back_inserter(cover));
+    int n_ray_intersections = 0;
     for(int i = 0; i < cover.size(); i++){
       DHalfedge *dh = cover[i].handle();
 
