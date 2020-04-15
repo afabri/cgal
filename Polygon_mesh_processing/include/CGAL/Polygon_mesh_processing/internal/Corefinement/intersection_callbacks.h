@@ -159,10 +159,6 @@ public:
     }
     {
       // non-coplanar case
-#ifdef CGAL_HAS_THREADS
-      //this ensures that this is done once at a time
-      CGAL_SCOPED_LOCK(insert_mutex);
-#endif
       edge_to_faces[edge(eh,tm_edges)].insert(face(fh, tm_faces));
     }
   }
