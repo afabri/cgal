@@ -13,6 +13,7 @@
 #ifndef CGAL_POLYGON_MESH_PROCESSING_INTERNAL_COREFINEMENT_INTERSECTION_IMPL_H
 #define CGAL_POLYGON_MESH_PROCESSING_INTERNAL_COREFINEMENT_INTERSECTION_IMPL_H
 
+#include <CGAL/Real_timer.h>
 #include <CGAL/license/Polygon_mesh_processing/corefinement.h>
 
 
@@ -1309,8 +1310,13 @@ public:
     const VertexPointMap& vpm1=nodes.vpm1;
     const VertexPointMap& vpm2=nodes.vpm2;
 
+
+    CGAL::Real_timer timer;
+    timer.start();
     filter_intersections(tm1, tm2, vpm1, vpm2, throw_on_self_intersection);
     filter_intersections(tm2, tm1, vpm2, vpm1, throw_on_self_intersection);
+    timer.stop();
+    std::cout << "Filtering intersections: " << timer.time() << "s.\n";
 
     Node_id current_node((std::numeric_limits<Node_id>::max)());
     CGAL_assertion(current_node+1==0);
