@@ -7,6 +7,7 @@ project( Polygon_mesh_processing_Examples )
 # CGAL and its components
 find_package( CGAL QUIET COMPONENTS  )
 
+
 if ( NOT CGAL_FOUND )
 
   message(STATUS "This project requires the CGAL library, and will not be compiled.")
@@ -119,6 +120,7 @@ endif(OpenMesh_FOUND)
 
 find_package( TBB )
 if( TBB_FOUND )
+  CGAL_target_use_TBB(corefinement_SM)
   CGAL_target_use_TBB(self_intersections_example)
   CGAL_target_use_TBB(hausdorff_distance_remeshing_example)
 else()

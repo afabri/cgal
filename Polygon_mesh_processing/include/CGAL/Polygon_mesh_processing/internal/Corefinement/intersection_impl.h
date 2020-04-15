@@ -25,6 +25,10 @@
 #include <CGAL/Polygon_mesh_processing/internal/Corefinement/intersect_triangle_and_segment_3.h>
 #include <CGAL/utility.h>
 
+#ifdef CGAL_HAS_THREADS
+#include <CGAL/mutex.h>
+#endif
+
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/dynamic_bitset.hpp>
@@ -230,6 +234,7 @@ class Intersection_of_triangle_meshes
     Edge_to_faces& edge_to_faces = &tm_e < &tm_f
                                  ? stm_edge_to_ltm_faces
                                  : ltm_edge_to_stm_faces;
+    CGAL_MUTEX insertion_mutex;
 
     #ifdef DO_NOT_HANDLE_COPLANAR_FACES
     typedef Collect_face_bbox_per_edge_bbox<TriangleMesh, Edge_to_faces>
@@ -239,7 +244,7 @@ class Intersection_of_triangle_meshes
     typedef Collect_face_bbox_per_edge_bbox_with_coplanar_handling<
       TriangleMesh, VertexPointMap, Edge_to_faces, Coplanar_face_set>
      Callback;
-    Callback  callback(tm_f, tm_e, vpm_f, vpm_e, edge_to_faces, coplanar_faces);
+    Callback  callback(tm_f, tm_e, vpm_f, vpm_e, edge_to_faces, coplanar_faces, insertion_mutex);
     #endif
     //using pointers in box_intersection_d is about 10% faster
     if (throw_on_self_intersection){
@@ -251,7 +256,11 @@ class Intersection_of_triangle_meshes
          throw Self_intersection_exception();
     }
     else {
-      CGAL::box_intersection_d( face_boxes_ptr.begin(), face_boxes_ptr.end(),
+      CGAL::box_intersection_d
+#ifdef BID_PARALLEL        
+        <Parallel_tag>
+#endif        
+        ( face_boxes_ptr.begin(), face_boxes_ptr.end(),
                                 edge_boxes_ptr.begin(), edge_boxes_ptr.end(),
                                 callback, cutoff );
     }

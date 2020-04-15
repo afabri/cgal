@@ -24,6 +24,10 @@
 #include <boost/shared_ptr.hpp>
 #include <set>
 
+#ifdef CGAL_HAS_THREADS
+#include <CGAL/mutex.h>
+#endif
+
 namespace CGAL {
 namespace Polygon_mesh_processing {
 namespace Corefinement {
@@ -78,6 +82,7 @@ protected:
   const VertexPointMap& vpmap_tme;
   EdgeToFaces& edge_to_faces;
   CoplanarFaceSet& coplanar_faces;
+  CGAL_MUTEX& insert_mutex;
 
   typedef boost::graph_traits<TriangleMesh> Graph_traits;
   typedef typename Graph_traits::face_descriptor face_descriptor;
@@ -95,13 +100,15 @@ public:
     const VertexPointMap& vpmap_tmf,
     const VertexPointMap& vpmap_tme,
     EdgeToFaces& edge_to_faces,
-    CoplanarFaceSet& coplanar_faces)
+    CoplanarFaceSet& coplanar_faces,
+    CGAL_MUTEX& insert_mutex)
   : tm_faces(tm_faces)
   , tm_edges(tm_edges)
   , vpmap_tmf(vpmap_tmf)
   , vpmap_tme(vpmap_tme)
   , edge_to_faces(edge_to_faces)
   , coplanar_faces(coplanar_faces)
+  , insert_mutex(insert_mutex)
   {}
 
   void operator()( const Box& face_box, const Box& edge_box) const {
@@ -123,6 +130,10 @@ public:
 
       if (orientation(a,b,c,get(vpmap_tme, target( next(eh, tm_edges), tm_edges)))==COPLANAR)
       {
+#ifdef CGAL_HAS_THREADS
+      //this ensures that this is done once at a time
+      CGAL_SCOPED_LOCK(insert_mutex);
+#endif
         coplanar_faces.insert(
             &tm_edges < &tm_faces // TODO can we avoid by reporting them in only of the two calls to the filter function?
             ? std::make_pair(face(eh, tm_edges), face(fh, tm_faces))
@@ -133,6 +144,10 @@ public:
       if (!is_border(eh_opp, tm_edges) &&
           orientation(a,b,c,get(vpmap_tme, target(next(eh_opp, tm_edges),tm_edges)))==COPLANAR)
       {
+#ifdef CGAL_HAS_THREADS
+      //this ensures that this is done once at a time
+      CGAL_SCOPED_LOCK(insert_mutex);
+#endif
         coplanar_faces.insert(
             &tm_edges < &tm_faces // TODO can we avoid by reporting them in only of the two calls to the filter function?
             ? std::make_pair(face(opposite(eh, tm_edges), tm_edges), face(fh, tm_faces))
@@ -142,8 +157,14 @@ public:
       //in case only the edge is coplanar, the intersection points will be detected using an incident facet
       return;
     }
-    // non-coplanar case
-    edge_to_faces[edge(eh,tm_edges)].insert(face(fh, tm_faces));
+    {
+      // non-coplanar case
+#ifdef CGAL_HAS_THREADS
+      //this ensures that this is done once at a time
+      CGAL_SCOPED_LOCK(insert_mutex);
+#endif
+      edge_to_faces[edge(eh,tm_edges)].insert(face(fh, tm_faces));
+    }
   }
 
   void operator()(const Box* face_box_ptr, const Box* edge_box_ptr) const
