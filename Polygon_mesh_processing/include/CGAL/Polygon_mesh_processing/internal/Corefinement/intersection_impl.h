@@ -25,6 +25,7 @@
 #include <CGAL/Polygon_mesh_processing/internal/Corefinement/intersection_nodes.h>
 #include <CGAL/Polygon_mesh_processing/internal/Corefinement/intersect_triangle_and_segment_3.h>
 #include <CGAL/utility.h>
+#include <CGAL/for_each.h>
 
 #ifdef CGAL_HAS_THREADS
 #include <CGAL/mutex.h>
@@ -34,7 +35,12 @@
 #include <boost/unordered_set.hpp>
 #include <boost/dynamic_bitset.hpp>
 
+#ifdef CGAL_LINKED_WITH_TBB
 #include "tbb/concurrent_unordered_map.h"
+#include "tbb/task_group.h"
+#include "tbb/parallel_for.h"
+#include "tbb/blocked_range.h"
+#endif
 
 namespace CGAL{
 namespace Polygon_mesh_processing {
@@ -197,6 +203,39 @@ class Intersection_of_triangle_meshes
   Faces_to_nodes_map         f_to_node;      //Associate a pair of triangles to their intersection points
   std::vector<Node_id> extra_terminal_nodes; //used only for autorefinement
   CGAL_assertion_code(bool doing_autorefinement;)
+
+#ifdef BID_PARALLEL
+  struct Fill_face_boxes_ptr {
+    const TriangleMesh& tm_f;
+    const VertexPointMap& vpm_f; 
+    const std::vector<face_descriptor>& copies;
+    std::vector<Box>& face_boxes;
+    std::vector<Box*>& face_boxes_ptr;
+    
+    Fill_face_boxes_ptr(const TriangleMesh& tm_f,
+                        const VertexPointMap& vpm_f,
+                        const std::vector<face_descriptor>& copies,
+                        std::vector<Box>& face_boxes,
+                        std::vector<Box*>& face_boxes_ptr)
+      : tm_f(tm_f),vpm_f(vpm_f), copies(copies), face_boxes(face_boxes), face_boxes_ptr(face_boxes_ptr)
+    {}
+    
+    void operator()(const tbb::blocked_range<size_t>& r) const
+    {
+      for(size_t i = r.begin() ; i != r.end() ; ++i){
+        face_descriptor fd = copies[i];
+        halfedge_descriptor h=halfedge(fd,tm_f);
+        face_boxes[i] = Box(
+                            get(vpm_f,source(h,tm_f)).bbox() +
+                            get(vpm_f,target(h,tm_f)).bbox() +
+                            get(vpm_f,target(next(h,tm_f),tm_f)).bbox(),
+                            h );
+        face_boxes_ptr[i] = &face_boxes[i] ;
+      }
+    }
+  };
+#endif
+  
 // member functions
   void filter_intersections(const TriangleMesh& tm_f,
                             const TriangleMesh& tm_e,
@@ -204,31 +243,49 @@ class Intersection_of_triangle_meshes
                             const VertexPointMap& vpm_e,
                             bool throw_on_self_intersection)
   {
+#if 0 && defined( BID_PARALLEL )     
+    std::vector<face_descriptor> copies(faces(tm_f).begin(), faces(tm_f).end());
+    std::vector<Box> face_boxes(num_faces(tm_f)), edge_boxes;
+    std::vector<Box*> face_boxes_ptr(num_faces(tm_f)), edge_boxes_ptr;
+ #else
     std::vector<Box> face_boxes, edge_boxes;
-    std::vector<Box*> face_boxes_ptr, edge_boxes_ptr;
-
+    std::vector<Box*> face_boxes_ptr, edge_boxes_ptr; 
     face_boxes.reserve(num_faces(tm_f));
     face_boxes_ptr.reserve(num_faces(tm_f));
+#endif
+    
+    // does not compile: tbb::parallel_for(faces(tm_f), [=](face_descriptor fd) {});
+
+    // compiles but we need an index  CGAL::for_each<CGAL::Parallel_tag>(faces(tm_f), [=](const face_descriptor& fd) -> bool { return true; });
+
+#if 0 && defined( BID_PARALLEL )   
+    tbb::parallel_for(tbb::blocked_range<size_t>(0,copies.size()),
+                      Fill_face_boxes_ptr(tm_f,
+                                          vpm_f,
+                                          copies,
+                                          face_boxes,
+                                          face_boxes_ptr));
+#else    
     for(face_descriptor fd : faces(tm_f))
     {
       halfedge_descriptor h=halfedge(fd,tm_f);
-      face_boxes.push_back( Box(
+      face_boxes.emplace_back(
         get(vpm_f,source(h,tm_f)).bbox() +
         get(vpm_f,target(h,tm_f)).bbox() +
         get(vpm_f,target(next(h,tm_f),tm_f)).bbox(),
-        h ) );
+        h );
       face_boxes_ptr.push_back( &face_boxes.back() );
     }
-
+#endif
     edge_boxes.reserve(num_edges(tm_e));
     edge_boxes_ptr.reserve(num_edges(tm_e));
     for(edge_descriptor ed : edges(tm_e))
     {
       halfedge_descriptor h=halfedge(ed,tm_e);
-      edge_boxes.push_back( Box(
+      edge_boxes.emplace_back(
         get(vpm_e,source(h,tm_e)).bbox() +
         get(vpm_e,target(h,tm_e)).bbox(),
-        h ) );
+        h );
       edge_boxes_ptr.push_back( &edge_boxes.back() );
     }
 
@@ -1313,8 +1370,15 @@ public:
 
     CGAL::Real_timer timer;
     timer.start();
+#ifdef CGAL_LINKED_WITH_TBB
+    tbb::task_group g;
+    g.run([&]{filter_intersections(tm1, tm2, vpm1, vpm2, throw_on_self_intersection);;}); // spawn a task
+    g.run([&]{filter_intersections(tm2, tm1, vpm2, vpm1, throw_on_self_intersection);}); // spawn another task
+    g.wait();
+#else        
     filter_intersections(tm1, tm2, vpm1, vpm2, throw_on_self_intersection);
     filter_intersections(tm2, tm1, vpm2, vpm1, throw_on_self_intersection);
+#endif    
     timer.stop();
     std::cout << "Filtering intersections: " << timer.time() << "s.\n";
 
