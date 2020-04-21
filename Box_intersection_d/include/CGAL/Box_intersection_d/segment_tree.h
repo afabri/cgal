@@ -99,12 +99,12 @@ void one_way_scan( RandomAccessIter1 p_begin, RandomAccessIter1 p_end,
     // for each box viewed as interval i
     for( RandomAccessIter2 i = i_begin; i != i_end; ++i ) {
         // look for the first box b with i.min <= p.min
-        for( ; p_begin != p_end && Traits::is_lo_less_lo( *p_begin, *i, 0 );
+      for( ; p_begin != p_end && Traits::is_lo_less_lo( *p_begin, *i /*, 0 */ );
              ++p_begin ) {}
 
         // look for all boxes with p.min < i.max
         for( RandomAccessIter1 p = p_begin;
-             p != p_end && Traits::is_lo_less_hi( *p, *i, 0 );
+             p != p_end && Traits::is_lo_less_hi( *p, *i /* , 0 */ );
              ++p )
         {
             if( Traits::id( *p ) == Traits::id( *i ) )
@@ -138,9 +138,9 @@ void modified_two_way_scan(
 
     // for each box viewed as interval
     while( i_begin != i_end && p_begin != p_end ) {
-        if( Traits::is_lo_less_lo( *i_begin, *p_begin, 0 ) ) {
+      if( Traits::is_lo_less_lo( *i_begin, *p_begin /* , 0 */ ) ) {
             for( RandomAccessIter1 p = p_begin;
-                 p != p_end && Traits::is_lo_less_hi( *p, *i_begin, 0 );
+                 p != p_end && Traits::is_lo_less_hi( *p, *i_begin /*, 0 */ );
                  ++p )
             {
                 if( Traits::id( *p ) == Traits::id( *i_begin ) )
@@ -161,7 +161,7 @@ void modified_two_way_scan(
             ++i_begin;
         } else {
             for( RandomAccessIter2 i = i_begin;
-                 i != i_end && Traits::is_lo_less_hi( *i, *p_begin, 0 );
+                 i != i_end && Traits::is_lo_less_hi( *i, *p_begin /* , 0  */);
                  ++i )
             {
                 if( Traits::id( *p_begin ) == Traits::id( *i ) )

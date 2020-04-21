@@ -157,7 +157,7 @@ public:
 
     Box_d() {}
     Box_d(bool complete) { init(complete); }
-    Box_d(NT l[3], NT h[3]) : bbx(l[0], l[1], l[2], h[0], h[1], h[2]) {}
+  Box_d(NT l[3], NT h[3]) : bbx(l[0], l[1], l[2], h[0], h[1], h[2]) {}
     Box_d( const Bbox_3& b) : bbx( b) {}
     const Bbox_3& bbox() const { return bbx; }
     void init () {
@@ -192,11 +192,21 @@ public:
             (std::max)( bbx.zmax(), p[2].second));
     }
     static int dimension() { return 3; }
+  
+    NT min_coord() const {
+      return  bbx.xmin();
+    }
+    NT max_coord() const {
+      return bbx.xmax();
+    }
+  
     NT min_coord(int dim) const {
-        return (dim==0) ? bbx.xmin() : ((dim==1) ? bbx.ymin() : bbx.zmin());
+        CGAL_assertion(dim > 0);
+      return (dim==1) ? bbx.ymin() : /*((dim==2) ? */ bbx.zmin() /* : bbx.xmin() )*/;
     }
     NT max_coord(int dim) const {
-        return (dim==0) ? bbx.xmax() : ((dim==1) ? bbx.ymax() : bbx.zmax());
+        CGAL_assertion(dim > 0);
+      return (dim==1) ? bbx.ymax() : /* ((dim==2) ? */ bbx.zmax() /* : bbx.xmax()) */ ;
     }
 };
 

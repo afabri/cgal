@@ -1,3 +1,6 @@
+
+int CUTOFF_FACTOR;
+
 #define BID_PARALLEL
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Surface_mesh.h>
@@ -18,6 +21,10 @@ int main(int argc, char* argv[])
   
   const char* filename1 = (argc > 1) ? argv[1] : "data/blobby.off";
   const char* filename2 = (argc > 2) ? argv[2] : "data/eight.off";
+
+  
+  CUTOFF_FACTOR = (argc > 3)? atoi(argv[3]) : 2;
+  
   std::ifstream input(filename1);
 
   Mesh mesh1, mesh2;
@@ -39,7 +46,9 @@ int main(int argc, char* argv[])
             << num_vertices(mesh2) << "\n";
 
   timer.start();
-  PMP::corefine(mesh1,mesh2);
+  for(int i =0; i < 1; ++i){
+    PMP::corefine(mesh1,mesh2);
+  }
   timer.stop();
   std::cout << timer.time() << " sec."<< std::endl;
   

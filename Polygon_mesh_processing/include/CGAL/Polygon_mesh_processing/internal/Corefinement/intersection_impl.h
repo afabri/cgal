@@ -290,9 +290,13 @@ class Intersection_of_triangle_meshes
     }
 
     /// \todo experiments different cutoff values
-    std::ptrdiff_t cutoff = 2 * std::ptrdiff_t(
+    std::ptrdiff_t cutoff = CUTOFF_FACTOR * std::ptrdiff_t(
         std::sqrt(face_boxes.size()+edge_boxes.size()) );
 
+    std::cout << "face_boxes.size() = " << face_boxes.size() << std::endl;
+    std::cout << "edge_boxes.size() = " << edge_boxes.size() << std::endl;
+    std::cout << "sqrt(|FB| + |EB|) = " << cutoff/4 << std::endl;
+    
     Edge_to_faces& edge_to_faces = &tm_e < &tm_f
                                  ? stm_edge_to_ltm_faces
                                  : ltm_edge_to_stm_faces;
@@ -1368,20 +1372,22 @@ public:
     const VertexPointMap& vpm2=nodes.vpm2;
 
 
-    CGAL::Real_timer timer;
-    timer.start();
+    //CGAL::Real_timer timer;
+    //timer.start();
 #ifdef CGAL_LINKED_WITH_TBB
     tbb::task_group g;
     g.run([&]{filter_intersections(tm1, tm2, vpm1, vpm2, throw_on_self_intersection);;}); // spawn a task
-    g.run([&]{filter_intersections(tm2, tm1, vpm2, vpm1, throw_on_self_intersection);}); // spawn another task
-    g.wait();
+    g.run_and_wait([&]{filter_intersections(tm2, tm1, vpm2, vpm1, throw_on_self_intersection);}); // spawn another task
+    //g.wait();
 #else        
     filter_intersections(tm1, tm2, vpm1, vpm2, throw_on_self_intersection);
     filter_intersections(tm2, tm1, vpm2, vpm1, throw_on_self_intersection);
 #endif    
-    timer.stop();
-    std::cout << "Filtering intersections: " << timer.time() << "s.\n";
+    //timer.stop();
+    //std::cout << "Filtering intersections: " << timer.time() << "s.\n";
 
+    return output; // AF early exit for benchmarking
+    
     Node_id current_node((std::numeric_limits<Node_id>::max)());
     CGAL_assertion(current_node+1==0);
 

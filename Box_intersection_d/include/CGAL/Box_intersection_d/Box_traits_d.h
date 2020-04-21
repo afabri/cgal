@@ -35,8 +35,10 @@ struct Box_traits_d {
     typedef typename BoxHandle::NT  NT;
     typedef typename BoxHandle::ID  ID;
 
+    static NT  min_coord(Box_parameter b) { return b.min_coord();}
     static NT  min_coord(Box_parameter b, int dim) { return b.min_coord( dim);}
     static NT  max_coord(Box_parameter b, int dim) { return b.max_coord( dim);}
+    static NT  max_coord(Box_parameter b) { return b.max_coord();}
     static ID  id(Box_parameter b)                 { return b.id();}
     static int dimension()                         { return BoxHandle::dimension();}
 };
@@ -48,8 +50,10 @@ struct Box_traits_d<Box_*> {
     typedef typename Box_::NT NT;
     typedef typename Box_::ID ID;
 
+    static NT  min_coord(Box_parameter b) { return b->min_coord();}
     static NT  min_coord(Box_parameter b, int dim) { return b->min_coord(dim);}
     static NT  max_coord(Box_parameter b, int dim) { return b->max_coord(dim);}
+    static NT  max_coord(Box_parameter b) { return b->max_coord();}
     static ID  id(Box_parameter b)                 { return b->id();}
     static int dimension()                         { return Box_::dimension();}
 };
@@ -61,8 +65,10 @@ struct Box_traits_d<const Box_*> {
     typedef typename Box_::NT NT;
     typedef typename Box_::ID ID;
 
+    static NT  min_coord(Box_parameter b) { return b->min_coord();}
     static NT  min_coord(Box_parameter b, int dim) { return b->min_coord(dim);}
     static NT  max_coord(Box_parameter b, int dim) { return b->max_coord(dim);}
+    static NT  max_coord(Box_parameter b) { return b->max_coord();}
     static ID  id(Box_parameter b)                 { return b->id();}
     static int dimension()                         { return Box_::dimension();}
 };
@@ -85,11 +91,13 @@ struct Predicate_traits_d : public BoxTraits {
     class Compare :
         public CGAL::cpp98::binary_function<Box_parameter,Box_parameter,bool>
     {
-        int dim;
+      //        int dim;
     public:
-        Compare(int dim) : dim(dim) {}
+      Compare(int dim)
+      // : dim(dim)
+      {}
         bool operator()(Box_parameter a, Box_parameter b) const {
-            return is_lo_less_lo(a,b,dim);
+            return is_lo_less_lo(a,b);
         }
     };
 
@@ -140,10 +148,22 @@ struct Predicate_traits_d : public BoxTraits {
     }
     static bool is_lo_less_lo(Box_parameter a, Box_parameter b, int dim) {
         return BoxTraits::min_coord(a,dim)  < BoxTraits::min_coord(b,dim) ||
-               ( BoxTraits::min_coord(a,dim) == BoxTraits::min_coord(b,dim) &&
-                 BoxTraits::id(a) < BoxTraits::id(b) );
+               (   BoxTraits::min_coord(a,dim) == BoxTraits::min_coord(b,dim)
+                   && BoxTraits::id(a) < BoxTraits::id(b)
+                  );
     }
 
+    static bool is_lo_less_lo(Box_parameter a, Box_parameter b) {
+      return BoxTraits::min_coord(a)  < BoxTraits::min_coord(b) ||
+                                        (    BoxTraits::min_coord(a) == BoxTraits::min_coord(b)
+                    && BoxTraits::id(a) < BoxTraits::id(b) 
+                  );
+    }
+
+    static bool is_lo_less_hi(Box_parameter a, Box_parameter b) {
+        return hi_greater( BoxTraits::max_coord(b),
+                           BoxTraits::min_coord(a));
+    }
     static bool is_lo_less_hi(Box_parameter a, Box_parameter b, int dim) {
         return hi_greater( BoxTraits::max_coord(b,dim),
                            BoxTraits::min_coord(a,dim));
