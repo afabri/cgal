@@ -173,9 +173,12 @@ class Intersection_of_triangle_meshes
 
   typedef boost::unordered_set<face_descriptor> Face_set;
 
-  //  typedef boost::unordered_map<edge_descriptor, Face_set> Edge_to_faces;
-  typedef tbb::concurrent_unordered_map<edge_descriptor,Face_set> Edge_to_faces;
 
+#ifdef BID_PARALLEL
+  typedef tbb::concurrent_unordered_map<edge_descriptor,Face_set> Edge_to_faces;
+#else
+  typedef boost::unordered_map<edge_descriptor, Face_set> Edge_to_faces;  
+#endif
   static const bool Predicates_on_constructions_needed =
     Node_visitor::Predicates_on_constructions_needed;
 
@@ -293,9 +296,9 @@ class Intersection_of_triangle_meshes
     std::ptrdiff_t cutoff = CUTOFF_FACTOR * std::ptrdiff_t(
         std::sqrt(face_boxes.size()+edge_boxes.size()) );
 
-    std::cout << "face_boxes.size() = " << face_boxes.size() << std::endl;
-    std::cout << "edge_boxes.size() = " << edge_boxes.size() << std::endl;
-    std::cout << "sqrt(|FB| + |EB|) = " << cutoff/4 << std::endl;
+    //std::cout << "face_boxes.size() = " << face_boxes.size() << std::endl;
+    //std::cout << "edge_boxes.size() = " << edge_boxes.size() << std::endl;
+    //std::cout << "sqrt(|FB| + |EB|) = " << cutoff/4 << std::endl;
     
     Edge_to_faces& edge_to_faces = &tm_e < &tm_f
                                  ? stm_edge_to_ltm_faces
@@ -1374,7 +1377,7 @@ public:
 
     //CGAL::Real_timer timer;
     //timer.start();
-#ifdef CGAL_LINKED_WITH_TBB
+#if defined(CGAL_LINKED_WITH_TBB) && defined(BID_TASK_GROUP)
     tbb::task_group g;
     g.run([&]{filter_intersections(tm1, tm2, vpm1, vpm2, throw_on_self_intersection);;}); // spawn a task
     g.run_and_wait([&]{filter_intersections(tm2, tm1, vpm2, vpm1, throw_on_self_intersection);}); // spawn another task
@@ -1386,8 +1389,6 @@ public:
     //timer.stop();
     //std::cout << "Filtering intersections: " << timer.time() << "s.\n";
 
-    return output; // AF early exit for benchmarking
-    
     Node_id current_node((std::numeric_limits<Node_id>::max)());
     CGAL_assertion(current_node+1==0);
 

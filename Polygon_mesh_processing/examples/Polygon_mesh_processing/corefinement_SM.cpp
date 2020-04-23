@@ -2,13 +2,16 @@
 int CUTOFF_FACTOR;
 
 #define BID_PARALLEL
+//#define BID_TASK_GROUP
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Surface_mesh.h>
 
 #include <CGAL/Polygon_mesh_processing/corefinement.h>
 #include <CGAL/Real_timer.h>
+#include <CGAL/Timer.h>
 
 #include <fstream>
+#include <chrono>
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef CGAL::Surface_mesh<K::Point_3>             Mesh;
@@ -17,7 +20,8 @@ namespace PMP = CGAL::Polygon_mesh_processing;
 
 int main(int argc, char* argv[])
 {
-  CGAL::Real_timer timer;
+  CGAL::Timer timer;
+  CGAL::Real_timer rtimer;
   
   const char* filename1 = (argc > 1) ? argv[1] : "data/blobby.off";
   const char* filename2 = (argc > 2) ? argv[2] : "data/eight.off";
@@ -46,11 +50,17 @@ int main(int argc, char* argv[])
             << num_vertices(mesh2) << "\n";
 
   timer.start();
+  rtimer.start();
+  auto start = std::chrono::steady_clock::now();
+  
   for(int i =0; i < 1; ++i){
     PMP::corefine(mesh1,mesh2);
   }
+  auto end = std::chrono::steady_clock::now();
+  std::chrono::duration<double> diff = end-start;
   timer.stop();
-  std::cout << timer.time() << " sec."<< std::endl;
+  rtimer.stop();
+  std::cout << "chrono: " << diff.count() << "  t: " << timer.time() << " sec.  rt: " << rtimer.time() << " sec."<< std::endl;
   
   std::cout << "Number of vertices after corefinement "
             << num_vertices(mesh1) << " and "
