@@ -732,6 +732,11 @@ insert_constraint(Vertex_handle  vaa, Vertex_handle vbb)
     boost::tie(vaa,vbb) = stack.top();
     stack.pop();
     CGAL_triangulation_precondition( vaa != vbb);
+#ifdef CGAL_CDT_2_DEBUG_INTERSECTIONS
+  std::cerr << "CT_2::insert_constraint, stack pop=( #" << vaa->time_stamp() << "= " << vaa->point()
+            << " , #" << vbb->time_stamp() << "= " << vbb->point()
+            << " )\n";
+#endif // CGAL_CDT_2_DEBUG_INTERSECTIONS
     Vertex_handle vi;
 
     Face_handle fr;
@@ -971,6 +976,13 @@ intersect(Face_handle f, int i,
   const Point& pc = vcc->point();
   const Point& pd = vdd->point();
 
+#ifdef CGAL_CDT_2_DEBUG_INTERSECTIONS
+  std::cerr << "CT_2::intersect segment ( #" << vaa->time_stamp() << "= " << vaa->point()
+            << " , #" << vbb->time_stamp() << "= " << vbb->point()
+            << " ) with edge ( #"<< vcc->time_stamp() << "= " << vcc->point()
+            << " , #" << vdd->time_stamp() << "= " << vdd->point()
+            << " )\n";
+#endif // CGAL_CDT_2_DEBUG_INTERSECTIONS
   Point pi; //creator for point is required here
   Itag itag = Itag();
   bool ok  = intersection(geom_traits(), pa, pb, pc, pd, pi, itag );
@@ -1578,6 +1590,15 @@ compute_intersection(const Gt& gt,
     construct_segment=gt.construct_segment_2_object();
   Object result = compute_intersec(construct_segment(pa,pb),
                                    construct_segment(pc,pd));
+#ifdef CGAL_CDT_2_DEBUG_INTERSECTIONS
+  typename Gt::Segment_2 s;
+  if(assign(s, result)) {
+    std::cerr << "compute_intersection: " << s << '\n';
+  }
+  if(assign(pi, result)) {
+    std::cerr << "compute_intersection: " << pi << '\n';
+  }
+#endif // CGAL_CDT_2_DEBUG_INTERSECTIONS
   return assign(pi, result);
 }
 
