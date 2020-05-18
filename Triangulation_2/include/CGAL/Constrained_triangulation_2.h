@@ -1004,6 +1004,10 @@ intersect(Face_handle f, int i,
     remove_constrained_edge(f, i);
     vi = virtual_insert(pi, f);
   }
+#ifdef CGAL_CDT_2_DEBUG_INTERSECTIONS
+  std::cerr << "CT_2::intersect, `vi` is ( #" << vi->time_stamp() << "= " << vi->point()
+            << " )\n";
+#endif // CGAL_CDT_2_DEBUG_INTERSECTIONS
 
   // vi == vc or vi == vd may happen even if intersection==true
   // due to approximate construction of the intersection
