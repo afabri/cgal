@@ -757,11 +757,12 @@ insert_constraint(Vertex_handle  vaa, Vertex_handle vbb)
     stack.pop();
     CGAL_triangulation_precondition( vaa != vbb);
 #ifdef CGAL_CDT_2_DEBUG_INTERSECTIONS
-  std::cerr << CGAL::internal::cdt_2_indent_level
-            << "CT_2::insert_constraint, stack pop=( #" << vaa->time_stamp() << "= " << vaa->point()
-            << " , #" << vbb->time_stamp() << "= " << vbb->point()
-            << " ) remaining stack size: "
-            << stack.size() << '\n';
+    std::cerr << CGAL::internal::cdt_2_indent_level
+              << "CT_2::insert_constraint, stack pop=( #" << vaa->time_stamp() << "= " << vaa->point()
+              << " , #" << vbb->time_stamp() << "= " << vbb->point()
+              << " ) remaining stack size: "
+              << stack.size() << '\n';
+    CGAL_assertion(this->is_valid());
 #endif // CGAL_CDT_2_DEBUG_INTERSECTIONS
     Vertex_handle vi;
 
@@ -861,6 +862,27 @@ find_intersected_faces(Vertex_handle vaa,
 
   // to deal with the case where the first crossed edge
   // is constrained
+#ifdef CGAL_CDT_2_DEBUG_INTERSECTIONS
+  std::cerr << CGAL::internal::cdt_2_indent_level
+            << "CT_2::find_intersected_faces ( #" << vaa->time_stamp() << "= " << vaa->point()
+            << " , #" << vbb->time_stamp() << "= " << vbb->point()
+            << " )\n"
+            << CGAL::internal::cdt_2_indent_level
+            << "> current constrained edges are:\n";
+  for(auto edge: this->constrained_edges()) {
+    std::cerr <<CGAL::internal::cdt_2_indent_level
+              << "> (#"
+              << edge.first->vertex(cw(edge.second))->time_stamp()
+              << ", #"
+              << edge.first->vertex(ccw(edge.second))->time_stamp()
+              << ")\n";
+  }
+  std::cerr << CGAL::internal::cdt_2_indent_level
+            << "> current face is ( #" << current_face->vertex(0)->time_stamp()
+            << " #" << current_face->vertex(1)->time_stamp()
+            << " #" << current_face->vertex(2)->time_stamp() << " )\n";
+#endif // CGAL_CDT_2_DEBUG_INTERSECTIONS
+
   if(current_face->is_constrained(ind)) {
     vi=intersect(current_face, ind, vaa, vbb);
     return true;
@@ -1307,6 +1329,14 @@ void
 Constrained_triangulation_2<Gt,Tds,Itag>::
 remove_constrained_edge(Face_handle f, int i)
 {
+#ifdef CGAL_CDT_2_DEBUG_INTERSECTIONS
+  std::cerr << CGAL::internal::cdt_2_indent_level
+            << "CT_2::remove_constrained_edge ( #"
+            << f->vertex(cw(i))->time_stamp()
+            << ", #"
+            << f->vertex(ccw(i))->time_stamp()
+            << ")\n";
+#endif // CGAL_CDT_2_DEBUG_INTERSECTIONS
   f->set_constraint(i, false);
   if (dimension() == 2)
     (f->neighbor(i))->set_constraint(mirror_index(f,i), false);
