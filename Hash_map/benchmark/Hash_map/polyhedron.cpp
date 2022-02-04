@@ -7,6 +7,8 @@
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/Polyhedron_3.h>
 #include <CGAL/Unique_hash_map.h>
+#include <CGAL/Tools/chained_map-7aa0dfd.h>
+#include <CGAL/Tools/chained_map-a2ebade.h>
 
 #include <CGAL/Timer.h>
 #include<boost/range/iterator_range.hpp>
@@ -46,9 +48,9 @@ Point_3 lookup(Map& sm,vertex_descriptor vh){
     return Point_3();
 }
 
-template <typename X, typename Y>
-Point_3 lookup(CGAL::Unique_hash_map<X,Y>& sm,vertex_descriptor vh){
-    const CGAL::Unique_hash_map<X,Y>& const_sm = sm;
+template <typename A, typename B, typename C, typename D, typename E>
+Point_3 lookup(CGAL::Unique_hash_map<A,B,C,D,E>& sm,vertex_descriptor vh){
+    const CGAL::Unique_hash_map<A,B,C,D,E>& const_sm = sm;
     return const_sm[vh];
 }
 
@@ -120,6 +122,9 @@ void  fct(int ii, int jj)
   typedef std::unordered_map<vertex_descriptor,Point_3> SUM;
   typedef boost::unordered_map<vertex_descriptor,Point_3> BUM;
   typedef CGAL::Unique_hash_map<vertex_descriptor, Point_3> UHM;
+  typedef std::allocator<Point_3> Alloc;
+  typedef CGAL::Unique_hash_map<vertex_descriptor, Point_3,CGAL::Handle_hash_function,Alloc,CGAL::internal_a2e::chained_map<Point_3,Alloc> > UHMa2e;
+  typedef CGAL::Unique_hash_map<vertex_descriptor, Point_3,CGAL::Handle_hash_function,Alloc,CGAL::internal_7aa::chained_map<Point_3,Alloc> > UHM7aa;
 
   Mesh mesh1;
   VPM vpm1 = get(CGAL::vertex_point,mesh1);
@@ -143,6 +148,11 @@ void  fct(int ii, int jj)
   if(temp != res){ std::cout << temp << " != " << res << std::endl;}
   temp = fct<UHM>(ii,jj,V1,V2, vpm1, "CGAL::Unique_hash_map\t| master\t| " );
   if(temp != res){ std::cout << temp << " != " << res << std::endl;}
+  temp = fct<UHMa2e>(ii,jj,V1,V2, vpm1, "CGAL::Unique_hash_map\t| a2ebade min\t| " );
+  if(temp != res){ std::cout << temp << " != " << res << std::endl;}
+  temp = fct<UHM7aa>(ii,jj,V1,V2, vpm1, "CGAL::Unique_hash_map\t| 7aa0dfd full\t| " );
+  if(temp != res){ std::cout << temp << " != " << res << std::endl;}
+
 }
 
 int main(int , char* argv[])
