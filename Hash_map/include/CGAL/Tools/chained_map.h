@@ -93,7 +93,7 @@ public:
    chained_map(const chained_map<T, Allocator>& D);
    chained_map& operator=(const chained_map<T, Allocator>& D);
 
-
+   void reserve(std::size_t n) {}
    void clear_entries();
    void clear();
    ~chained_map()

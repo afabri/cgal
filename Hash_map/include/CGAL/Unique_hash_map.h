@@ -30,7 +30,8 @@ namespace CGAL {
 
 template <class Key_, class Data_,
           class UniqueHashFunction = Handle_hash_function,
-          class Allocator_ = CGAL_ALLOCATOR(Data_) >
+          class Allocator_ = CGAL_ALLOCATOR(Data_),
+          class Backend_ = internal::chained_map<Data_, Allocator_> >
 class Unique_hash_map {
 public:
     typedef Key_                                     Key;
@@ -46,7 +47,7 @@ public:
     typedef Unique_hash_map<Key,Data,Hash_function,Allocator> Self;
 
 private:
-    typedef internal::chained_map<Data, Allocator>   Map;
+    typedef Backend_  Map;
     typedef typename Map::item                       Item;
 
 private:
@@ -76,6 +77,10 @@ public:
     : m_hash_function(fct), m_map( table_size) {
         m_map.xdef() = deflt;
         insert( first1, beyond1, first2);
+    }
+
+    void reserve(std::size_t n) {
+      m_map.reserve(n);
     }
 
     Data default_value() const { return m_map.cxdef(); }
