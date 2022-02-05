@@ -14,6 +14,7 @@
 #include<boost/range/iterator_range.hpp>
 #include <boost/unordered_map.hpp>
 #include <unordered_map>
+#include "robin_hood.h"
 
 #include <boost/random/random_number_generator.hpp>
 #include <boost/random/linear_congruential.hpp>
@@ -122,6 +123,7 @@ void  fct(int ii, int jj)
   typedef std::unordered_map<vertex_descriptor,Point_3> SUM;
   typedef boost::unordered_map<vertex_descriptor,Point_3> BUM;
   typedef CGAL::Unique_hash_map<vertex_descriptor, Point_3> UHM;
+  typedef robin_hood::unordered_map<vertex_descriptor, Point_3,CGAL::Handle_hash_function> RHM;
   typedef std::allocator<Point_3> Alloc;
   typedef CGAL::Unique_hash_map<vertex_descriptor, Point_3,CGAL::Handle_hash_function,Alloc,CGAL::internal_a2e::chained_map<Point_3,Alloc> > UHMa2e;
   typedef CGAL::Unique_hash_map<vertex_descriptor, Point_3,CGAL::Handle_hash_function,Alloc,CGAL::internal_7aa::chained_map<Point_3,Alloc> > UHM7aa;
@@ -138,21 +140,22 @@ void  fct(int ii, int jj)
 
 
   std::cerr << std::endl << ii << " items and queries (repeated " << jj << " times)" << std::endl;
-  std::cerr << "Name\t\t\t| Version\t| Construction\t| Queries\t| Lookups" << std::endl;
+  std::cerr << "Name\t\t\t\t| Version\t| Construction\t| Queries\t| Lookups" << std::endl;
 
   int temp;
-  int res = fct<SM>(ii,jj, V1,V2, vpm1, "std::map\t\t|\t\t| " );
-  temp = fct<SUM>(ii,jj,V1,V2, vpm1, "std::unordered_map\t|\t\t| " );
+  int res = fct<SM>(ii,jj, V1,V2, vpm1, "std::map\t\t\t|\t\t| " );
+  temp = fct<BUM>(ii,jj, V1,V2, vpm1, "boost::unordered_map\t\t|\t\t| " );
   if(temp != res){ std::cout << temp << " != " << res << std::endl;}
-  temp = fct<BUM>(ii,jj, V1,V2, vpm1, "boost::unordered_map\t|\t\t| " );
+  temp = fct<SUM>(ii,jj,V1,V2, vpm1, "std::unordered_map\t\t|\t\t| " );
   if(temp != res){ std::cout << temp << " != " << res << std::endl;}
-  temp = fct<UHM>(ii,jj,V1,V2, vpm1, "CGAL::Unique_hash_map\t| master\t| " );
+  temp = fct<UHM>(ii,jj,V1,V2, vpm1, "CGAL::Unique_hash_map\t\t| master\t| " );
   if(temp != res){ std::cout << temp << " != " << res << std::endl;}
-  temp = fct<UHMa2e>(ii,jj,V1,V2, vpm1, "CGAL::Unique_hash_map\t| a2ebade min\t| " );
+  temp = fct<UHMa2e>(ii,jj,V1,V2, vpm1, "CGAL::Unique_hash_map\t\t| a2ebade min\t| " );
   if(temp != res){ std::cout << temp << " != " << res << std::endl;}
-  temp = fct<UHM7aa>(ii,jj,V1,V2, vpm1, "CGAL::Unique_hash_map\t| 7aa0dfd full\t| " );
+  temp = fct<RHM>(ii,jj,V1,V2, vpm1, "robin_hood::unordered_map\t| 3.11.5\t| " );
   if(temp != res){ std::cout << temp << " != " << res << std::endl;}
-
+  temp = fct<UHM7aa>(ii,jj,V1,V2, vpm1, "CGAL::Unique_hash_map\t\t| 7aa0dfd full\t| " );
+  if(temp != res){ std::cout << temp << " != " << res << std::endl;}
 }
 
 int main(int , char* argv[])
