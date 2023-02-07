@@ -34,7 +34,7 @@ A typical use of this algorithm consists of the following steps:
 1. Create an input range with 2D segments;
 2. Define groups of segments, which should be regularized together;
 3. Instantiate models of the concepts `NeighborQuery` and `RegularizationType` with the proper parameters;
-4. Call the function `regularize_segments()`.
+4. Call the function `Segments::regularize_segments()`.
 
 Once the user has defined an input range with 2D segments, he can either provide them all
 to the regularization algorithm, which is the default option, or they could be reorganized into
@@ -72,7 +72,7 @@ refer to that section.
 The example below shows the most straightforward entry point to the algorithm, where
 we apply two type of regularities: parallelism and orthogonality, within the
 group of all input segments. The algorithm is called via the function
-`regularize_segments()`.
+`Segments::regularize_segments()`.
 
 \cgalFigureBegin{regularize_simple_example, regularize_simple.svg}
 A set of 2D segments before (red) and after (green) the angle and offset regularization.
@@ -187,7 +187,7 @@ respectively. We also show here how to create and work with contextually similar
 regularize each group on its own. The defined groups are the outer boundary, top and
 bottom rhombus. Since the shape regularization algorithm on segments is based on the
 \ref QP_Regularization framework, this example also shows how to use that framework
-directly instead of calling the function `regularize_segments()`.
+directly instead of calling the function `Segments::regularize_segments()`.
 
 \anchor Regularize_15_Segments_Figure
 \cgalFigureBegin{regularize_15_segments_example, regularize_15_segments.svg}
@@ -313,7 +313,7 @@ or open, users can reinforce three types of regularities among consecutive edges
 A typical use of this algorithm consists of the following steps:
 1. Specify a type of the contour, open or closed;
 2. Create an instance of the class `ContourDirections` with the proper parameters;
-3. Call the function `regularize_closed_contour()` or `regularize_open_contour()`.
+3. Call the function `Contours::regularize_closed_contour()` or `Contours::regularize_open_contour()`.
 
 We assume that each contour has at least one principal direction that is a reference
 direction towards which the contour edges are rotated. Given a set of such directions
@@ -355,7 +355,7 @@ without reconnecting them after into a closed/open contour, she can either use t
 each segment by calling the `ContourDirections::orient()` method.
 
 The example below shows the most straightforward entry point to the algorithm, where
-we regularize a simple closed contour. The algorithm is called via the function `regularize_closed_contour()`.
+we regularize a simple closed contour. The algorithm is called via the function `Contours::regularize_closed_contour()`.
 
 \cgalFigureBegin{regularize_contour_example, regularize_contour.svg}
 A closed contour before (red) and after (green) regularization.
@@ -416,7 +416,7 @@ Time in seconds to regularize closed (red) and open (green) contours.
 \section Plane_Regularization Planes
 
 Given a set of 3D planes with their corresponding inlier sets, users can reinforce four
-types of regularities among these planes using the function `regularize_planes()`:
+types of regularities among these planes using the function `Planes::regularize_planes()`:
 - *Parallelism*: planes, which are detected as near parallel, are made exactly parallel.
 - *Orthogonality*: planes, which are detected as near orthogonal, are made exactly orthogonal.
 - *Coplanarity*: parallel planes, which are detected as near coplanar, are made exactly coplanar.

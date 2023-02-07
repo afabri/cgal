@@ -62,9 +62,9 @@ to the user-specified conditions.}
 ### %Segments ###
 
 #### Free Functions ####
-- `regularize_angles()`
-- `regularize_offsets()`
-- `regularize_segments()`
+- `Segments::regularize_angles()`
+- `Segments::regularize_offsets()`
+- `Segments::regularize_segments()`
 
 #### Neighbor Queries ####
 - `Segments::Delaunay_neighbor_query_2<GeomTraits, InputRange, SegmentMap>`
@@ -84,8 +84,8 @@ to the user-specified conditions.}
 ### %Contours ###
 
 #### Free Functions ####
-- `regularize_closed_contour()`
-- `regularize_open_contour()`
+- `Contours::regularize_closed_contour()`
+- `Contours::regularize_open_contour()`
 
 #### Estimating Directions ####
 - `Contours::Longest_direction_2<GeomTraits, InputRange, PointMap>`
@@ -95,7 +95,7 @@ to the user-specified conditions.}
 ### %Planes ###
 
 #### Free Functions ####
-- `regularize_planes()`
+- `Planes::regularize_planes()`
 
 ### QP Regularization ###
 - `QP_regularization<GeomTraits, InputRange, NeighQuery, RegType, QPSolver>`
