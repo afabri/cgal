@@ -520,7 +520,24 @@ public:
   const Mesh* sm_;
 };
 
+template <>
+struct graph_has_property<iglMesh, boost::vertex_index_t>
+  : CGAL::Tag_true{};
+
+template <>
+struct graph_has_property<iglMesh, boost::face_index_t>
+  : CGAL::Tag_true{};
+
+template <>
+struct graph_has_property<iglMesh, boost::halfedge_index_t>
+  : CGAL::Tag_true{};
+
+template <>
+struct graph_has_property<iglMesh, boost::vertex_point_t>
+  : CGAL::Tag_true{};
+
 } // namespace CGAL
+
 
 
 namespace boost{
@@ -620,6 +637,8 @@ int main()
 
   // std::cout << mesh.TTi.row(0) << std::endl;
 
-  std::cout << "area = " << CGAL::Polygon_mesh_processing::area(mesh, CGAL::parameters::vertex_point_map(pmap).geom_traits(CGAL::Exact_predicates_inexact_constructions_kernel())) << std::endl;
+  std::cout << "area = " << CGAL::Polygon_mesh_processing::area(mesh, CGAL::parameters::geom_traits(CGAL::Exact_predicates_inexact_constructions_kernel())
+  //    .vertex_point_map(pmap)
+  ) << std::endl;
   return 0;
 }
