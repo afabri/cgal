@@ -170,7 +170,7 @@ class AABB_tree;
 /// \sa `AABBPrimitive`
 /// \sa `AABBPrimitiveWithSharedData`
 
-  template<typename GeomTraits, typename AABBPrimitive, typename BboxMap = Default>
+template<typename GeomTraits, typename AABBPrimitive, typename BboxMap = Default>
 class AABB_traits
 #ifndef DOXYGEN_RUNNING
 : public internal::AABB_tree::AABB_traits_base<AABBPrimitive>,
@@ -527,6 +527,346 @@ private:
     }
   }
 }
+
+template<typename GeomTraits, typename AABBPrimitive, typename BboxMap = Default>
+class AABB_traits_2
+#ifndef DOXYGEN_RUNNING
+: public internal::AABB_tree::AABB_traits_base<AABBPrimitive>,
+  public internal::AABB_tree::AABB_traits_base_2<GeomTraits>
+#endif
+{
+  typedef typename CGAL::Object Object;
+public:
+  typedef GeomTraits Geom_traits;
+
+  typedef AABB_traits_2<GeomTraits, AABBPrimitive, BboxMap> AT;
+  // AABBTraits concept types
+  typedef typename GeomTraits::FT FT;
+  typedef AABBPrimitive Primitive;
+
+  typedef typename std::pair<Object,typename Primitive::Id> Object_and_primitive_id;
+
+  typedef typename std::pair<typename GeomTraits::Point_2, typename Primitive::Id> Point_and_primitive_id;
+
+  /// `Intersection_and_primitive_id<Query>::%Type::first_type` is found according to
+  /// the result type of `GeomTraits::Intersect_3::operator()`. If it is
+  /// `std::optional<T>` then it is `T`, and the result type otherwise.
+  template<typename Query>
+  struct Intersection_and_primitive_id {
+    typedef decltype(
+      std::declval<typename GeomTraits::Intersect_2>()(
+        std::declval<Query>(),
+        std::declval<typename Primitive::Datum>())) Intersection_type;
+
+    typedef std::pair<
+      typename internal::AABB_tree::Remove_optional<Intersection_type>::type,
+      typename Primitive::Id > Type;
+  };
+
+  // types for search tree
+  /// \name Types
+  /// @{
+
+  /// Point query type.
+  typedef typename GeomTraits::Point_2 Point_3;
+
+  /// additional types for the search tree, required by the RangeSearchTraits concept
+  /// \bug This is not documented for now in the AABBTraits concept.
+  typedef typename GeomTraits::Iso_rectangle_2 Iso_cuboid_3;
+
+  /// Bounding box type.
+  typedef typename CGAL::Bbox_2 Bounding_box;
+
+  /// @}
+
+  typedef typename GeomTraits::Circle_2 Sphere_3;
+  typedef typename GeomTraits::Cartesian_const_iterator_2 Cartesian_const_iterator_3;
+  typedef typename GeomTraits::Construct_cartesian_const_iterator_2 Construct_cartesian_const_iterator_3;
+  typedef typename GeomTraits::Construct_center_2 Construct_center_3;
+  typedef typename GeomTraits::Compute_squared_radius_2 Compute_squared_radius_3;
+  typedef typename GeomTraits::Construct_min_vertex_2 Construct_min_vertex_3;
+  typedef typename GeomTraits::Construct_max_vertex_2 Construct_max_vertex_3;
+  typedef typename GeomTraits::Construct_iso_rectangle_2 Construct_iso_cuboid_3;
+
+  BboxMap bbm;
+
+  /// Default constructor.
+  AABB_traits_2() { }
+
+  AABB_traits_2(BboxMap bbm)
+    : bbm(bbm)
+  {}
+
+
+  typedef typename GeomTraits::Compute_squared_distance_2 Squared_distance;
+  Squared_distance squared_distance_object() const { return GeomTraits().compute_squared_distance_2_object(); }
+
+  typedef typename GeomTraits::Equal_2 Equal_3;
+  Equal_3 equal_3_object() const { return GeomTraits().equal_2_object(); }
+
+  /**
+   * @internal
+   * @brief Sorts [first,beyond[
+   * @param first iterator on first element
+   * @param beyond iterator on beyond element
+   * @param bbox the bounding box of [first,beyond[
+   *
+   * Sorts the range defined by [first,beyond[. Sort is achieved on bbox longest
+   * axis, using the comparison function `<dim>_less_than` (dim in {x,y,z})
+   */
+  class Split_primitives
+  {
+    typedef AABB_traits_2<GeomTraits,AABBPrimitive,BboxMap> Traits;
+    const Traits& m_traits;
+  public:
+    Split_primitives(const AABB_traits_2<GeomTraits,AABBPrimitive,BboxMap>& traits)
+      : m_traits(traits) {}
+
+    typedef void result_type;
+    template<typename PrimitiveIterator>
+    void operator()(PrimitiveIterator first,
+                    PrimitiveIterator beyond,
+                    const typename AT::Bounding_box& bbox) const
+      {
+        PrimitiveIterator middle = first + (beyond - first)/2;
+        switch(Traits::longest_axis(bbox))
+        {
+        case AT::CGAL_AXIS_X: // sort along x
+          std::nth_element(first, middle, beyond, [this](const Primitive& p1, const Primitive& p2){ return Traits::less_x(p1, p2, this->m_traits); });
+          break;
+        case AT::CGAL_AXIS_Y: // sort along y
+          std::nth_element(first, middle, beyond, [this](const Primitive& p1, const Primitive& p2){ return Traits::less_y(p1, p2, this->m_traits); });
+          break;
+        default:
+          CGAL_error();
+        }
+      }
+  };
+
+  Split_primitives split_primitives_object() const {return Split_primitives(*this);}
+
+
+  /*
+   * Computes the bounding box of a set of primitives
+   * @param first an iterator on the first primitive
+   * @param beyond an iterator on the past-the-end primitive
+   * @return the bounding box of the primitives of the iterator range
+   */
+  class Compute_bbox {
+    const AABB_traits_2<GeomTraits,AABBPrimitive, BboxMap>& m_traits;
+  public:
+    Compute_bbox(const AABB_traits_2<GeomTraits,AABBPrimitive, BboxMap>& traits)
+      :m_traits (traits) {}
+
+    template<typename ConstPrimitiveIterator>
+    typename AT::Bounding_box operator()(ConstPrimitiveIterator first,
+                                         ConstPrimitiveIterator beyond) const
+    {
+      typename AT::Bounding_box bbox = m_traits.compute_bbox(*first,m_traits.bbm);
+      for(++first; first != beyond; ++first)
+        {
+          bbox = bbox + m_traits.compute_bbox(*first,m_traits.bbm);
+        }
+      return bbox;
+    }
+
+  };
+
+  Compute_bbox compute_bbox_object() const {return Compute_bbox(*this);}
+
+  /// \brief Function object using `GeomTraits::Do_intersect`.
+  /// In the case the query is a `CGAL::AABB_tree`, the `do_intersect()`
+  /// function of this tree is used.
+  class Do_intersect {
+    const AABB_traits_2<GeomTraits,AABBPrimitive, BboxMap>& m_traits;
+  public:
+    Do_intersect(const AABB_traits_2<GeomTraits,AABBPrimitive, BboxMap>& traits)
+      :m_traits(traits) {}
+
+    template<typename Query>
+    bool operator()(const Query& q, const Bounding_box& bbox) const
+    {
+      return GeomTraits().do_intersect_3_object()(q, bbox);
+    }
+
+    template<typename Query>
+    bool operator()(const Query& q, const Primitive& pr) const
+    {
+      return GeomTraits().do_intersect_2_object()(q, internal::Primitive_helper<AT>::get_datum(pr,m_traits));
+    }
+
+    // intersection with AABB-tree
+    template<typename AABBTraits>
+    bool operator()(const CGAL::AABB_tree<AABBTraits>& other_tree, const Primitive& pr) const
+    {
+      return other_tree.do_intersect( internal::Primitive_helper<AT>::get_datum(pr,m_traits) );
+    }
+
+    template<typename AABBTraits>
+    bool operator()(const CGAL::AABB_tree<AABBTraits>& other_tree, const Bounding_box& bbox) const
+    {
+      return other_tree.do_intersect(bbox);
+    }
+  };
+
+  Do_intersect do_intersect_object() const {return Do_intersect(*this);}
+
+
+  class Intersection {
+    const AABB_traits_2<GeomTraits,AABBPrimitive,BboxMap>& m_traits;
+  public:
+    Intersection(const AABB_traits_2<GeomTraits,AABBPrimitive,BboxMap>& traits)
+      :m_traits(traits) {}
+    template<typename Query>
+    std::optional< typename Intersection_and_primitive_id<Query>::Type >
+    operator()(const Query& query, const typename AT::Primitive& primitive) const {
+      auto inter_res = GeomTraits().intersect_2_object()(query, internal::Primitive_helper<AT>::get_datum(primitive,m_traits));
+      if (!inter_res)
+        return std::nullopt;
+      return std::make_optional( std::make_pair(*inter_res, primitive.id()) );
+    }
+  };
+
+  Intersection intersection_object() const {return Intersection(*this);}
+
+
+  // This should go down to the GeomTraits, i.e. the kernel
+  class Closest_point {
+      typedef typename AT::Point_3 Point;
+      typedef typename AT::Primitive Primitive;
+    const AABB_traits_2<GeomTraits,AABBPrimitive, BboxMap>& m_traits;
+  public:
+    Closest_point(const AABB_traits_2<GeomTraits,AABBPrimitive, BboxMap>& traits)
+      : m_traits(traits) {}
+
+
+    Point operator()(const Point& p, const Primitive& pr, const Point& bound) const
+    {
+        assert(false);
+        return bound;
+        /* AF to do
+      GeomTraits geom_traits;
+      Point closest_point = geom_traits.construct_projected_point_2_object()(
+        internal::Primitive_helper<AT>::get_datum(pr,m_traits), p);
+
+      return (geom_traits.compare_distance_2_object()(p, closest_point, bound) == LARGER) ?
+               bound : closest_point;
+               */
+    }
+  };
+
+  // This should go down to the GeomTraits, i.e. the kernel
+  // and the internal implementation should change its name from
+  // do_intersect to something like does_contain (this is what we compute,
+  // this is not the same do_intersect as the spherical kernel)
+  class Compare_distance {
+      typedef typename AT::Point_3 Point;
+      typedef typename AT::FT FT;
+      typedef typename AT::Primitive Primitive;
+  public:
+      CGAL::Comparison_result operator()(const Point& p, const Bounding_box& bb, const Point& bound, Tag_true) const
+      {
+          return GeomTraits().do_intersect_2_object()
+          (GeomTraits().construct_circle_2_object()
+           (p, GeomTraits().compute_squared_distance_2_object()(p, bound)), bb,true)?
+          CGAL::SMALLER : CGAL::LARGER;
+      }
+
+      CGAL::Comparison_result operator()(const Point& p, const Bounding_box& bb, const Point& bound, Tag_false) const
+      {
+          return GeomTraits().do_intersect_2_object()
+          (GeomTraits().construct_circle_2_object()
+           (p, GeomTraits().compute_squared_distance_3_object()(p, bound)), bb)?
+          CGAL::SMALLER : CGAL::LARGER;
+      }
+
+      CGAL::Comparison_result operator()(const Point& p, const Bounding_box& bb, const Point& bound) const
+      {
+        return (*this)(p, bb, bound, Boolean_tag<internal::Has_static_filters<GeomTraits>::value>());
+      }
+
+      // The following functions seem unused...?
+      template <class Solid>
+      CGAL::Comparison_result operator()(const Point& p, const Solid& pr, const Point& bound) const
+      {
+          return GeomTraits().do_intersect_2_object()
+          (GeomTraits().construct_circle_3_object()
+          (p, GeomTraits().compute_squared_distance_2_object()(p, bound)), pr)?
+          CGAL::SMALLER : CGAL::LARGER;
+      }
+
+      template <class Solid>
+      CGAL::Comparison_result operator()(const Point& p, const Solid& pr, const FT& sq_distance) const
+      {
+        return GeomTraits().do_intersect_2_object()
+          (GeomTraits().construct_circle_2_object()(p, sq_distance),
+           pr) ?
+          CGAL::SMALLER :
+          CGAL::LARGER;
+      }
+  };
+
+  Closest_point closest_point_object() const {return Closest_point(*this);}
+  Compare_distance compare_distance_object() const {return Compare_distance();}
+
+  typedef enum { CGAL_AXIS_X = 0,
+                 CGAL_AXIS_Y = 1} Axis;
+
+  static Axis longest_axis(const Bounding_box& bbox);
+
+private:
+  /**
+   * @brief Computes bounding box of one primitive
+   * @param pr the primitive
+   * @return the bounding box of the primitive \c pr
+   */
+  template <typename PM>
+  Bounding_box compute_bbox(const Primitive& pr, const PM&)const
+  {
+    return get(bbm, pr.id());
+  }
+
+  Bounding_box compute_bbox(const Primitive& pr, const Default&)const
+  {
+    return internal::Primitive_helper<AT>::get_datum(pr,*this).bbox();
+  }
+
+  /// Comparison functions
+  static bool less_x(const Primitive& pr1, const Primitive& pr2,const AABB_traits_2<GeomTraits,AABBPrimitive, BboxMap>& traits)
+  {
+    return GeomTraits().less_x_2_object()( internal::Primitive_helper<AT>::get_reference_point(pr1,traits),
+                                           internal::Primitive_helper<AT>::get_reference_point(pr2,traits) );
+  }
+  static bool less_y(const Primitive& pr1, const Primitive& pr2,const AABB_traits_2<GeomTraits,AABBPrimitive, BboxMap>& traits)
+  {
+    return GeomTraits().less_y_2_object()( internal::Primitive_helper<AT>::get_reference_point(pr1,traits),
+                                           internal::Primitive_helper<AT>::get_reference_point(pr2,traits) );
+  }
+
+};  // end class AABB_traits_2
+
+
+//-------------------------------------------------------
+// Private methods
+//-------------------------------------------------------
+  template<typename GT, typename P, typename B>
+  typename AABB_traits_2<GT,P,B>::Axis
+  AABB_traits_2<GT,P,B>::longest_axis(const Bounding_box& bbox)
+{
+  const double dx = bbox.xmax() - bbox.xmin();
+  const double dy = bbox.ymax() - bbox.ymin();
+
+  if(dx>=dy)
+    {
+      return CGAL_AXIS_X;
+    }
+  else
+    {
+      return CGAL_AXIS_Y;
+    }
+}
+
+
 
 /// @}
 
