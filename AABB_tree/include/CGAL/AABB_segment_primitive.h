@@ -25,8 +25,14 @@
 namespace CGAL {
 
 namespace internal {
+
+  template <class GeomTraits, class Iterator,int Dimension>
+  struct Source_of_segment_3_iterator_property_map
+  {
+  };
+
   template <class GeomTraits, class Iterator>
-  struct Source_of_segment_3_iterator_property_map{
+  struct Source_of_segment_3_iterator_property_map< GeomTraits, Iterator,3>{
     //classical typedefs
     typedef Iterator key_type;
     typedef typename GeomTraits::Point_3 value_type;
@@ -37,12 +43,33 @@ namespace internal {
       typename GeomTraits::Construct_source_3()(
         *std::declval<key_type&>())) reference;
     typedef boost::readable_property_map_tag category;
-    typedef Source_of_segment_3_iterator_property_map<GeomTraits, Iterator> Self;
+    typedef Source_of_segment_3_iterator_property_map<GeomTraits, Iterator,3> Self;
 
     inline friend reference
     get(Self, key_type it)
     {
       return typename GeomTraits::Construct_source_3()( *it );
+    }
+  };
+
+  template <class GeomTraits, class Iterator>
+  struct Source_of_segment_3_iterator_property_map< GeomTraits, Iterator,2>{
+    //classical typedefs
+    typedef Iterator key_type;
+    typedef typename GeomTraits::Point_2 value_type;
+    // typedef decltype(
+    //   std::declval<typename GeomTraits::Construct_source_2>()(
+    //     std::declval<typename GeomTraits::Segment_2>())) reference;
+    typedef decltype(
+      typename GeomTraits::Construct_source_2()(
+        *std::declval<key_type&>())) reference;
+    typedef boost::readable_property_map_tag category;
+    typedef Source_of_segment_3_iterator_property_map<GeomTraits, Iterator,2> Self;
+
+    inline friend reference
+    get(Self, key_type it)
+    {
+      return typename GeomTraits::Construct_source_2()( *it );
     }
   };
 }//namespace internal
@@ -78,14 +105,14 @@ class AABB_segment_primitive
 #ifndef DOXYGEN_RUNNING
   : public AABB_primitive<  Iterator,
                             Input_iterator_property_map<Iterator>,
-                            internal::Source_of_segment_3_iterator_property_map<GeomTraits, Iterator>,
+                            internal::Source_of_segment_3_iterator_property_map<GeomTraits, Iterator,Iterator::value_type::Ambient_dimension::value>,
                             Tag_false,
                             CacheDatum >
 #endif
 {
   typedef AABB_primitive< Iterator,
                           Input_iterator_property_map<Iterator>,
-                          internal::Source_of_segment_3_iterator_property_map<GeomTraits, Iterator>,
+                          internal::Source_of_segment_3_iterator_property_map<GeomTraits, Iterator,Iterator::value_type::Ambient_dimension::value>,
                           Tag_false,
                           CacheDatum > Base;
 public:
@@ -98,4 +125,3 @@ public:
 #include <CGAL/enable_warnings.h>
 
 #endif // CGAL_AABB_SEGMENT_PRIMITIVE_H_
-
