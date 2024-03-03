@@ -37,7 +37,7 @@ int main()
         //   // constructs the AABB tree and the internal search tree for
         //   // efficient distance computations.
         Tree tree(segments.begin(), segments.end());
-        //tree.accelerate_distance_queries();
+        tree.accelerate_distance_queries();
 
         //   // counts #intersections with a segment query
         Segment segment_query(Point(1.0, 0.0), Point(0.0, 7.0));
@@ -47,7 +47,7 @@ int main()
 
         // computes the closest point from a point query
         Point point_query(1.5, 3.0);
-        //Point closest = tree.closest_point(point_query);
+        Point closest = tree.closest_point(point_query);
 
         //std::cerr << "closest point is: " << closest << std::endl;
         return EXIT_SUCCESS;
