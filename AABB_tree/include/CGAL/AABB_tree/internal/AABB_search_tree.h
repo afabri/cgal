@@ -18,6 +18,7 @@
 
 #include <CGAL/Orthogonal_k_neighbor_search.h>
 #include <CGAL/Search_traits_3.h>
+#include <CGAL/Search_traits_2.h>
 
 namespace CGAL
 {
@@ -68,7 +69,8 @@ namespace CGAL
                     bool m_is_id_initialized;
                 };
         public:
-                typedef Decorated_point Point_3;
+                typedef Decorated_point Point_2;
+                typedef typename Underlying::Iso_cuboid_3 Iso_rectangle_2;
         };
 
         template <class Traits>
@@ -79,7 +81,7 @@ namespace CGAL
                 typedef typename Traits::Point_3 Point;
                 typedef typename Traits::Primitive Primitive;
                 typedef typename Traits::Point_and_primitive_id Point_and_primitive_id;
-                typedef typename CGAL::Search_traits_3<Add_decorated_point<Traits, typename Traits::Primitive::Id> > TreeTraits;
+                typedef typename CGAL::Search_traits_2<Add_decorated_point<Traits, typename Traits::Primitive::Id> > TreeTraits;
                 typedef typename CGAL::Orthogonal_k_neighbor_search<TreeTraits> Neighbor_search;
                 typedef typename Neighbor_search::Tree Tree;
         private:
@@ -121,4 +123,3 @@ namespace CGAL
 }
 
 #endif // CGAL_AABB_SEARCH_TREE_H
-

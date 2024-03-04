@@ -588,6 +588,15 @@ public:
   typedef typename GeomTraits::Construct_max_vertex_2 Construct_max_vertex_3;
   typedef typename GeomTraits::Construct_iso_rectangle_2 Construct_iso_cuboid_3;
 
+  typedef typename GeomTraits::Circle_2 Circle_2;
+  typedef typename GeomTraits::Cartesian_const_iterator_2 Cartesian_const_iterator_2;
+  typedef typename GeomTraits::Construct_cartesian_const_iterator_2 Construct_cartesian_const_iterator_2;
+  typedef typename GeomTraits::Construct_center_2 Construct_center_2;
+  typedef typename GeomTraits::Compute_squared_radius_2 Compute_squared_radius_2;
+  typedef typename GeomTraits::Construct_min_vertex_2 Construct_min_vertex_2;
+  typedef typename GeomTraits::Construct_max_vertex_2 Construct_max_vertex_2;
+  typedef typename GeomTraits::Construct_iso_rectangle_2 Construct_iso_rectangle_2;
+  typedef typename GeomTraits::Construct_point_2 Construct_point_2;
   BboxMap bbm;
 
   /// Default constructor.
