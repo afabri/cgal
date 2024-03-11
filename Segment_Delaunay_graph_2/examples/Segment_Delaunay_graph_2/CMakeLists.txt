@@ -13,6 +13,7 @@ create_single_source_cgal_program("sdg-filtered-traits.cpp")
 create_single_source_cgal_program("sdg-info-set.cpp")
 create_single_source_cgal_program("sdg-red-blue-info.cpp")
 create_single_source_cgal_program("sdg-voronoi-edges.cpp")
+create_single_source_cgal_program("sdg-inscribed-circle.cpp")
 
 find_package(LEDA QUIET)
 if(CGAL_Core_FOUND OR LEDA_FOUND)
