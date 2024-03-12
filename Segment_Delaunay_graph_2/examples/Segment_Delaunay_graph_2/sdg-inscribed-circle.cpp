@@ -49,12 +49,12 @@ int main(int argc, char* argv[])
           assert(!sdg.is_infinite(fit->vertex(i)));
           if (fit->vertex(i)->site().is_segment()) {
               Segment_2 s = fit->vertex(i)->site().segment();
-              double sqdist = CGAL::squared_distance(pp, s);
+              sqdist = CGAL::squared_distance(pp, s);
               std::cout << "  segment " << s << " at distance " << sqrt(sqdist) << std::endl;
           }
           else {
               Point_2 p = fit->vertex(i)->site().point();
-              double sqdist = CGAL::squared_distance(pp, p);
+              sqdist = CGAL::squared_distance(pp, p);
               std::cout << "  point " << p << " at distance " << sqrt(sqdist) << std::endl;
           }
       }
