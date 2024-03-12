@@ -25,9 +25,9 @@ typedef CGAL::Segment_Delaunay_graph_traits_2<Kernel>  Gt;
 typedef CGAL::Segment_Delaunay_graph_2<Gt>             SDG2;
 
 
-int main()
+int main(int argc, char* argv[])
 {
-  std::ifstream ifs("data/polygon.wkt");
+  std::ifstream ifs((argc>1)? argv[1]:"data/polygon.wkt");
   assert( ifs );
 
   Polygon_with_holes pwh;
@@ -39,20 +39,31 @@ int main()
 
   sdg.insert_segments(boundary_polygon.edges_begin(), boundary_polygon.edges_end());
 
-  double sd = 0;
+  double sd = 0, sqdist = 0;
   SDG2::Finite_faces_iterator fit = sdg.finite_faces_begin();
-  for(; fit !=  sdg.finite_faces_end(); ++fit){
-    if(fit->vertex(0)->site().is_segment() && fit->vertex(1)->site().is_segment()  && fit->vertex(2)->site().is_segment()){
-      Segment_2 s0 = fit->vertex(0)->site().segment();
-
-      
-      Point_2 p = sdg.primal(fit);
-      std::cout << p << std::endl;
-      if (boundary_polygon.bounded_side(p) == CGAL::ON_BOUNDED_SIDE) {
-          double point_segment_sqdist = CGAL::squared_distance(p, s0);
-          sd = std::max(point_segment_sqdist, sd);
+  for (; fit != sdg.finite_faces_end(); ++fit) {
+      Point_2 pp = sdg.primal(fit);
+      std::cout << "Point " << pp << std::endl;
+      std::cout << "equidistant to:" << std::endl;
+      for (int i = 0; i < 3; ++i) {
+          assert(!sdg.is_infinite(fit->vertex(i)));
+          if (fit->vertex(i)->site().is_segment()) {
+              Segment_2 s = fit->vertex(i)->site().segment();
+              double sqdist = CGAL::squared_distance(pp, s);
+              std::cout << "  segment " << s << " at distance " << sqrt(sqdist) << std::endl;
+          }
+          else {
+              Point_2 p = fit->vertex(i)->site().point();
+              double sqdist = CGAL::squared_distance(pp, p);
+              std::cout << "  point " << p << " at distance " << sqrt(sqdist) << std::endl;
+          }
       }
-    }
+      if (boundary_polygon.bounded_side(pp) == CGAL::ON_BOUNDED_SIDE) {
+          sd = std::max(sqdist, sd);
+      }
+      else {
+          std::cout << "  but ignored as not on bounded side" << std::endl;
+      }
   }
   std::cout << "radius of largest inscribed circle: " << sqrt(sd) << std::endl;
   return 0;
