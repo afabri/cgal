@@ -15,7 +15,6 @@
 #ifndef CGAL_HYPERBOLIC_SURFACE_TRIANGULATION_2
 #define CGAL_HYPERBOLIC_SURFACE_TRIANGULATION_2
 
-#include <CGAL/Complex_without_sqrt.h>
 #include <CGAL/Hyperbolic_isometry_2.h>
 #include <CGAL/Hyperbolic_fundamental_domain_2.h>
 #include <CGAL/basic.h>
@@ -24,6 +23,7 @@
 #include <map>
 #include <vector>
 #include <queue>
+#include <complex>
 
 namespace CGAL {
 
@@ -39,7 +39,7 @@ template<class Traits>
 struct Combinatorial_map_with_cross_ratios_item{
     template <class CMap>
     struct Dart_wrapper{
-        typedef Cell_attribute<CMap, Complex_without_sqrt<typename Traits::FT>> Edge_attrib;
+        typedef Cell_attribute<CMap, std::complex<typename Traits::FT>> Edge_attrib;
         typedef std::tuple<void,Edge_attrib,void>   Attributes;
     };
   };
@@ -256,7 +256,7 @@ const typename Hyperbolic_surface_triangulation_2<Traits, Attributes>::Anchor&
 
 template<class Traits, class Attributes>
 bool Hyperbolic_surface_triangulation_2<Traits, Attributes>::is_Delaunay_flippable(Dart_const_handle dart) const{
-  return ( get_cross_ratio(dart).imaginary_part()>Number(0) );
+  return ( get_cross_ratio(dart).imag()>Number(0) );
 }
 
 template<class Traits, class Attributes>
@@ -739,7 +739,7 @@ typename Hyperbolic_surface_triangulation_2<Traits, Attributes>::Point Hyperboli
   Complex_number zb (b.x(), b.y());
   Complex_number zc (c.x(), c.y());
   Complex_number result = ( cratio*za*(zc-zb) + zb*(za-zc) ) / ( cratio*(zc-zb) + (za-zc) );
-  return Point(result.real_part(), result.imaginary_part());
+  return Point(result.real(), result.imag());
 }
 
 } // namespace CGAL

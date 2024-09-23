@@ -114,7 +114,7 @@ typename Traits::Hyperbolic_point_2 Hyperbolic_isometry_2<Traits>::evaluate(cons
   Complex_number numerator_of_the_result = _coefficients[0] * z + _coefficients[1];
   Complex_number denominator_of_the_result = _coefficients[2] * z + _coefficients[3];
   Complex_number result = numerator_of_the_result / denominator_of_the_result;
-  return Point(result.real_part(), result.imaginary_part());
+  return Point(result.real(), result.imag());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -153,7 +153,7 @@ Hyperbolic_isometry_2<Traits> hyperbolic_translation(const typename Traits::Hype
     z = - typename Traits::Complex(p.x(), p.y());
   }
   Hyperbolic_isometry_2<Traits> result;
-  result.set_coefficients(one, z, z.conjugate(), one);
+  result.set_coefficients(one, z, std::conj(z), one);
   return result;
 }
 
