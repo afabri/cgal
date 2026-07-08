@@ -548,7 +548,7 @@ _test_cls_delaunay_3(const Triangulation &)
     std::vector<Vertex_handle> vertices;
     for (Finite_vertices_iterator vi = Tdel.finite_vertices_begin();
          vi != Tdel.finite_vertices_end(); ++vi)
-      vertices.push_back(vi);
+      vertices.push_back(*vi);
 
     size_type n = Tdel.number_of_vertices();
     size_type m = Tdel.remove(vertices.begin(), vertices.end());
@@ -621,8 +621,8 @@ _test_cls_delaunay_3(const Triangulation &)
     // queries on all points with integer coordinate
     // in the cube [-1;6]^3. In each case we check explicitly that the
     // output is correct by comparing distance to other vertices.
-    Cell_handle c1 = T3_13.finite_cells_begin();
-    Cell_handle c2 = T3_13.infinite_vertex()->cell();
+    Cell_handle c1 = *T3_13.finite_cells_begin();
+    Cell_handle c2 = T3_13.cell(T3_13.infinite_vertex());
     for (int x = -1; x < 7; ++x)
       for (int y = -1; y < 7; ++y)
         for (int z = -1; z < 7; ++z) {
@@ -633,23 +633,23 @@ _test_cls_delaunay_3(const Triangulation &)
                fvit != T3_13.finite_vertices_end(); ++fvit){
 
             assert(CGAL::squared_distance(p,
-                                          v->point()) <=
-                   CGAL::squared_distance(p, fvit->point()));
+                                          T3_13.point(v)) <=
+                   CGAL::squared_distance(p, T3_13.point(*fvit)));
           }
                    Vertex_handle v1 = nearest_vertex_in_cell(T3_13, p, c1)
 ;
-          int i1 = c1->index(v1);
+          int i1 = T3_13.index(c1,v1);
            for(int i=0; i<4; ++i) {
             if (i != i1)
-              assert(CGAL::squared_distance(p, v1->point()) <=
-              CGAL::squared_distance(p, c1->vertex(i)->point()));
+              assert(CGAL::squared_distance(p, T3_13.point(v1)) <=
+              CGAL::squared_distance(p, T3_13.point(T3_13.vertex(c1,i))));
           }
           Vertex_handle v2 = nearest_vertex_in_cell(T3_13, p, c2);
-          int i2 = c2->index(v2);
+          int i2 = T3_13.index(c2, v2);
           for(int i=0; i<4; ++i) {
-            if (i != i2 && c2->vertex(i) != T3_13.infinite_vertex())
-              assert(CGAL::squared_distance(p, v2->point()) <=
-              CGAL::squared_distance(p, c2->vertex(i)->point()));
+            if (i != i2 && T3_13.vertex(c2,i) != T3_13.infinite_vertex())
+              assert(CGAL::squared_distance(p, T3_13.point(v2)) <=
+              CGAL::squared_distance(p, T3_13.point(T3_13.vertex(c2, i))));
           }
         }
   }
@@ -746,16 +746,16 @@ _test_cls_delaunay_3(const Triangulation &)
     Vertex_handle v;
     while ( T3_5.number_of_vertices() >= 1 ) {
       if ( T3_5.dimension() == 3 )
-        v = T3_5.infinite_cell()->vertex
-          ( (T3_5.infinite_cell()->index( T3_5.infinite_vertex() ) +1 )&3 );
+        v = T3_5.vertex
+          (T3_5.infinite_cell(), (T3_5.index(T3_5.infinite_cell(), T3_5.infinite_vertex() ) +1 )&3 );
       else if ( T3_5.dimension() == 2 )
-        v = T3_5.infinite_cell()->vertex
-          ( (T3_5.infinite_cell()->index( T3_5.infinite_vertex() ) +1 )%3 );
+        v = T3_5.vertex
+          (T3_5.infinite_cell(), (T3_5.index(T3_5.infinite_cell(), T3_5.infinite_vertex() ) +1 )%3 );
       else if ( T3_5.dimension() == 1 )
-          v = T3_5.infinite_cell()->vertex
-            ( (T3_5.infinite_cell()->index( T3_5.infinite_vertex() ) +1 )%2 );
+          v = T3_5.vertex
+            (T3_5.infinite_cell(),  (T3_5.index(T3_5.infinite_cell(), T3_5.infinite_vertex() ) +1 )%2 );
         else
-          v = T3_5.infinite_cell()->neighbor(0)->vertex(0);
+          v = T3_5.vertex(T3_5.neighbor(T3_5.infinite_cell(), 0), 0);
 
       T3_5.remove( v );
     }
@@ -841,7 +841,7 @@ _test_cls_delaunay_3(const Triangulation &)
   v0 = T4.insert(q0);
   Vertex_handle v1 = T4.insert(q1);
   Vertex_handle v2 = T4.insert(q2, v1);         // testing with the hint
-  Vertex_handle v3 = T4.insert(q3, v2->cell()); // testing with the hint
+  Vertex_handle v3 = T4.insert(q3, T4.cell(v2)); // testing with the hint
   Cell_handle c;
   int j,k,l;
   assert(T4.is_facet(v0,v1,v2,c,j,k,l));
@@ -864,7 +864,7 @@ _test_cls_delaunay_3(const Triangulation &)
   // We only test return types and instantiation, basically.
   {
     T4.add_circumcenter_property_map();
-    Cell_handle c = T4.finite_cells_begin();
+    Cell_handle c = *T4.finite_cells_begin();
     Bare_point p = T4.dual(c);
     (void)p;
     Facet f = Facet(c, 2);
@@ -891,15 +891,15 @@ _test_cls_delaunay_3(const Triangulation &)
                                   itb = Tb.finite_vertices_begin(),
                                   end = Ta.finite_vertices_end();
          ita != end; ++ita, ++itb)
-      assert(ita->point() == itb->point());
+      assert(Ta.point(*ita) == Tb.point(*itb));
     for (Finite_cells_iterator ita = Ta.finite_cells_begin(),
                                itb = Tb.finite_cells_begin(),
                                end = Ta.finite_cells_end();
          ita != end; ++ita, ++itb) {
-      assert(ita->vertex(0)->point() == itb->vertex(0)->point());
-      assert(ita->vertex(1)->point() == itb->vertex(1)->point());
-      assert(ita->vertex(2)->point() == itb->vertex(2)->point());
-      assert(ita->vertex(3)->point() == itb->vertex(3)->point());
+      assert(Ta.point(Ta.vertex(*ita,0)) == Tb.point(Tb.vertex(*itb,0)));
+      assert(Ta.point(Ta.vertex(*ita,1)) == Tb.point(Tb.vertex(*itb,1)));
+      assert(Ta.point(Ta.vertex(*ita,2)) == Tb.point(Tb.vertex(*itb,2)));
+      assert(Ta.point(Ta.vertex(*ita,3)) == Tb.point(Tb.vertex(*itb,3)));
     }
   }
 
@@ -1110,7 +1110,7 @@ _test_cls_delaunay_3(const Triangulation &)
     for(Finite_vertices_iterator vh = TM_1.finite_vertices_begin();
         vh != TM_1.finite_vertices_end(); ++vh) {
       Point p = Point(0, 0, rand()%30000);
-      vTM_1 = TM_1.move_if_no_collision(vh, p);
+      vTM_1 = TM_1.move_if_no_collision(*vh, p);
     }
   }
   assert(TM_1.is_valid());
@@ -1128,7 +1128,7 @@ _test_cls_delaunay_3(const Triangulation &)
     for(Finite_vertices_iterator vh = TM_2.finite_vertices_begin();
         vh != TM_2.finite_vertices_end(); ++vh) {
       Point p = Point(0, rand()%30000, rand()%30000);
-      vTM_2 = TM_2.move_if_no_collision(vh, p);
+      vTM_2 = TM_2.move_if_no_collision(*vh, p);
     }
   }
   assert(TM_2.is_valid());
@@ -1148,13 +1148,13 @@ _test_cls_delaunay_3(const Triangulation &)
     for(Finite_vertices_iterator vh = TM_3.finite_vertices_begin();
         vh != TM_3.finite_vertices_end(); ++vh) {
       Point p = Point(rand()%30000, rand()%30000, rand()%30000);
-      vTM_3 = TM_3.move_if_no_collision(vh, p);
+      vTM_3 = TM_3.move_if_no_collision(*vh, p);
     }
   }
 
   // A simple test to see if move return the good vertex
   // when there is a collision
-  assert(TM_3.move(TM_3.finite_vertices_begin(), vTM_3->point()) == vTM_3);
+  assert(TM_3.move(*TM_3.finite_vertices_begin(), TM_3.point(vTM_3)) == vTM_3);
 
   // Test remove cluster
   {

@@ -153,6 +153,7 @@ public:
   typedef Tag_false                                  Periodic_tag;
 
 #ifndef CGAL_CFG_USING_BASE_MEMBER_BUG_2
+  using Tr_Base::cell;
   using Tr_Base::cw;
   using Tr_Base::ccw;
   using Tr_Base::geom_traits;
@@ -507,7 +508,7 @@ public:
 
   Vertex_handle insert(const Point& p, Vertex_handle hint, bool *could_lock_zone = nullptr)
   {
-    return insert(p, hint == Vertex_handle() ? this->infinite_cell() : hint->cell(),
+    return insert(p, hint == Vertex_handle() ? this->infinite_cell() : cell(hint),
                   could_lock_zone);
   }
 
@@ -749,8 +750,8 @@ template <typename VertexDescriptor,
                                      >
            >
 Bounded_side
-side_of_sphere(VertexDescriptor v0, VertexDescriptor v1,
-               VertexDescriptor v2, VertexDescriptor v3,
+side_of_sphere(const VertexDescriptor& v0, const VertexDescriptor& v1,
+               const VertexDescriptor& v2, const VertexDescriptor& v3,
                const Point& p, bool perturb) const
 
 {
@@ -800,11 +801,13 @@ side_of_sphere(VertexDescriptor v0, VertexDescriptor v1,
 public:
   // Queries
   template <typename CellDescriptor>
-  Bounded_side side_of_sphere(CellDescriptor c, const Point& p, bool perturb = false) const
+  Bounded_side side_of_sphere(const CellDescriptor& c, const Point& p, bool perturb = false) const
   {
-    cell_descriptor cd = tds().descriptor(c);
-    return side_of_sphere(tds().vertex(cd,0), tds().vertex(cd,1),
-                          tds().vertex(cd,2), tds().vertex(cd,3), p, perturb);
+    cell_descriptor cd = c;
+    const std::array<vertex_descriptor, 4>& vertices = tds().vertices(cd);
+    return side_of_sphere(vertices[0], vertices[1], vertices[2], vertices[3], p, perturb);
+    // return side_of_sphere(tds().vertex(cd,0), tds().vertex(cd,1),
+    //                       tds().vertex(cd,2), tds().vertex(cd,3), p, perturb);
   }
 /*
   template <typename CellDescriptor,
@@ -878,7 +881,7 @@ protected:
       return w;
     if(is_infinite(w))
       return v;
-    return less_distance(p, w->point(), v->point()) ? w : v;
+    return less_distance(p, point(w), point(v)) ? w : v;
   }
 
   class Conflict_tester_3
@@ -956,7 +959,10 @@ protected:
     void reinsert_vertices(Vertex_handle) {}
     Vertex_handle replace_vertex(Cell_handle c, int index, const Point& )
     {
-      return c->vertex(index);
+      assert(false);
+      // AF: todo add a pointer to the triangulation
+      // return t->vertex(c,index);
+      return Vertex_handle();
     }
     void hide_point(Cell_handle, const Point& ) {}
   };
@@ -1241,8 +1247,8 @@ insert_and_give_new_cells(const Point  &p, OutputItCells fit, Cell_handle start)
     do
     {
       *fit++ = c;
-      int i = c->index(v);
-      c = c->neighbor((i+1)%3);
+      int i = index(c, v);
+      c = neighbor(c,(i+1)%3);
     }
     while(c != end);
   }
@@ -1250,11 +1256,11 @@ insert_and_give_new_cells(const Point  &p, OutputItCells fit, Cell_handle start)
   {
     Cell_handle c = v->cell();
     *fit++ = c;
-    *fit++ = c->neighbor((~(c->index(v)))&1);
+    *fit++ = neighbor(c, (~(index(c,v)))&1);
   }
   else // dimension = 0
   {
-    *fit++ = v->cell();
+    *fit++ = cell(v);
   }
   return v;
 }
@@ -1273,24 +1279,24 @@ insert_and_give_new_cells(const Point& p, OutputItCells fit, Vertex_handle hint)
   }
   else if(dimension == 2)
   {
-    Cell_handle c = v->cell(), end = c;
+    Cell_handle c = cell(v), end = c;
     do
     {
       *fit++ = c;
-      int i = c->index(v);
-      c = c->neighbor((i+1)%3);
+      int i = index(c, v);
+      c = neighbor(c, (i+1)%3);
     }
     while(c != end);
   }
   else if(dimension == 1)
   {
-    Cell_handle c = v->cell();
+    Cell_handle c = cell(v);
     *fit++ = c;
-    *fit++ = c->neighbor((~(c->index(v)))&1);
+    *fit++ = neighbor(c,(~(index(c,v)))&1);
   }
   else // dimension = 0
   {
-    *fit++ = v->cell();
+    *fit++ = cell(v);
   }
   return v;
 }
@@ -1312,24 +1318,24 @@ insert_and_give_new_cells(const Point& p,
   }
   else if(dimension == 2)
   {
-    Cell_handle c = v->cell(), end = c;
+    Cell_handle c = cell(v), end = c;
     do
     {
       *fit++ = c;
-      int i = c->index(v);
-      c = c->neighbor((i+1)%3);
+      int i = index(c,v);
+      c = neighbor(c, (i+1)%3);
     }
     while(c != end);
   }
   else if(dimension == 1)
   {
-    Cell_handle c = v->cell();
+    Cell_handle c = cell(v);
     *fit++ = c;
-    *fit++ = c->neighbor((~(c->index(v)))&1);
+    *fit++ = neighbor(c, (~(index(c,v)))&1);
   }
   else // dimension = 0
   {
-    *fit++ = v->cell();
+    *fit++ = cell(v);
   }
   return v;
 }
@@ -1438,7 +1444,7 @@ Delaunay_triangulation_3<Gt,Tds,Default,Lds>::
 move(Vertex_handle v, const Point& p)
 {
   CGAL_precondition(!is_infinite(v));
-  if(v->point() == p)
+  if(point(v) == p)
     return v;
 
   Self tmp;
@@ -1650,19 +1656,19 @@ side_of_circle(Cell_handle c, int i, const Point& p, bool perturb) const
     CGAL_precondition(i == 3);
     // the triangulation is supposed to be valid, i.e. the facet
     // with vertices 0 1 2 in this order is positively oriented
-    if(! c->has_vertex(infinite_vertex(), i3))
-      return coplanar_side_of_bounded_circle(c->vertex(0)->point(),
-                                              c->vertex(1)->point(),
-                                              c->vertex(2)->point(),
+    if(! has_vertex(c, infinite_vertex(), i3))
+      return coplanar_side_of_bounded_circle(point(vertex(c,0)),
+                                              point(vertex(c,1)),
+                                              point(vertex(c,2)),
                                               p, perturb);
     // else infinite facet
     // v1, v2 finite vertices of the facet such that v1,v2,infinite
     // is positively oriented
-    Vertex_handle v1 = c->vertex(ccw(i3)),
-                  v2 = c->vertex(cw(i3));
-    CGAL_assertion(coplanar_orientation(v1->point(), v2->point(),
-                                        mirror_vertex(c, i3)->point()) == NEGATIVE);
-    Orientation o = coplanar_orientation(v1->point(), v2->point(), p);
+    Vertex_handle v1 = vertex(c, ccw(i3)),
+                  v2 = vertex(c, cw(i3));
+    CGAL_assertion(coplanar_orientation(point(v1), point(v2),
+                                        point(mirror_vertex(c, i3))) == NEGATIVE);
+    Orientation o = coplanar_orientation(point(v1), point(v2), p);
     if(o != COLLINEAR)
         return Bounded_side(o);
     // because p is in f iff
@@ -1670,12 +1676,12 @@ side_of_circle(Cell_handle c, int i, const Point& p, bool perturb) const
     int i_e;
     Locate_type lt;
     // case when p collinear with v1v2
-    return side_of_segment(p, v1->point(), v2->point(), lt, i_e);
+    return side_of_segment(p, point(v1), point(v2), lt, i_e);
   }
 
   // else dimension == 3
   CGAL_precondition(i >= 0 && i < 4);
-  if((! c->has_vertex(infinite_vertex(),i3)) || (i3 != i))
+  if((! has_vertex(c, infinite_vertex(),i3)) || (i3 != i))
   {
     // finite facet
     // initialization of i0 i1 i2, vertices of the facet positively
@@ -1683,25 +1689,25 @@ side_of_circle(Cell_handle c, int i, const Point& p, bool perturb) const
     int i0 = (i>0) ? 0 : 1;
     int i1 = (i>1) ? 1 : 2;
     int i2 = (i>2) ? 2 : 3;
-    CGAL_precondition(coplanar(c->vertex(i0)->point(),
-                               c->vertex(i1)->point(),
-                               c->vertex(i2)->point(),
+    CGAL_precondition(coplanar(point(vertex(c,i0)),
+                               point(vertex(c,i1)),
+                               point(vertex(c,i2)),
                                p));
-    return coplanar_side_of_bounded_circle(c->vertex(i0)->point(),
-                                            c->vertex(i1)->point(),
-                                            c->vertex(i2)->point(),
-                                            p, perturb);
+    return coplanar_side_of_bounded_circle(point(vertex(c,i0)),
+                                           point(vertex(c,i1)),
+                                           point(vertex(c,i2)),
+                                           p, perturb);
   }
 
   //else infinite facet
   // v1, v2 finite vertices of the facet such that v1,v2,infinite
   // is positively oriented
-  Vertex_handle v1 = c->vertex(next_around_edge(i3,i)),
-                v2 = c->vertex(next_around_edge(i,i3));
+  Vertex_handle v1 = vertex(c, next_around_edge(i3,i)),
+                v2 = vertex(c, next_around_edge(i,i3));
   Orientation o = static_cast<Orientation>
-                  (coplanar_orientation(v1->point(), v2->point(),
-                                         c->vertex(i)->point()) *
-                   coplanar_orientation(v1->point(), v2->point(), p));
+                  (coplanar_orientation(point(v1), point(v2),
+                                         point(vertex(c,i))) *
+                   coplanar_orientation(point(v1), point(v2), p));
   // then the code is duplicated from 2d case
   if(o != COLLINEAR)
       return Bounded_side(-o);
@@ -1710,7 +1716,7 @@ side_of_circle(Cell_handle c, int i, const Point& p, bool perturb) const
   int i_e;
   Locate_type lt;
   // case when p collinear with v1v2
-  return side_of_segment(p, v1->point(), v2->point(), lt, i_e);
+  return side_of_segment(p, point(v1), point(v2), lt, i_e);
 }
 
 template < class Gt, class Tds, class Lds >
@@ -1721,12 +1727,12 @@ nearest_vertex_in_cell(const Point& p, Cell_handle c) const
 // Returns the finite vertex of the cell c which is the closest to p.
   CGAL_precondition(dimension() >= 0);
 
-  Vertex_handle nearest = nearest_vertex(p, c->vertex(0), c->vertex(1));
+  Vertex_handle nearest = nearest_vertex(p, vertex(c,0), vertex(c,1));
   if(dimension() >= 2)
   {
-    nearest = nearest_vertex(p, nearest, c->vertex(2));
+    nearest = nearest_vertex(p, nearest, vertex(c,2));
     if(dimension() == 3)
-      nearest = nearest_vertex(p, nearest, c->vertex(3));
+      nearest = nearest_vertex(p, nearest, vertex(c,3));
   }
   return nearest;
 }
@@ -1754,7 +1760,7 @@ nearest_vertex(const Point& p, Cell_handle start) const
   int li, lj;
   Cell_handle c = locate(p, lt, li, lj, start);
   if(lt == Tr_Base::VERTEX)
-    return c->vertex(li);
+    return vertex(c,li);
 
   // - start with the closest vertex from the located cell.
   // - repeatedly take the nearest of its incident vertices if any
@@ -1797,11 +1803,11 @@ is_delaunay_after_displacement(Vertex_handle v, const Point& p) const
   CGAL_precondition(!this->is_infinite(v));
   CGAL_precondition(this->dimension() == 2);
   CGAL_precondition(!this->test_dim_down(v));
-  if(v->point() == p)
+  if(point(v) == p)
     return true;
 
-  Point ant = v->point();
-  v->set_point(p);
+  Point ant = point(v);
+  set_point(v,p);
 
   std::size_t size;
 
@@ -1814,10 +1820,10 @@ is_delaunay_after_displacement(Vertex_handle v, const Point& p) const
   {
     Cell_handle c = cells[i];
     if(this->is_infinite(c)) continue;
-    if(this->orientation(c->vertex(0)->point(), c->vertex(1)->point(),
-                         c->vertex(2)->point(), c->vertex(3)->point()) != POSITIVE)
+    if(this->orientation(point(vertex(c,0)), point(vertex(c,1)),
+                         point(vertex(c,2)), point(vertex(c,3))) != POSITIVE)
     {
-      v->set_point(ant);
+      set_point(v,ant);
       return false;
     }
   }
@@ -1832,28 +1838,28 @@ is_delaunay_after_displacement(Vertex_handle v, const Point& p) const
     const Facet& f = facets[i];
     Cell_handle c = f.first;
     int j = f.second;
-    Cell_handle cj = c->neighbor(j);
+    Cell_handle cj = neighbor(c,j);
     int mj = this->mirror_index(c, j);
-    Vertex_handle h1 = c->vertex(j);
+    Vertex_handle h1 = vertex(c,j);
     if(this->is_infinite(h1))
     {
-      if(this->side_of_sphere(c, cj->vertex(mj)->point(), true) != ON_UNBOUNDED_SIDE)
+      if(this->side_of_sphere(c, point(vertex(cj,mj)), true) != ON_UNBOUNDED_SIDE)
       {
-        v->set_point(ant);
+        set_point(v,ant);
         return false;
       }
     }
     else
     {
-      if(this->side_of_sphere(cj, h1->point(), true) != ON_UNBOUNDED_SIDE)
+      if(this->side_of_sphere(cj, point(h1), true) != ON_UNBOUNDED_SIDE)
       {
-        v->set_point(ant);
+        set_point(v,ant);
         return false;
       }
     }
   }
 
-  v->set_point(ant);
+  set_point(v,ant);
   return true;
 }
 
@@ -1874,21 +1880,21 @@ is_Gabriel(Cell_handle c, int i) const
   typename Geom_traits::Side_of_bounded_sphere_3 side_of_bounded_sphere =
     geom_traits().side_of_bounded_sphere_3_object();
 
-  if((!is_infinite(c->vertex(i))) &&
-     side_of_bounded_sphere (c->vertex(vertex_triple_index(i,0))->point(),
-                             c->vertex(vertex_triple_index(i,1))->point(),
-                             c->vertex(vertex_triple_index(i,2))->point(),
-                             c->vertex(i)->point()) == ON_BOUNDED_SIDE)
+  if((!is_infinite(vertex(c,i))) &&
+     side_of_bounded_sphere (point(vertex(c,vertex_triple_index(i,0))),
+                             point(vertex(c,vertex_triple_index(i,1))),
+                             point(vertex(c,vertex_triple_index(i,2))),
+                             point(vertex(c,i))) == ON_BOUNDED_SIDE)
     return false;
 
-  Cell_handle neighbor = c->neighbor(i);
-  int in = neighbor->index(c);
+  Cell_handle neighbor = this->neighbor(c,i);
+  int in = index(neighbor, c);
 
-  if((!is_infinite(neighbor->vertex(in))) &&
-     side_of_bounded_sphere(c->vertex(vertex_triple_index(i,0))->point(),
-                            c->vertex(vertex_triple_index(i,1))->point(),
-                            c->vertex(vertex_triple_index(i,2))->point(),
-                            neighbor->vertex(in)->point()) == ON_BOUNDED_SIDE)
+  if((!is_infinite(vertex(neighbor, in))) &&
+     side_of_bounded_sphere(point(vertex(c,vertex_triple_index(i,0))),
+                            point(vertex(c,vertex_triple_index(i,1))),
+                            point(vertex(c,vertex_triple_index(i,2))),
+                            point(vertex(neighbor,in))) == ON_BOUNDED_SIDE)
     return false;
 
   return true;
@@ -1912,16 +1918,16 @@ is_Gabriel(Cell_handle c, int i, int j) const
     geom_traits().side_of_bounded_sphere_3_object();
 
   Facet_circulator fcirc = incident_facets(c,i,j), fdone(fcirc);
-  Vertex_handle v1 = c->vertex(i);
-  Vertex_handle v2 = c->vertex(j);
+  Vertex_handle v1 = vertex(c,i);
+  Vertex_handle v2 = vertex(c,j);
   do
   {
       // test whether the vertex of cc opposite to *fcirc
       // is inside the sphere defined by the edge e = (s, i,j)
       Cell_handle cc = (*fcirc).first;
       int ii = (*fcirc).second;
-      if(!is_infinite(cc->vertex(ii)) &&
-           side_of_bounded_sphere(v1->point(), v2->point(), cc->vertex(ii)->point())
+      if(!is_infinite(vertex(cc, ii)) &&
+           side_of_bounded_sphere(point(v1), point(v2), point(vertex(cc,ii)))
           == ON_BOUNDED_SIDE) return false;
   }
   while(++fcirc != fdone);
@@ -1938,7 +1944,7 @@ dual(Cell_handle c) const
   CGAL_precondition(! is_infinite(c));
   if constexpr (Tds::has_property_maps) {
     if(this->circumcenter_pmap) {
-      auto& opt_point = this->circumcenter_pmap[c->idx()];
+      auto& opt_point = this->circumcenter_pmap[c];
       if(opt_point.has_value())
         return *opt_point;
       else {
@@ -1966,13 +1972,13 @@ dual(Cell_handle c, int i) const
   if(dimension() == 2)
   {
     CGAL_precondition(i == 3);
-    return construct_object(construct_circumcenter(c->vertex(0)->point(),
-                                                   c->vertex(1)->point(),
-                                                   c->vertex(2)->point()));
+    return construct_object(construct_circumcenter(point(vertex(c,0)),
+                                                   point(vertex(c,1)),
+                                                   point(vertex(c,2))));
   }
 
   // dimension() == 3
-  Cell_handle n = c->neighbor(i);
+  Cell_handle n = neighbor(c,i);
   if(! is_infinite(c) && ! is_infinite(n))
     return construct_object(construct_segment(dual(c), dual(n)));
 
@@ -1980,7 +1986,7 @@ dual(Cell_handle c, int i) const
   int in;
   if(is_infinite(c))
   {
-    in = n->index(c);
+    in = index(n,c);
   }
   else
   {
@@ -1997,9 +2003,9 @@ dual(Cell_handle c, int i) const
   // in=1: 3 2 0
   // in=2: 3 0 1
   // in=3: 1 0 2
-  const Point& p = n->vertex(ind[0])->point();
-  const Point& q = n->vertex(ind[1])->point();
-  const Point& r = n->vertex(ind[2])->point();
+  const Point& p = point(vertex(n, ind[0]));
+  const Point& q = point(vertex(n, ind[1]));
+  const Point& r = point(vertex(n, ind[2]));
 
   Line l = construct_equidistant_line(p, q, r);
   return construct_object(construct_ray(dual(n), l));
@@ -2016,14 +2022,14 @@ dual_support(Cell_handle c, int i) const
   if(dimension() == 2)
   {
     CGAL_precondition(i == 3);
-    return construct_equidistant_line(c->vertex(0)->point(),
-                                       c->vertex(1)->point(),
-                                       c->vertex(2)->point());
+    return construct_equidistant_line(point(vertex(c,0)),
+                                      point(vertex(c,1)),
+                                      point(vertex(c,2)));
   }
 
-  return construct_equidistant_line(c->vertex((i+1)&3)->point(),
-                                     c->vertex((i+2)&3)->point(),
-                                     c->vertex((i+3)&3)->point());
+  return construct_equidistant_line(point(vertex(c, (i+1)&3)->),
+                                    point(vertex(c, (i+2)&3)->),
+                                    point(vertex(c, (i+3)&3)->));
 }
 
 template < class Gt, class Tds, class Lds >
@@ -2055,13 +2061,13 @@ is_valid(bool verbose, int level) const
     {
       for(Finite_cells_iterator it = finite_cells_begin(), end = finite_cells_end(); it != end; ++it)
       {
-        is_valid_finite(it);
+        is_valid_finite(*it);
         for(int i=0; i<4; i++)
         {
-          if(!is_infinite(it->neighbor(i)->vertex(it->neighbor(i)->index(it))))
+          if(!is_infinite(vertex(neighbor(*it,i), index(neighbor(*it,i), *it))))
           {
-            if(side_of_sphere(it, it->neighbor(i)->vertex(
-                                it->neighbor(i)->index(it))->point()) == ON_BOUNDED_SIDE)
+            if(side_of_sphere(*it, point(vertex(neighbor(*it,i),
+                                         index(neighbor(*it,i), *it)))) == ON_BOUNDED_SIDE)
             {
               if(verbose)
                 std::cerr << "non-empty sphere " << std::endl;
@@ -2081,13 +2087,13 @@ is_valid(bool verbose, int level) const
         is_valid_finite((*it).first);
         for(int i=0; i<3; i++)
         {
-          if(!is_infinite((*it).first->neighbor(i)->vertex(
-                            (((*it).first)->neighbor(i))->index(
+          if(!is_infinite(vertex(neighbor((*it).first,i),
+                            index((neighbor(((*it).first), i)),
                               (*it).first))))
-          {
-            if(side_of_circle((*it).first, 3, (*it).first->neighbor(i)->
-                              vertex((((*it).first)->neighbor(i))->index(
-                                       (*it).first))->point()) == ON_BOUNDED_SIDE)
+          { Cell_handle n = neighbor((*it).first,i);
+            if(side_of_circle((*it).first, 3,
+                              point(vertex(n, index(n,
+                                       (*it).first)))) == ON_BOUNDED_SIDE)
             {
               if(verbose)
                 std::cerr << "non-empty circle " << std::endl;
@@ -2126,7 +2132,7 @@ is_valid(Cell_handle c, bool verbose, int level) const
     {
       std::cerr << "combinatorically invalid cell" ;
       for(int i=0; i <= dimension(); i++)
-        std::cerr << c->vertex(i)->point() << ", " ;
+        std::cerr << point(vertex(c, i)) << ", " ;
       std::cerr << std::endl;
     }
     CGAL_assertion(false);
@@ -2140,7 +2146,7 @@ is_valid(Cell_handle c, bool verbose, int level) const
       {
         is_valid_finite(c, verbose, level);
         for(int i=0; i<4; i++) {
-          if(side_of_sphere(c, c->vertex((c->neighbor(i))->index(c))->point()) == ON_BOUNDED_SIDE)
+          if(side_of_sphere(c, point(vertex(c, index(neighbor(c,i), c)))) == ON_BOUNDED_SIDE)
           {
             if(verbose)
               std::cerr << "non-empty sphere " << std::endl;
@@ -2158,7 +2164,7 @@ is_valid(Cell_handle c, bool verbose, int level) const
       {
         for(int i=0; i<2; i++)
         {
-          if(side_of_circle(c, 3, c->vertex(c->neighbor(i)->index(c))->point()) == ON_BOUNDED_SIDE)
+          if(side_of_circle(c, 3, point(vertex(c, index(neighbor(c,i),c)))) == ON_BOUNDED_SIDE)
           {
             if(verbose)
               std::cerr << "non-empty circle " << std::endl;

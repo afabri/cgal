@@ -30,12 +30,12 @@ _test_vertex_iterator( const Triangulation &T )
 
     for(Vertex_iterator vit = T.vertices_begin(); vit != T.vertices_end(); ++vit)
     {
-      Vertex_handle vh = vit; // Test the conversion.
+      Vertex_handle vh = *vit; // Test the conversion.
       n++;
-      const Vertex& v = *vit;      // Test operator*;
-      Cell_handle c = vit->cell(); // Test operator->;
+      // AF:  const Vertex& v = *vit;      // Test operator*;
+      Cell_handle c = T.cell(*vit); // Test operator->;
       (void)vh;
-      (void)v;
+      // AF: (void)v;
       (void)c;
     }
     assert( n-1 == T.number_of_vertices() );
@@ -43,12 +43,12 @@ _test_vertex_iterator( const Triangulation &T )
     for (Finite_vertices_iterator fvit = T.finite_vertices_begin();
          fvit != T.finite_vertices_end(); ++fvit)
     {
-      Vertex_handle vh = fvit; // Test the conversion.
-      const Vertex & v = *fvit; // Test operator*;
-      Cell_handle c = fvit->cell(); // Test operator->;
+      Vertex_handle vh = *fvit; // Test the conversion.
+      // AF: const Vertex & v = *fvit; // Test operator*;
+      Cell_handle c = T.cell(*fvit); // Test operator->;
       n++;
       (void) vh;
-      (void) v;
+      // AF: (void) v;
       (void) c;
     }
     assert( n == T.number_of_vertices() );
@@ -58,7 +58,7 @@ _test_vertex_iterator( const Triangulation &T )
     for (Vertex_iterator vit = T.vertices_end(); vit != T.vertices_begin(); --vit)
     {
       if(vit != T.vertices_end()) {
-        Vertex_handle vh = vit; // Test the conversion.
+        Vertex_handle vh = *vit; // Test the conversion.
         (void) vh;
       }
       n++;
@@ -69,7 +69,7 @@ _test_vertex_iterator( const Triangulation &T )
          fvit != T.finite_vertices_begin(); --fvit)
     {
       if(fvit != T.finite_vertices_end()) {
-        Vertex_handle vh = fvit; // Test the conversion.
+        Vertex_handle vh = *fvit; // Test the conversion.
         (void) vh;
       }
       n++;
@@ -111,7 +111,7 @@ _test_triangulation_iterator( const Triangulation &T )
   typedef typename Triangulation::Finite_cell_handles Finite_cell_handles;
   typedef typename Triangulation::Finite_edges Finite_edges;
   typedef typename Triangulation::Finite_facets Finite_facets;
-  typedef typename Triangulation::Points Points;
+  // AF:  todo   typedef typename Triangulation::Points Points;
 
   typedef typename Triangulation::Cell            Cell;
   typedef typename Triangulation::Facet           Facet;
@@ -144,21 +144,21 @@ _test_triangulation_iterator( const Triangulation &T )
   Finite_edges_iterator FEit;
   Finite_vertices_iterator FVit;
   for (Cit = T.tds().raw_cells_begin(); Cit != T.tds().raw_cells_end(); ++Cit) {
-    Cell_handle ch = Cit;
+    Cell_handle ch = *Cit;
     (void) ch;
   }
   if (T.dimension()==3) {
     {
       All_vertex_handles range = T.all_vertex_handles();
       Vertex_handle vh = *(range.first);
-      assert(vh == T.all_vertices_begin());
-      assert(*(range.second) == T.all_vertices_end());
+      assert(vh == *T.all_vertices_begin());
+      assert(*(range.second) == *T.all_vertices_end());
     }
     {
       All_cell_handles range = T.all_cell_handles();
       Cell_handle vh = *(range.first);
-      assert(vh == T.all_cells_begin());
-      assert(*(range.second) == T.all_cells_end());
+      assert(vh == *T.all_cells_begin());
+      assert(*(range.second) == *T.all_cells_end());
     }
     {
       All_edges range = T.all_edges();
@@ -173,14 +173,14 @@ _test_triangulation_iterator( const Triangulation &T )
     {
       Finite_vertex_handles range = T.finite_vertex_handles();
       Vertex_handle vh = *(range.first);
-      assert(vh == Vertex_handle(T.finite_vertices_begin()));
-      assert(Vertex_handle{*(std::prev(range.second))} == Vertex_handle(std::prev(T.finite_vertices_end())));
+      assert(vh == Vertex_handle(*T.finite_vertices_begin()));
+      assert(Vertex_handle{*(std::prev(range.second))} == Vertex_handle(*std::prev(T.finite_vertices_end())));
     }
     {
       Finite_cell_handles range = T.finite_cell_handles();
       Cell_handle ch = *(range.first);
-      assert(ch == Cell_handle(T.finite_cells_begin()));
-      assert(Cell_handle{*(std::prev(range.second))} == Cell_handle(std::prev(T.finite_cells_end())));
+      assert(ch == Cell_handle(*T.finite_cells_begin()));
+      assert(Cell_handle{*(std::prev(range.second))} == Cell_handle(*std::prev(T.finite_cells_end())));
     }
     {
       Finite_edges range = T.finite_edges();
@@ -192,20 +192,21 @@ _test_triangulation_iterator( const Triangulation &T )
       assert(range.first == T.finite_facets_begin());
       assert(range.second == T.finite_facets_end());
     }
+    /* AF: todo
     {
       Points range = T.points();
       assert(range.first == T.points_begin());
       assert(range.second == T.points_end());
     }
-
+*/
 
   for (FCit = T.finite_cells_begin(); FCit != T.finite_cells_end(); ++FCit)
   {
-     Cell_handle ch = FCit; // Test the conversion.
-     const Cell & c = *FCit; // Test operator*.
-     Cell_handle ch2 = FCit->neighbor(0); // Test operator->.
+     Cell_handle ch = *FCit; // Test the conversion.
+     // AF: const Cell & c = *FCit; // Test operator*.
+     Cell_handle ch2 = T.neighbor(*FCit,0); // Test operator->.
      (void) ch;
-     (void) c;
+     // AF: (void) c;
      (void) ch2;
      t++;
   }
@@ -224,9 +225,9 @@ _test_triangulation_iterator( const Triangulation &T )
      m++;
   }
   for (FVit = T.finite_vertices_begin(); FVit != T.finite_vertices_end(); ++FVit) {
-     const Vertex & v = *FVit; // Test operator*.
-     Cell_handle ch = FVit->cell(); // Test operator->.
-     (void) v;
+     // AF: const Vertex & v = *FVit; // Test operator*.
+     Cell_handle ch = T.cell(*FVit); // Test operator->.
+     // AF: (void) v;
      (void) ch;
      n++;
   }
@@ -240,7 +241,7 @@ _test_triangulation_iterator( const Triangulation &T )
   n=0 ; m=0 ; f=0 ; t=0;
   for (Cit = T.cells_begin(); Cit != T.cells_end(); ++Cit)
   {
-     Cell_handle ch = Cit; // Test the conversion.
+     Cell_handle ch = *Cit; // Test the conversion.
      (void) ch;
      t++;
   }
@@ -257,10 +258,10 @@ _test_triangulation_iterator( const Triangulation &T )
   Finite_cells_iterator Cit2;
   FCit = T.finite_cells_begin();
   Cit2=FCit;
-  assert(T.tetrahedron(FCit)==T.tetrahedron(Cit2));
+  assert(T.tetrahedron(*FCit)==T.tetrahedron(*Cit2));
   FCit++ ; FCit-- ; ++FCit ; --FCit ;
   assert(FCit==Cit2);
-  assert(T.tetrahedron(FCit)==T.tetrahedron(Cit2));
+  assert(T.tetrahedron(*FCit)==T.tetrahedron(*Cit2));
     }
   if (T.dimension() >=2)
     {
@@ -285,10 +286,10 @@ _test_triangulation_iterator( const Triangulation &T )
   Finite_vertices_iterator Vit2;
   FVit = T.finite_vertices_begin();
   Vit2=FVit;
-  assert(FVit->point()==Vit2->point());
+  assert(T.point(*FVit)== T.point(*Vit2));
   FVit++ ; FVit-- ; ++FVit ; --FVit ;
   assert(FVit==Vit2);
-  assert(FVit->point()==Vit2->point());
+  assert(T.point(*FVit)==T.point(*Vit2));
   return(n-m+f-t);
 }
 

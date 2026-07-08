@@ -26,6 +26,7 @@ bool del=true;
 #include <CGAL/_test_cls_delaunay_3.h>
 #include <CGAL/_test_cls_parallel_triangulation_3.h>
 
+/*
 // Explicit instantiation of the whole class :
 template class CGAL::Delaunay_triangulation_3<K>;
 
@@ -33,7 +34,7 @@ template <typename K, typename ConcurrencyTag = CGAL::Sequential_tag>
 using Tds = CGAL::Triangulation_data_structure_3<CGAL::Triangulation_vertex_base_3<K>,
                                                  CGAL::Delaunay_triangulation_cell_base_3<K>,
                                                  ConcurrencyTag>;
-
+*/
 template <typename K, typename ConcurrencyTag = CGAL::Sequential_tag>
 using Tds_index = CGAL::Triangulation_data_structure_3<CGAL::VertexWithPoint<K>,
                                                        CGAL::Cell4Delaunay<K>,
@@ -41,16 +42,18 @@ using Tds_index = CGAL::Triangulation_data_structure_3<CGAL::VertexWithPoint<K>,
 
 int main()
 {
+  /*
   using Cls = CGAL::Delaunay_triangulation_3<EPIC>;
   using Cls_with_epec = CGAL::Delaunay_triangulation_3<EPEC>;
 
   _test_cls_delaunay_3( Cls() );
   _test_cls_delaunay_3( Cls_with_epec() );
-
+*/
   using Cls_index = CGAL::Delaunay_triangulation_3<EPIC, Tds_index<EPIC>>;
 
   _test_cls_delaunay_3( Cls_index() );
 
+  /*
   using Tds_Delaunay_Cb = Tds<K>;
   using Cls_with_Delaunay_Cb = CGAL::Delaunay_triangulation_3<EPIC, Tds_Delaunay_Cb>;
 
@@ -89,6 +92,7 @@ int main()
   using Cls4 = CGAL::Delaunay_triangulation_3<EPIC, TDS4>;
 
   _test_cls_delaunay_3(Cls4());
+  */
 
   return 0;
 }

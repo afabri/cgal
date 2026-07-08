@@ -24,7 +24,6 @@
 # include <CGAL/Profile_counter.h>
 #endif
 
-#include <CGAL/Unique_hash_map.h>
 #include <CGAL/assertions.h>
 #include <CGAL/Compact_container.h>
 #include <CGAL/Triangulation_utils_3.h>
@@ -53,7 +52,7 @@
 #include <boost/unordered_map.hpp>
 #include <boost/utility/result_of.hpp>
 #include <boost/container/small_vector.hpp>
-#include <boost/iterator/function_output_iterator.hpp>
+#include <boost/iterator/transform_iterator.hpp>
 
 #ifndef CGAL_TRIANGULATION_3_DONT_INSERT_RANGE_OF_POINTS_WITH_INFO
 #include <CGAL/STL_Extension/internal/info_check.h>
@@ -153,9 +152,8 @@ protected:
   template <typename Vertex_handle>
   struct Vertex_handle_unique_hash_map_generator
   {
-    typedef Unique_hash_map<Vertex_handle,
-    Vertex_handle,
-    Handle_hash_function> type;
+    typedef std::unordered_map<Vertex_handle,
+    Vertex_handle> type;
   };
 
 public:
@@ -259,7 +257,7 @@ protected:
   {
     typedef Unique_hash_map<Vertex_handle,
                             Vertex_handle,
-                            Handle_hash_function,
+                            std::hash<Vertex_handle>,
                             tbb::scalable_allocator<Vertex_handle> > type;
   };
 
@@ -484,7 +482,7 @@ private:
 
     bool operator()(const Vertex_iterator& v) const
     {
-      return t->is_infinite(v);
+      return t->is_infinite(*v);
     }
 
     bool operator()(typename std::vector<Vertex_handle>::const_iterator v) const
@@ -494,7 +492,7 @@ private:
 
     bool operator()(const Cell_iterator& c) const
     {
-      return t->is_infinite(c);
+      return t->is_infinite(*c);
     }
 
     bool operator()(const Edge_iterator& e) const
@@ -525,7 +523,7 @@ public:
     Self operator++(int) { Self tmp(*this); ++(*this); return tmp; }
     Self operator--(int) { Self tmp(*this); --(*this); return tmp; }
 
-    operator Cell_handle() const { return Base::base(); }
+    // operator Cell_handle() const { return Base::base(); }
   };
 
   // We derive in order to add a conversion to handle.
@@ -544,13 +542,11 @@ public:
     Self operator++(int) { Self tmp(*this); ++(*this); return tmp; }
     Self operator--(int) { Self tmp(*this); --(*this); return tmp; }
 
-    operator Vertex_handle() const { return Base::base(); }
+    // operator Vertex_handle() const { return Base::base(); }
   };
 
-  typedef Iterator_range<Prevent_deref<Finite_cells_iterator,
-                                       Cell_handle> >         Finite_cell_handles;
-  typedef Iterator_range<Prevent_deref<Finite_vertices_iterator,
-                                       Vertex_handle> >       Finite_vertex_handles;
+  typedef Iterator_range<Finite_cells_iterator>         Finite_cell_handles;
+  typedef Iterator_range<Finite_vertices_iterator>       Finite_vertex_handles;
 
   typedef Filter_iterator<Edge_iterator, Infinite_tester>     Finite_edges_iterator;
   typedef Filter_iterator<Facet_iterator, Infinite_tester>    Finite_facets_iterator;
@@ -568,10 +564,22 @@ public:
 private:
   // Auxiliary iterators for convenience
   // do not use default template argument to please VC++
-  typedef Project_point<Vertex>                               Proj_point;
+  // typedef Project_point<Vertex>                               Proj_point;
+
+  struct Proj_point {
+    const Self *t;
+    Proj_point(const Self *tr) : t(tr) {}
+
+    Point operator()(const Vertex_handle& v) const
+    {
+      return t->point(v);
+    }
+  };
 
 public:
-  typedef Iterator_project<Finite_vertices_iterator, Proj_point>   Point_iterator;
+  // typedef Iterator_project<Finite_vertices_iterator, Proj_point>   Point_iterator;
+
+  typedef boost::transform_iterator<Proj_point, Finite_vertices_iterator> Point_iterator;
 
 
   typedef Iterator_range<Point_iterator> Points;
@@ -860,8 +868,8 @@ public:
 
   Cell_handle infinite_cell() const
   {
-    CGAL_assertion(infinite_vertex()->cell()->has_vertex(infinite_vertex()));
-    return infinite_vertex()->cell();
+    CGAL_assertion(has_vertex(cell(infinite_vertex()),infinite_vertex()));
+    return cell(infinite_vertex());
   }
 
   // GEOMETRIC ACCESS FUNCTIONS
@@ -869,10 +877,10 @@ public:
   {
     CGAL_precondition(dimension() == 3);
     CGAL_precondition(! is_infinite(c));
-    return construct_tetrahedron(c->vertex(0)->point(),
-                                 c->vertex(1)->point(),
-                                 c->vertex(2)->point(),
-                                 c->vertex(3)->point());
+    return construct_tetrahedron(point(vertex(c,0)),
+                                 point(vertex(c,1)),
+                                 point(vertex(c,2)),
+                                 point(vertex(c,3)));
   }
 
   template<typename P> // can be 'Point' or 'Point_3'
@@ -903,62 +911,47 @@ public:
   {
     CGAL_precondition(dimension() >= 0);
     CGAL_precondition(i >= 0 && i <= dimension());
-    CGAL_precondition(! is_infinite(c->vertex(i)));
-    c->vertex(i)->point() = p;
+    CGAL_precondition(! is_infinite(vertex(c,i)));
+    point(vertex(c,i)) = p;
   }
 
-  const Point& point(Cell_handle c, int i) const
+  const Point& point(const Cell_handle& c, int i) const
   {
     CGAL_precondition(dimension() >= 0);
     CGAL_precondition(i >= 0 && i <= dimension());
-    CGAL_precondition(! is_infinite(c->vertex(i)));
+    CGAL_precondition(! is_infinite(vertex(c,i)));
 
-    if constexpr (Tds::is_index_based) {
-      auto v_idx = tds().cell_storage()[c.idx()].ivertices[i];
-      return tds().point(v_idx);
-    } else {
-      return c->vertex(i)->point();
-    }
-  }
-
-  template <typename Cell_descriptor,
-            typename = std::enable_if_t<false == std::is_same_v<Cell_handle, cell_descriptor> &&
-                                        std::is_convertible_v<Cell_descriptor, cell_descriptor>
-                                       >
-           >
-  const Point& point(Cell_descriptor cd, int i) const
-  {
-    auto v_idx = tds().cell_storage()[cd].ivertices[i];
-    return tds().point(v_idx);
+    return point(vertex(c,i));
   }
 
   void set_point(Vertex_handle v, const Point& p)
   {
     CGAL_precondition(dimension() >= 0);
     CGAL_precondition(! is_infinite(v));
-    v->point() = p;
+    point(v) = p;
   }
 
-  const Point& point(Vertex_handle v) const
+  const Point& point(const Vertex_handle& v) const
   {
     CGAL_precondition(number_of_vertices() > 0);
     CGAL_precondition(! is_infinite(v));
 
-    if constexpr (Tds::is_index_based) {
-      return tds().point(v->idx());
-    } else {
-      return v->point();
-    }
+    return tds().point(v);
   }
 
-  template <typename Vertex_descriptor,
-            typename = std::enable_if_t<false == std::is_same_v<Vertex_handle, vertex_descriptor> &&
-                                        std::is_convertible_v<Vertex_descriptor, vertex_descriptor>
-                                       >
-           >
-  const Point& point(Vertex_descriptor v) const
+  int index(Cell_handle c, Vertex_handle v) const
   {
-    return tds().point(v);
+    return tds().index(c, v);
+  }
+
+  int index(Cell_handle c, Cell_handle n) const
+  {
+    return tds().index(c, n);
+  }
+
+  Cell_handle cell(Vertex_handle v) const
+  {
+    return tds().cell(v);
   }
 
   auto geometry(Cell_handle c) const { return tetrahedron(c); }
@@ -971,7 +964,7 @@ public:
   bool is_infinite(const Cell_handle c) const
   {
     CGAL_precondition(dimension() == 3);
-    return c->has_vertex(infinite_vertex());
+    return has_vertex(c,infinite_vertex());
   }
 
   bool is_infinite(const Cell_handle c, int i) const;
@@ -1012,6 +1005,7 @@ public:
 
   bool has_vertex(const Facet& f, Vertex_handle v, int& j) const;
   bool has_vertex(Cell_handle c, int i, Vertex_handle v, int& j) const;
+  bool has_vertex(Cell_handle c, Vertex_handle v, int& j) const;
   bool has_vertex(const Facet& f, Vertex_handle v) const;
   bool has_vertex(Cell_handle c, int i, Vertex_handle v) const;
 
@@ -1135,13 +1129,13 @@ public:
                      bool *could_lock_zone = nullptr) const
   {
     return locate(p, lt, li, lj,
-                  hint == Vertex_handle() ? infinite_cell() : hint->cell(),
+                  hint == Vertex_handle() ? infinite_cell() : cell(hint),
                   could_lock_zone);
   }
 
   Cell_handle locate(const Point& p, Vertex_handle hint, bool *could_lock_zone = nullptr) const
   {
-    return locate(p, hint == Vertex_handle() ? infinite_cell() : hint->cell(),
+    return locate(p, hint == Vertex_handle() ? infinite_cell() : cell(hint),
                   could_lock_zone);
   }
 
@@ -1211,9 +1205,34 @@ public:
   void flip_flippable(const Edge& e) { flip_flippable(e.first, e.second, e.third); }
   void flip_flippable(Cell_handle c, int i, int j);
 
+  Point& point(const Vertex_handle& v)
+  {
+    return tds().point(v);
+  }
+
+  void set_cell(const Vertex_index& vi, const Cell_index& ci)
+  {
+    tds().set_cell(vi, ci);
+  }
+
+  bool has_vertex(const Cell_index& ci, const Vertex_index& vi) const
+  {
+    return tds().has_vertex(ci, vi);
+  }
+
+  Vertex_index vertex(const Cell_index& ci, int i) const
+  {
+    return tds().vertex(ci, i);
+  }
+
+  Cell_index neighbor(const Cell_index& ci, int i) const
+  {
+    return tds().neighbor(ci, i);
+  }
+
   //INSERTION
   Vertex_handle insert(const Point& p, Vertex_handle hint) {
-    return insert(p, hint == Vertex_handle() ? infinite_cell() : hint->cell());
+    return insert(p, hint == Vertex_handle() ? infinite_cell() : cell(hint));
   }
   Vertex_handle insert(const Point& p, Cell_handle start = Cell_handle());
   Vertex_handle insert(const Point& p, Locate_type lt, Cell_handle c,
@@ -1357,7 +1376,7 @@ public:
   {
     // Some geometric preconditions should be tested...
     Vertex_handle v = tds().insert_in_hole(cell_begin, cell_end, begin, i);
-    v->set_point(p);
+    set_point(v,p);
     return v;
   }
 
@@ -1367,7 +1386,7 @@ public:
                                Cell_handle begin, int i, Vertex_handle newv)
   {
     // Some geometric preconditions should be tested...
-    newv->set_point(p);
+    set_point(newv,p);
     return tds().insert_in_hole(cell_begin, cell_end, begin, i, newv);
   }
 
@@ -1379,7 +1398,7 @@ public:
   {
     // Some geometric preconditions should be tested...
     Vertex_handle v = tds()._insert_in_hole(cell_begin, cell_end, begin, i);
-    v->set_point(p);
+    set_point(v,p);
     return v;
   }
 
@@ -1390,7 +1409,7 @@ public:
                                       const Facets& facets )
   {
     Vertex_handle v = tds()._insert_in_small_hole(cells, facets);
-    v->set_point(p);
+    set_point(v,p);
     return v;
   }
 
@@ -1401,7 +1420,7 @@ public:
                                 Cell_handle begin, int i, Vertex_handle newv)
   {
     // Some geometric preconditions should be tested...
-    newv->set_point(p);
+    set_point(newv, p);
     return tds()._insert_in_hole(cell_begin, cell_end, begin, i, newv);
   }
 
@@ -1452,20 +1471,20 @@ protected:
     SV sv;
     std::stack<cell_descriptor, SV > cell_stack(sv);
 
-    cell_stack.push(tds().descriptor(d));
-    d->tds_data().mark_in_conflict();
+    cell_stack.push(d);
+    tds().tds_data(d).mark_in_conflict();
 
-    *it.second++ = d; // = tds().descriptor(d);
+    *it.second++ = d;
 
     auto check_this_facet_must_be_in_the_cz = [&](cell_descriptor cd, int i, bool on_boundary = false) {
-      if((cd == tds().descriptor(this_facet_must_be_in_the_cz->first)) &&
+      if((cd == this_facet_must_be_in_the_cz->first) &&
          (i == this_facet_must_be_in_the_cz->second))
       {
         *the_facet_is_in_its_cz = true;
       }
       if(on_boundary) {
         auto [nd, ni] = tds().mirror_facet(cd, i);
-        if((nd == tds().descriptor(this_facet_must_be_in_the_cz->first)) &&
+        if((nd == this_facet_must_be_in_the_cz->first) &&
            (ni == this_facet_must_be_in_the_cz->second))
         {
           *the_facet_is_in_its_cz = true;
@@ -1491,13 +1510,14 @@ protected:
       std::cerr << ss.str();
     }
 #endif
+    int dim_plus_one = dimension()+1;
     do
     {
       cell_descriptor cd = cell_stack.top();
       cell_stack.pop();
 
       // For each neighbor cell
-      for(int i=0, dim = dimension()+1; i < dim; ++i)
+      for(int i=0; i < dim_plus_one; ++i)
       {
         cell_descriptor test = tds().neighbor(cd, i);
 
@@ -1512,7 +1532,7 @@ protected:
           }
           if(cd < test)
           {
-            *it.third++ = std::make_pair(tds().handle(cd), i);
+            *it.third++ = std::make_pair(cd, i);
           }
           continue; // test was already in conflict.
         }
@@ -1548,12 +1568,12 @@ protected:
             }
             if(cd < test)
             {
-              *it.third++ = std::make_pair(tds().handle(cd), i);
+              *it.third++ = std::make_pair(cd, i);
             }
 
             cell_stack.push(test);
             tds().tds_data(test).mark_in_conflict();
-            *it.second++ = tds().handle(test);
+            *it.second++ = test;
             continue;
           }
 
@@ -1566,7 +1586,7 @@ protected:
           check_this_boundary_facet_must_be_in_the_cz(cd, i);
         }
 
-        *it.first++ = std::make_pair(tds().handle(cd), i);
+        *it.first++ = std::make_pair(cd, i);
       }
     }
     while(!cell_stack.empty());
@@ -1621,14 +1641,14 @@ protected:
     *it.second++ = d;
 
     auto check_this_facet_must_be_in_the_cz = [&](cell_descriptor cd, int i, bool on_boundary = false) {
-      if((cd == tds().descriptor(this_facet_must_be_in_the_cz->first)) &&
+      if((cd == this_facet_must_be_in_the_cz->first) &&
          (i == this_facet_must_be_in_the_cz->second))
       {
         *the_facet_is_in_its_cz = true;
       }
       if(on_boundary) {
         auto [nd, ni] = tds().mirror_facet(cd, i);
-        if((nd == tds().descriptor(this_facet_must_be_in_the_cz->first)) &&
+        if((nd == this_facet_must_be_in_the_cz->first) &&
            (ni == this_facet_must_be_in_the_cz->second))
         {
           *the_facet_is_in_its_cz = true;
@@ -1726,16 +1746,10 @@ protected:
     std::vector<cell_descriptor> cells;
     cells.reserve(32);
     auto cells_back = std::back_inserter(cells);
-    auto cells_out = boost::make_function_output_iterator(
-        [&](Cell_handle c) mutable {
-          // transform on the fly, then insert
-          *cells_back = tds().descriptor(c);
-        }
-      );
     Facet facet;
 
     auto triple = make_triple(Oneset_iterator<Facet>(facet),
-                                              cells_out,
+                                              cells_back,
                                               Emptyset_iterator());
 
     // Find the cells in conflict
@@ -1770,7 +1784,7 @@ private:
     {
       Locate_type loc;
       int i, j;
-      return t->side_of_cell(p, t->tds().handle(c), loc, i, j) == ON_BOUNDED_SIDE;
+      return t->side_of_cell(p, c, loc, i, j) == ON_BOUNDED_SIDE;
     }
   };
 
@@ -1789,7 +1803,7 @@ private:
     {
       Locate_type loc;
       int i, j;
-      return t->side_of_facet(p, t->tds().handle(c), loc, i, j) == ON_BOUNDED_SIDE;
+      return t->side_of_facet(p, c, loc, i, j) == ON_BOUNDED_SIDE;
     }
   };
 
@@ -1895,8 +1909,8 @@ protected:
                                               VertexRemover& remover,
                                               VertexInserter& inserter)
   {
-    Cell_handle fkstart = v->cell();
-    Cell_handle start = fkstart->neighbor(fkstart->index(v));
+    Cell_handle fkstart = cell(v);
+    Cell_handle start = neighbor(fkstart, index(fkstart, v));
 
     std::list<Edge_2D> hole;
     make_hole_2D(v, hole, remover);
@@ -1910,16 +1924,16 @@ protected:
     // not the basic Triangulation_3.
     // Here we correct the recent triangulation (with decreased dimension) formed
     // in particular here a 2D (from 3D to 2D displacement)
-    Vertex_handle inserted = inserter.insert(v->point(), start);
+    Vertex_handle inserted = inserter.insert(point(v), start);
 
     // fixing pointer
-    Cell_handle fc = inserted->cell(), done(fc);
+    Cell_handle fc = cell(inserted), done(fc);
     std::vector<Cell_handle> faces_pt;
     faces_pt.reserve(16);
     do
     {
       faces_pt.push_back(fc);
-      fc = fc->neighbor((fc->index(inserted) + 1)%3);
+      fc = neighbor(fc, (index(fc,inserted) + 1)%3);
     }
     while(fc != done);
 
@@ -1927,10 +1941,10 @@ protected:
     for(std::size_t k=0; k<ss; k++)
     {
       Cell_handle f = faces_pt[k];
-      int i = f->index(inserted);
-      f->set_vertex(i, v);
+      int i = index(f,inserted);
+      set_vertex(f, i, v);
     }
-    v->set_cell(inserted->cell());
+    set_cell(v, cell(inserted));
 
     tds().delete_vertex(inserted);
   }
@@ -2191,11 +2205,14 @@ public:
 
   Point_iterator points_begin() const
   {
-    return Point_iterator(finite_vertices_begin());
+    Proj_point  proj_point(this);
+    return boost::make_transform_iterator(finite_vertices_begin(), proj_point);
   }
+
   Point_iterator points_end() const
   {
-    return Point_iterator(finite_vertices_end());
+    Proj_point  proj_point(this);
+    return boost::make_transform_iterator(finite_vertices_end(), proj_point);
   }
 
   Points points() const
@@ -2311,12 +2328,12 @@ public:
     if(!this->try_lock_vertex(v))
       return false;
 
-    Cell_handle d = v->cell();
+    Cell_handle d = cell(v);
     if(!this->try_lock_cell(d)) // LOCK
       return false;
 
     cells.push_back(d);
-    d->tds_data().mark_in_conflict();
+    tds().tds_data(d).mark_in_conflict();
     int head=0;
     int tail=1;
     do
@@ -2325,26 +2342,26 @@ public:
 
       for(int i=0; i<4; ++i)
       {
-        if(c->vertex(i) == v)
+        if(vertex(c,i) == v)
           continue;
 
-        Cell_handle next = c->neighbor(i);
+        Cell_handle next = neighbor(c,i);
         if(!this->try_lock_cell(next)) // LOCK
         {
           for(Cell_handle ch : cells)
           {
-            ch->tds_data().clear();
+            tds().tds_data(ch).clear();
           }
           cells.clear();
           return false;
         }
 
-        if(! next->tds_data().is_clear())
+        if(! tds().tds_data(next).is_clear())
           continue;
 
         cells.push_back(next);
         ++tail;
-        next->tds_data().mark_in_conflict();
+        tds().tds_data(next).mark_in_conflict();
       }
       ++head;
     }
@@ -2352,7 +2369,7 @@ public:
 
     for(Cell_handle ch : cells)
     {
-      ch->tds_data().clear();
+      tds().tds_data(ch).clear();
     }
     return true;
   }
@@ -2366,12 +2383,12 @@ public:
     if(!this->try_lock_vertex(v))
       return false;
 
-    Cell_handle d = v->cell();
+    Cell_handle d = cell(v);
     if(!this->try_lock_cell(d)) // LOCK
       return false;
 
     cells.push_back(d);
-    d->tds_data().mark_in_conflict();
+    tds().tds_data(d).mark_in_conflict();
     int head=0;
     int tail=1;
     do
@@ -2380,25 +2397,25 @@ public:
 
       for(int i=0; i<4; ++i)
       {
-        if(c->vertex(i) == v)
+        if(vertex(c,i) == v)
           continue;
 
-        Cell_handle next = c->neighbor(i);
+        Cell_handle next = neighbor(c,i);
         if(!this->try_lock_cell(next)) // LOCK
         {
           for(Cell_handle ch : cells)
           {
-            ch->tds_data().clear();
+            tds().tds_data(ch).clear();
           }
           cells.clear();
           return false;
         }
-        if(! next->tds_data().is_clear())
+        if(! tds().tds_data(next).is_clear())
           continue;
 
         cells.push_back(next);
         ++tail;
-        next->tds_data().mark_in_conflict();
+        tds().tds_data(next).mark_in_conflict();
       }
       ++head;
     }
@@ -2407,10 +2424,10 @@ public:
     std::set<Vertex_handle> tmp_vertices;
     for(Cell_handle ch : cells)
     {
-      ch->tds_data().clear();
+      tds().tds_data(ch).clear();
       for(int i = 0;  i < 4; ++i)
       {
-        Vertex_handle w = ch->vertex(i);
+        Vertex_handle w = vertex(ch,i);
         if(w != v && tmp_vertices.insert(w).second)
         {
           *vertices = w;
@@ -2718,7 +2735,8 @@ std::istream& operator>> (std::istream& is, Triangulation_3<GT, Tds, Lds>& tr)
   for(size_type i=1; i <= n; i++)
   {
     V[i] = tr.tds().create_vertex();
-    if(!(is >> *V[i]))
+    // AF todo if(!(is >> *V[i]))
+    assert(false);
       return is;
   }
 
@@ -2728,7 +2746,8 @@ std::istream& operator>> (std::istream& is, Triangulation_3<GT, Tds, Lds>& tr)
   tr.tds().read_cells(is, V, m, C);
 
   for(size_type j=0 ; j < m; j++)
-    if(!(is >> *(C[j])))
+    // AF: todo if(!(is >> *(C[j])))
+    assert(false);
       return is;
 
   CGAL_assertion(tr.is_valid(false));
@@ -2776,16 +2795,16 @@ std::ostream& operator<< (std::ostream& os, const Triangulation_3<GT, Tds, Lds>&
 
   // write the vertices
   for(Vertex_iterator it = tr.vertices_begin(), end = tr.vertices_end(); it != end; ++it)
-    TV[i++] = it;
+    TV[i++] = *it;
 
   CGAL_assertion(i == n+1);
   CGAL_assertion(tr.is_infinite(TV[0]));
 
-  Unique_hash_map<Vertex_handle, size_type > V;
+  Unique_hash_map<Vertex_handle, size_type, std::hash<Vertex_handle> > V;
   V[tr.infinite_vertex()] = 0;
   for(i=1; i <= n; i++)
   {
-    os << *TV[i];
+    // AF: todo  // os << *TV[i];
     V[TV[i]] = i;
     if(IO::is_ascii(os))
       os << std::endl;
@@ -2804,7 +2823,7 @@ std::ostream& operator<< (std::ostream& os, const Triangulation_3<GT, Tds, Lds>&
     {
       for(Cell_iterator it = tr.cells_begin(), end = tr.cells_end(); it != end; ++it)
       {
-        os << *it; // other information
+        // AF:  todo   os << *it; // other information
         if(IO::is_ascii(os))
           os << std::endl;
       }
@@ -2814,7 +2833,7 @@ std::ostream& operator<< (std::ostream& os, const Triangulation_3<GT, Tds, Lds>&
     {
       for(Facet_iterator it = tr.facets_begin(), end = tr.facets_end(); it != end; ++it)
       {
-        os << *((*it).first); // other information
+        // AF: todo // os << *((*it).first); // other information
         if(IO::is_ascii(os))
           os << std::endl;
       }
@@ -2824,7 +2843,7 @@ std::ostream& operator<< (std::ostream& os, const Triangulation_3<GT, Tds, Lds>&
     {
       for(Edge_iterator it = tr.edges_begin(), end = tr.edges_end(); it != end; ++it)
       {
-        os << *((*it).first); // other information
+        // AF:  todo   os << *((*it).first); // other information
         if(IO::is_ascii(os))
           os << std::endl;
       }
@@ -2932,9 +2951,9 @@ is_infinite(const Cell_handle c, int i) const
   CGAL_precondition(dimension() == 2 || dimension() == 3);
   CGAL_precondition((dimension() == 2 && i == 3) ||
                     (dimension() == 3 && i >= 0 && i <= 3));
-  return is_infinite(c->vertex(i<=0 ? 1 : 0)) ||
-      is_infinite(c->vertex(i<=1 ? 2 : 1)) ||
-      is_infinite(c->vertex(i<=2 ? 3 : 2));
+  return is_infinite(vertex(c, i<=0 ? 1 : 0)) ||
+      is_infinite(vertex(c, i<=1 ? 2 : 1)) ||
+      is_infinite(vertex(c, i<=2 ? 3 : 2));
 }
 
 template < class GT, class Tds, class Lds >
@@ -2947,7 +2966,7 @@ is_infinite(const Cell_handle c, int i, int j) const
   CGAL_precondition(dimension() >= 1 && dimension() <= 3);
   CGAL_precondition(i >= 0 && i <= dimension() &&
                                   j >= 0 && j <= dimension());
-  return is_infinite(c->vertex(i)) || is_infinite(c->vertex(j));
+  return is_infinite(vertex(c,i)) || is_infinite(vertex(c,j));
 }
 
 template < class GT, class Tds, class Lds >
@@ -3072,6 +3091,15 @@ template < class GT, class Tds, class Lds >
 inline
 bool
 Triangulation_3<GT,Tds,Lds>::
+has_vertex(Cell_handle c, Vertex_handle v, int& res) const
+{
+  return tds().has_vertex(c, v, res);
+}
+
+template < class GT, class Tds, class Lds >
+inline
+bool
+Triangulation_3<GT,Tds,Lds>::
 are_equal(Cell_handle c, int i, Cell_handle n, int j) const
 {
   return tds().are_equal(c, i, n, j);
@@ -3130,8 +3158,8 @@ exact_locate(const Point& p, Locate_type& lt, int& li, int& lj,
       start = infinite_cell();
 
     int ind_inf;
-    if(start->has_vertex(_infinite_vertex, ind_inf))
-      start = start->neighbor(ind_inf);
+    if(has_vertex(start,_infinite_vertex, ind_inf))
+      start = neighbor(start, ind_inf);
   }
 
   boost::rand48 rng;
@@ -3141,7 +3169,7 @@ exact_locate(const Point& p, Locate_type& lt, int& li, int& lj,
     case 3:
     {
       CGAL_precondition(start != Cell_handle());
-      CGAL_precondition(! start->has_vertex(_infinite_vertex));
+      CGAL_precondition(! has_vertex(start, _infinite_vertex));
 
       // We implement the remembering visibility/stochastic walk.
 
@@ -3175,10 +3203,10 @@ exact_locate(const Point& p, Locate_type& lt, int& li, int& lj,
         // So, in order to test if p is seen outside from one of c's facets,
         // we just replace the corresponding point by p in the orientation
         // test.  We do this using the array below.
-        const Point* pts[4] = { &(c->vertex(0)->point()),
-                                &(c->vertex(1)->point()),
-                                &(c->vertex(2)->point()),
-                                &(c->vertex(3)->point()) };
+        const Point* pts[4] = { &(point(vertex(c,0))),
+                                &(point(vertex(c,1))),
+                                &(point(vertex(c,2))),
+                                &(point(vertex(c,3))) };
 
         // For the remembering stochastic walk,
         // we need to start trying with a random index :
@@ -3190,7 +3218,7 @@ exact_locate(const Point& p, Locate_type& lt, int& li, int& lj,
         // for each vertex
         for(int j=0; !try_next_cell && j != 4; ++j, i = (i+1)&3)
         {
-          Cell_handle next = c->neighbor(i);
+          Cell_handle next = neighbor(c,i);
 
           if(previous == next)
           {
@@ -3208,7 +3236,7 @@ exact_locate(const Point& p, Locate_type& lt, int& li, int& lj,
             }
             else
             {
-              if(next->has_vertex(_infinite_vertex, li))
+              if(has_vertex(next, _infinite_vertex, li))
               {
                 // We are outside the convex hull.
                 lt = OUTSIDE_CONVEX_HULL;
@@ -3260,8 +3288,8 @@ exact_locate(const Point& p, Locate_type& lt, int& li, int& lj,
           lj = (o[li+1] != COPLANAR) ? li+1 :
                  (o[li+2] != COPLANAR) ? li+2 : li+3;
           CGAL_assertion(collinear(p,
-                                   c->vertex(li)->point(),
-                                   c->vertex(lj)->point()));
+                                   point(vertex(c,li)),
+                                   point(vertex(c,lj))));
           break;
         }
         case 3:
@@ -3279,16 +3307,16 @@ exact_locate(const Point& p, Locate_type& lt, int& li, int& lj,
     case 2:
     {
       CGAL_precondition(start != Cell_handle());
-      CGAL_precondition(! start->has_vertex(_infinite_vertex));
+      CGAL_precondition(! has_vertex(start, _infinite_vertex));
       Cell_handle c = start;
 
       boost::uniform_smallint<> three(0, 2);
       boost::variate_generator<boost::rand48&, boost::uniform_smallint<> > die3(rng, three);
 
       //first tests whether p is coplanar with the current triangulation
-      if(orientation(c->vertex(0)->point(),
-                     c->vertex(1)->point(),
-                     c->vertex(2)->point(),
+      if(orientation(point(vertex(c,0)),
+                     point(vertex(c,1)),
+                     point(vertex(c,2)),
                      p) != DEGENERATE)
       {
         lt = OUTSIDE_AFFINE_HULL;
@@ -3301,7 +3329,7 @@ exact_locate(const Point& p, Locate_type& lt, int& li, int& lj,
       while(1)
       {
         int inf;
-        if(c->has_vertex(_infinite_vertex, inf))
+        if(has_vertex(c, _infinite_vertex, inf))
         {
           // c must contain p in its interior
           lt = OUTSIDE_CONVEX_HULL;
@@ -3314,29 +3342,29 @@ exact_locate(const Point& p, Locate_type& lt, int& li, int& lj,
         // we test its edges in a random order until we find a
         // neighbor to go further
         int i = die3();
-        const Point& p0 = c->vertex(i)->point();
-        const Point& p1 = c->vertex(ccw(i))->point();
-        const Point& p2 = c->vertex(cw(i))->point();
+        const Point& p0 = point(vertex(c,i));
+        const Point& p1 = point(vertex(c,ccw(i)));
+        const Point& p2 = point(vertex(c,cw(i)));
         Orientation o[3];
         CGAL_assertion(coplanar_orientation(p0,p1,p2) == POSITIVE);
         o[0] = coplanar_orientation(p0,p1,p);
         if(o[0] == NEGATIVE)
         {
-          c = c->neighbor(cw(i));
+          c = neighbor(c,cw(i));
           continue;
         }
 
         o[1] = coplanar_orientation(p1,p2,p);
         if(o[1] == NEGATIVE)
         {
-          c = c->neighbor(i);
+          c = neighbor(c,i);
           continue;
         }
 
         o[2] = coplanar_orientation(p2,p0,p);
         if(o[2] == NEGATIVE)
         {
-          c = c->neighbor(ccw(i));
+          c = neighbor(c,ccw(i));
           continue;
         }
 
@@ -3376,11 +3404,11 @@ exact_locate(const Point& p, Locate_type& lt, int& li, int& lj,
     case 1:
     {
       CGAL_precondition(start != Cell_handle());
-      CGAL_precondition(! start->has_vertex(_infinite_vertex));
+      CGAL_precondition(! has_vertex(start, _infinite_vertex));
       Cell_handle c = start;
 
       //first tests whether p is collinear with the current triangulation
-      if(! collinear(p, c->vertex(0)->point(), c->vertex(1)->point()))
+      if(! collinear(p, point(vertex(c,0)), point(vertex(c,1))))
       {
         lt = OUTSIDE_AFFINE_HULL;
         return c;
@@ -3388,7 +3416,7 @@ exact_locate(const Point& p, Locate_type& lt, int& li, int& lj,
       // if p is collinear, location :
       while(1)
       {
-        if(c->has_vertex(_infinite_vertex))
+        if(has_vertex(c,_infinite_vertex))
         {
           // c must contain p in its interior
           lt = OUTSIDE_CONVEX_HULL;
@@ -3397,13 +3425,13 @@ exact_locate(const Point& p, Locate_type& lt, int& li, int& lj,
 
         // else c is finite
         // we test on which direction to continue the traversal
-        switch(collinear_position(c->vertex(0)->point(), p, c->vertex(1)->point()))
+        switch(collinear_position(point(vertex(c,0)), p, point(vertex(c,1))))
         {
           case AFTER:
-            c = c->neighbor(0);
+            c = neighbor(c,0);
             continue;
           case BEFORE:
-            c = c->neighbor(1);
+            c = neighbor(c,1);
             continue;
           case MIDDLE:
             lt = EDGE;
@@ -3424,7 +3452,7 @@ exact_locate(const Point& p, Locate_type& lt, int& li, int& lj,
     case 0:
     {
       Finite_vertices_iterator vit = finite_vertices_begin();
-      if(! equal(p, vit->point()))
+      if(! equal(p, point(*vit)))
       {
         lt = OUTSIDE_AFFINE_HULL;
       }
@@ -3433,7 +3461,7 @@ exact_locate(const Point& p, Locate_type& lt, int& li, int& lj,
         lt = VERTEX;
         li = 0;
       }
-      return vit->cell();
+      return cell(*vit);
     }
     case -1:
     {
@@ -3480,11 +3508,11 @@ inexact_locate(const Point& t, Cell_handle start, int n_of_turns,
   }
 
   int ind_inf;
-  if(start->has_vertex(_infinite_vertex, ind_inf))
-    start = start->neighbor(ind_inf);
+  if(has_vertex(start, _infinite_vertex, ind_inf))
+    start = neighbor(start, ind_inf);
 
   CGAL_precondition(start != Cell_handle());
-  CGAL_precondition(! start->has_vertex(_infinite_vertex));
+  CGAL_precondition(! has_vertex(start, _infinite_vertex));
 
   // We implement the remembering visibility walk.
   // In this phase, no need to be stochastic
@@ -3532,7 +3560,7 @@ try_next_cell:
   // (non-stochastic) visibility walk
   for(int i=0; i != 4; ++i)
   {
-    Cell_handle next = c->neighbor(i);
+    Cell_handle next = neighbor(c,i);
     if(previous == next) continue;
 
     // We temporarily put p at i's place in pts.
@@ -3544,7 +3572,7 @@ try_next_cell:
       continue;
     }
 
-    if(next->has_vertex(_infinite_vertex))
+    if(has_vertex(next, _infinite_vertex))
     {
       // We are outside the convex hull.
       return next;
@@ -3687,24 +3715,24 @@ side_of_cell(const Point& p,
   if(! is_infinite(c))
   {
     return side_of_tetrahedron(p,
-                               c->vertex(0)->point(),
-                               c->vertex(1)->point(),
-                               c->vertex(2)->point(),
-                               c->vertex(3)->point(),
+                               point(vertex(c, 0)),
+                               point(vertex(c, 1)),
+                               point(vertex(c, 2)),
+                               point(vertex(c, 3)),
                                lt, i, j);
   }
   else
   {
-    int inf = c->index(_infinite_vertex);
+    int inf = index(c, _infinite_vertex);
     Orientation o;
-    Vertex_handle v1 = c->vertex((inf+1)&3),
-                  v2 = c->vertex((inf+2)&3),
-                  v3 = c->vertex((inf+3)&3);
+    Vertex_handle v1 = vertex(c, (inf+1)&3),
+                  v2 = vertex(c, (inf+2)&3),
+                  v3 = vertex(c, (inf+3)&3);
 
     if((inf&1) == 0)
-      o = orientation(p, v1->point(), v2->point(), v3->point());
+      o = orientation(p, point(v1), point(v2), point(v3));
     else
-      o =  orientation(v3->point(), p, v1->point(), v2->point());
+      o =  orientation(point(v3), p, point(v1), point(v2));
 
     switch(o)
     {
@@ -3720,7 +3748,7 @@ side_of_cell(const Point& p,
         // location in the finite facet
         int i_f, j_f;
         Bounded_side side = side_of_triangle(p,
-                                             v1->point(), v2->point(), v3->point(),
+                                             point(v1), point(v2), point(v3),
                                              lt, i_f, j_f);
 
         // lt need not be modified in most cases :
@@ -3876,9 +3904,9 @@ side_of_facet(const Point& p,
     //                                     c->vertex(2)->point));
     int i_t, j_t;
     Bounded_side side = side_of_triangle(p,
-                                         c->vertex(0)->point(),
-                                         c->vertex(1)->point(),
-                                         c->vertex(2)->point(),
+                                         point(vertex(c,0)),
+                                         point(vertex(c,1)),
+                                         point(vertex(c,2)),
                                          lt, i_t, j_t);
 
     // We protect the following code by this test to avoid valgrind messages.
@@ -3894,7 +3922,7 @@ side_of_facet(const Point& p,
   }
 
   // else infinite facet
-  int inf = c->index(_infinite_vertex);
+  int inf = index(c,_infinite_vertex);
   // The following precondition is useless because it is written
   // in side_of_facet
   //         CGAL_precondition(coplanar (p,
@@ -3903,13 +3931,13 @@ side_of_facet(const Point& p,
   //                                     c->neighbor(inf)->vertex(2)->point()));
   int i2 = next_around_edge(inf,3);
   int i1 = 3 - inf - i2;
-  Vertex_handle v1 = c->vertex(i1),
-                v2 = c->vertex(i2);
+  Vertex_handle v1 = vertex(c,i1),
+                v2 = vertex(c,i2);
 
-  CGAL_assertion(coplanar_orientation(v1->point(), v2->point(),
-                                      mirror_vertex(c, inf)->point()) == POSITIVE);
+  CGAL_assertion(coplanar_orientation(point(v1), point(v2),
+                                      point(mirror_vertex(c, inf))) == POSITIVE);
 
-  switch(coplanar_orientation(v1->point(), v2->point(), p))
+  switch(coplanar_orientation(point(v1), point(v2), p))
   {
     case POSITIVE:
       // p lies on the same side of v1v2 as vn, so not in f
@@ -3922,7 +3950,7 @@ side_of_facet(const Point& p,
     default: // case ZERO:
       // p collinear with v1v2
       int i_e;
-      switch(side_of_segment(p, v1->point(), v2->point(), lt, i_e))
+      switch(side_of_segment(p, point(v1), point(v2), lt, i_e))
       {
         // computation of the indices in the original cell
         case ON_BOUNDED_SIDE:
@@ -3998,12 +4026,12 @@ side_of_edge(const Point& p,
 
   CGAL_precondition(dimension() == 1);
   if(! is_infinite(c,0,1))
-    return side_of_segment(p, c->vertex(0)->point(), c->vertex(1)->point(),
+    return side_of_segment(p, point(vertex(c,0)), point(vertex(c,1)),
                            lt, li);
   // else infinite edge
-  int inf = c->index(_infinite_vertex);
-  switch(collinear_position(c->vertex(1-inf)->point(), p,
-                             mirror_vertex(c, inf)->point()))
+  int inf = index(c,_infinite_vertex);
+  switch(collinear_position(point(vertex(c, 1-inf)), p,
+                             point(mirror_vertex(c, inf))))
   {
     case SOURCE:
       lt = VERTEX;
@@ -4025,49 +4053,49 @@ flip(Cell_handle c, int i)
   CGAL_precondition((dimension() == 3) && (0<=i) && (i<4) &&
                     (number_of_vertices() >= 5));
 
-  Cell_handle n = c->neighbor(i);
-  int in = n->index(c);
+  Cell_handle n = neighbor(c,i);
+  int in = index(n,c);
   if(is_infinite(c) || is_infinite(n))
     return false;
 
   if(i%2 == 1)
   {
-    if(orientation(c->vertex((i+1)&3)->point(),
-                   c->vertex((i+2)&3)->point(),
-                   n->vertex(in)->point(),
-                   c->vertex(i)->point()) != POSITIVE)
+    if(orientation(point(vertex(c, (i+1)&3)),
+                   point(vertex(c, (i+2)&3)),
+                   point(vertex(n,in)),
+                   point(vertex(c,i))) != POSITIVE)
       return false;
 
-    if(orientation(c->vertex((i+2)&3)->point(),
-                   c->vertex((i+3)&3)->point(),
-                   n->vertex(in)->point(),
-                   c->vertex(i)->point()) != POSITIVE)
+    if(orientation(point(vertex((c, i+2)&3)),
+                   point(vertex((c, i+3)&3)),
+                   point(vertex(n, in)),
+                   point(vertex(c, i))) != POSITIVE)
       return false;
 
-    if(orientation(c->vertex((i+3)&3)->point(),
-                   c->vertex((i+1)&3)->point(),
-                   n->vertex(in)->point(),
-                   c->vertex(i)->point()) != POSITIVE)
+    if(orientation(point(vertex(c, (i+3)&3)),
+                   point(vertex(c, (i+1)&3)),
+                   point(vertex(n, in)),
+                   point(vertex(c, i))) != POSITIVE)
       return false;
   }
   else
   {
-    if(orientation(c->vertex((i+2)&3)->point(),
-                   c->vertex((i+1)&3)->point(),
-                   n->vertex(in)->point(),
-                   c->vertex(i)->point()) != POSITIVE)
+    if(orientation(point(vertex(c,(i+2)&3)),
+                   point(vertex(c,(i+1)&3)),
+                   point(vertex(n,in)),
+                   point(vertex(c,i))) != POSITIVE)
       return false;
 
-    if(orientation(c->vertex((i+3)&3)->point(),
-                   c->vertex((i+2)&3)->point(),
-                   n->vertex(in)->point(),
-                   c->vertex(i)->point()) != POSITIVE)
+    if(orientation(point(vertex(c,(i+3)&3)),
+                   point(vertex(c,(i+2)&3)),
+                   point(vertex(n,in)),
+                   point(vertex(c,i))) != POSITIVE)
       return false;
 
-    if(orientation(c->vertex((i+1)&3)->point(),
-                   c->vertex((i+3)&3)->point(),
-                   n->vertex(in)->point(),
-                   c->vertex(i)->point()) != POSITIVE)
+    if(orientation(point(vertex(c,(i+1)&3)),
+                   point(vertex(c,(i+3)&3)),
+                   point(vertex(n,in)),
+                   point(vertex(c,i))) != POSITIVE)
       return false;
   }
 
@@ -4082,39 +4110,39 @@ flip_flippable(Cell_handle c, int i)
 {
   CGAL_precondition((dimension() == 3) && (0<=i) && (i<4) &&
                     (number_of_vertices() >= 5));
-  CGAL_precondition_code(Cell_handle n = c->neighbor(i););
-  CGAL_precondition_code(int in = n->index(c););
+  CGAL_precondition_code(Cell_handle n = neighbor(c, i););
+  CGAL_precondition_code(int in = index(n,c););
   CGAL_precondition((! is_infinite(c)) &&(! is_infinite(n)));
 
   if(i%2 == 1)
   {
-    CGAL_precondition(orientation(c->vertex((i+1)&3)->point(),
-                                  c->vertex((i+2)&3)->point(),
-                                  n->vertex(in)->point(),
-                                  c->vertex(i)->point()) == POSITIVE);
-    CGAL_precondition(orientation(c->vertex((i+2)&3)->point(),
-                                  c->vertex((i+3)&3)->point(),
-                                  n->vertex(in)->point(),
-                                  c->vertex(i)->point()) == POSITIVE);
-    CGAL_precondition(orientation(c->vertex((i+3)&3)->point(),
-                                  c->vertex((i+1)&3)->point(),
-                                  n->vertex(in)->point(),
-                                  c->vertex(i)->point()) == POSITIVE);
+    CGAL_precondition(orientation(point(vertex(c,(i+1)&3)),
+                                  point(vertex(c,(i+2)&3)),
+                                  point(vertex(n,in)),
+                                  point(vertex(c,i))) == POSITIVE);
+    CGAL_precondition(orientation(point(vertex(c,(i+2)&3)),
+                                  point(vertex(c,(i+3)&3)),
+                                  point(vertex(n,in)),
+                                  point(vertex(c,i))) == POSITIVE);
+    CGAL_precondition(orientation(point(vertex(c,(i+3)&3)),
+                                  point(vertex(c,(i+1)&3)),
+                                  point(vertex(n,in)),
+                                  point(vertex(c,i))) == POSITIVE);
   }
   else
   {
-    CGAL_precondition(orientation(c->vertex((i+2)&3)->point(),
-                                  c->vertex((i+1)&3)->point(),
-                                  n->vertex(in)->point(),
-                                  c->vertex(i)->point()) == POSITIVE);
-    CGAL_precondition(orientation(c->vertex((i+3)&3)->point(),
-                                  c->vertex((i+2)&3)->point(),
-                                  n->vertex(in)->point(),
-                                  c->vertex(i)->point()) == POSITIVE);
-    CGAL_precondition(orientation(c->vertex((i+1)&3)->point(),
-                                  c->vertex((i+3)&3)->point(),
-                                  n->vertex(in)->point(),
-                                  c->vertex(i)->point()) == POSITIVE);
+    CGAL_precondition(orientation(point(vertex(c,(i+2)&3)),
+                                  point(vertex(c,(i+1)&3)),
+                                  point(vertex(n,in)-),
+                                  point(vertex(c,i))) == POSITIVE);
+    CGAL_precondition(orientation(point(vertex(c,(i+3)&3)),
+                                  point(vertex(c,(i+2)&3)),
+                                  point(vertex(n,in)),
+                                  point(vertex(c,i))) == POSITIVE);
+    CGAL_precondition(orientation(point(vertex(c,(i+1)&3)),
+                                  point(vertex(c,(i+3)&3)),
+                                  point(vertex(n,in)),
+                                  point(vertex(c,i))) == POSITIVE);
   }
 
   tds().flip_flippable(c, i);
@@ -4150,19 +4178,19 @@ flip(Cell_handle c, int i, int j)
     return false;
 
   // Checks that future tetrahedra are well oriented
-  Cell_handle n = c->neighbor(next_around_edge(i,j));
-  int in = n->index(c->vertex(i));
-  int jn = n->index(c->vertex(j));
-  if(orientation(c->vertex(next_around_edge(i,j))->point(),
-                 c->vertex(next_around_edge(j,i))->point(),
-                 n->vertex(next_around_edge(jn,in))->point(),
-                 c->vertex(j)->point()) != POSITIVE)
+  Cell_handle n = neighbor(c, next_around_edge(i,j));
+  int in = index(n,vertex(c,i));
+  int jn = index(n,vertex(c,j));
+  if(orientation(point(vertex(c,next_around_edge(i,j))),
+                 point(vertex(c,next_around_edge(j,i))),
+                 point(vertex(n,next_around_edge(jn,in))),
+                 point(vertex(c,j))) != POSITIVE)
     return false;
 
-  if(orientation(c->vertex(i)->point(),
-                 c->vertex(next_around_edge(j,i))->point(),
-                 n->vertex(next_around_edge(jn,in))->point(),
-                 c->vertex(next_around_edge(i,j))->point()) != POSITIVE)
+  if(orientation(point(vertex(c,i)),
+                 point(vertex(c,next_around_edge(j,i))),
+                 point(vertex(n,next_around_edge(jn,in))),
+                 point(vertex(c,next_around_edge(i,j)))) != POSITIVE)
     return false;
 
   tds().flip_flippable(c, i, j);
@@ -4193,17 +4221,17 @@ flip_flippable(Cell_handle c, int i, int j)
   while(ccir != cdone);
   CGAL_precondition(degree == 3);
 
-  Cell_handle n = c->neighbor(next_around_edge(i, j));
-  int in = n->index(c->vertex(i));
-  int jn = n->index(c->vertex(j));
-  CGAL_precondition(orientation(c->vertex(next_around_edge(i,j))->point(),
-                                c->vertex(next_around_edge(j,i))->point(),
-                                n->vertex(next_around_edge(jn,in))->point(),
-                                c->vertex(j)->point()) == POSITIVE);
-  CGAL_precondition(orientation(c->vertex(i)->point(),
-                                c->vertex(next_around_edge(j,i))->point(),
-                                n->vertex(next_around_edge(jn,in))->point(),
-                                c->vertex(next_around_edge(i,j))->point()) == POSITIVE);
+  Cell_handle n = neighbor(c,next_around_edge(i, j));
+  int in = index(n,vertex(c,i));
+  int jn = index(n,vertex(c,j));
+  CGAL_precondition(orientation(point(vertex(c,next_around_edge(i,j))),
+                                point(vertex(c,next_around_edge(j,i))),
+                                point(vertex(n,next_around_edge(jn,in))),
+                                point(vertex(c,j))) == POSITIVE);
+  CGAL_precondition(orientation(point(vertex(c,i)),
+                                point(vertex(c,next_around_edge(j,i))),
+                                point(vertex(n,next_around_edge(jn,in))),
+                                point(vertex(c,next_around_edge(i,j)))) == POSITIVE);
 #endif
 
   tds().flip_flippable(c, i, j);
@@ -4228,7 +4256,7 @@ insert(const Point& p, Locate_type lt, Cell_handle c, int li, int lj)
   switch(lt)
   {
     case VERTEX:
-      return c->vertex(li);
+      return vertex(c,li);
     case EDGE:
       return insert_in_edge(p, c, li, lj);
     case FACET:
@@ -4258,17 +4286,17 @@ insert_in_conflict(const Point& p,
 
   auto cell_handle_iterator = [&](auto it) {
     return boost::make_transform_iterator(it,
-      [this](const cell_descriptor& cd) { return tds().handle(cd); });
+      [this](const cell_descriptor& cd) { return cd; });
   };
 
-  cell_descriptor cd = tds().descriptor(c);
+  cell_descriptor cd = c;
   switch(dimension())
   {
     case 3:
     {
-      if((lt == VERTEX) && (tester.compare_weight(c->vertex(li)->point(), p)==0))
+      if((lt == VERTEX) && (tester.compare_weight(point(vertex(c,li)), p)==0))
       {
-        return c->vertex(li);
+        return vertex(c,li);
       }
 
       // If the new point is not in conflict with its cell, it is hidden.
@@ -4323,14 +4351,14 @@ insert_in_conflict(const Point& p,
 
       // Remember the points that are hidden by the conflicting cells,
       // as they will be deleted during the insertion.
-      hider.process_cells_in_conflict(cell_handle_iterator(cells.begin()), cell_handle_iterator(cells.end()));
+      hider.process_cells_in_conflict(cells.begin(), cells.end());
 
       Vertex_handle v =
         tds().is_small_hole(facets.size()) ?
         _insert_in_small_hole(p, cells, facets) :
         _insert_in_hole(p,
                         cells.begin(), cells.end(),
-                        tds().handle(facet.first), facet.second);
+                        facet.first, facet.second);
 
       // Store the hidden points in their new cells.
       hider.reinsert_vertices(v);
@@ -4342,9 +4370,9 @@ insert_in_conflict(const Point& p,
       if(lt == OUTSIDE_AFFINE_HULL)
         return insert_outside_affine_hull (p);
 
-      if((lt == VERTEX) && (tester.compare_weight(c->vertex(li)->point(), p)==0))
+      if((lt == VERTEX) && (tester.compare_weight(point(vertex(c,li)), p)==0))
       {
-        return c->vertex(li);
+        return vertex(c,li);
       }
       // If the new point is not in conflict with its cell, it is hidden.
       if(!tester.test_initial_cell(c))
@@ -4359,14 +4387,9 @@ insert_in_conflict(const Point& p,
       cells.reserve(32);
       Facet facet;
       auto cells_back = std::back_inserter(cells);
-      auto cells_out = boost::make_function_output_iterator(
-        [&](Cell_handle c) mutable {
-          // transform on the fly, then insert
-          *cells_back = tds().descriptor(c);
-        });
 
       find_conflicts(c, tester, make_triple(Oneset_iterator<Facet>(facet),
-                                            cells_out,
+                                            cells_back,
                                             Emptyset_iterator()));
 
 
@@ -4387,8 +4410,8 @@ insert_in_conflict(const Point& p,
       if(lt == OUTSIDE_AFFINE_HULL)
         return insert_outside_affine_hull (p);
 
-      if(lt == VERTEX && tester.compare_weight(c->vertex(li)->point(), p) == 0)
-        return c->vertex(li);
+      if(lt == VERTEX && tester.compare_weight(point(vertex(c,li)), p) == 0)
+        return vertex(c,li);
 
       // If the new point is not in conflict with its cell, it is hidden.
       if(! tester.test_initial_cell(c))
@@ -4414,11 +4437,11 @@ insert_in_conflict(const Point& p,
 
       for(int j = 0; j<2; ++j)
       {
-        Cell_handle n = c->neighbor(j);
+        Cell_handle n = neighbor(c,j);
         while(tester(n))
         {
           cells.push_back(n);
-          n = n->neighbor(j);
+          n = neighbor(n,j);
         }
         bound[j] = n;
       }
@@ -4429,15 +4452,15 @@ insert_in_conflict(const Point& p,
 
       // We preserve the order (like the orientation in 2D-3D).
       Vertex_handle v = tds().create_vertex();
-      Cell_handle c0 = tds().create_face(v, bound[0]->vertex(0), Vertex_handle());
-      Cell_handle c1 = tds().create_face(bound[1]->vertex(1), v, Vertex_handle());
+      Cell_handle c0 = tds().create_face(v, vertex(bound[0], 0), Vertex_handle());
+      Cell_handle c1 = tds().create_face(vertex(bound[1], 1), v, Vertex_handle());
       tds().set_adjacency(c0, 1, c1, 0);
       tds().set_adjacency(bound[0], 1, c0, 0);
       tds().set_adjacency(c1, 1, bound[1], 0);
-      bound[0]->vertex(0)->set_cell(bound[0]);
-      bound[1]->vertex(1)->set_cell(bound[1]);
-      v->set_cell(c0);
-      v->set_point (p);
+      set_cell(vertex(bound[0], 0), bound[0]);
+      set_cell(vertex(bound[1], 1), bound[1]);
+      set_cell(v, c0);
+      set_point(v,p);
 
       hider.reinsert_vertices(v);
 
@@ -4457,14 +4480,14 @@ insert_in_cell(const Point& p, Cell_handle c)
     int i; int j;
   );
   CGAL_precondition(side_of_tetrahedron(p,
-                                        c->vertex(0)->point(),
-                                        c->vertex(1)->point(),
-                                        c->vertex(2)->point(),
-                                        c->vertex(3)->point(),
+                                        point(vertex(c,0)),
+                                        point(vertex(c,1)),
+                                        point(vertex(c,2)),
+                                        point(vertex(c,3)),
                                         lt,i,j) == ON_BOUNDED_SIDE);
 
   Vertex_handle v = tds().insert_in_cell(c);
-  v->set_point(p);
+  set_point(v,p);
   return v;
 }
 
@@ -4481,17 +4504,17 @@ insert_in_facet(const Point& p, Cell_handle c, int i)
     Locate_type lt;
     int li; int lj;
   );
-  CGAL_exactness_precondition(coplanar(p, c->vertex((i+1)&3)->point(),
-                                       c->vertex((i+2)&3)->point(),
-                                       c->vertex((i+3)&3)->point()) &&
+  CGAL_exactness_precondition(coplanar(p, point(vertex(c,(i+1)&3)),
+                                       point(vertex(c,(i+2)&3)),
+                                       point(vertex(c,(i+3)&3))) &&
                               side_of_triangle(p,
-                                               c->vertex((i+1)&3)->point(),
-                                               c->vertex((i+2)&3)->point(),
-                                               c->vertex((i+3)&3)->point(),
+                                               point(vertex(c,(i+1)&3)),
+                                               point(vertex(c,(i+2)&3)),
+                                               point(vertex(c,(i+3)&3)),
                                                lt, li, lj) == ON_BOUNDED_SIDE);
 
   Vertex_handle v = tds().insert_in_facet(c, i);
-  v->set_point(p);
+  set_point(v,p);
   return v;
 }
 
@@ -4515,12 +4538,12 @@ insert_in_edge(const Point& p, Cell_handle c, int i, int j)
     case 2:
     {
       CGAL_precondition(! is_infinite(c, i, j));
-      CGAL_exactness_precondition(collinear(c->vertex(i)->point(),
+      CGAL_exactness_precondition(collinear(point(vertex(c,i)),
                                             p,
-                                            c->vertex(j)->point())
+                                            point(vertex(c,j)))
                                   && side_of_segment(p,
-                                                     c->vertex(i)->point(),
-                                                     c->vertex(j)->point(),
+                                                     point(vertex(c,i)),
+                                                     point(vertex(c,j)),
                                                      lt, li) == ON_BOUNDED_SIDE);
       break;
     }
@@ -4532,7 +4555,7 @@ insert_in_edge(const Point& p, Cell_handle c, int i, int j)
   }
 
   Vertex_handle v = tds().insert_in_edge(c, i, j);
-  v->set_point(p);
+  set_point(v,p);
   return v;
 }
 
@@ -4546,7 +4569,7 @@ insert_outside_convex_hull(const Point& p, Cell_handle c)
   // dimension 0 not allowed, use outside-affine-hull
 
   CGAL_precondition(dimension() > 0);
-  CGAL_precondition(c->has_vertex(_infinite_vertex));
+  CGAL_precondition(has_vertex(c,_infinite_vertex));
   // the precondition that p is in c is tested in each of the
   // insertion methods called from this method
 
@@ -4563,14 +4586,14 @@ insert_outside_convex_hull(const Point& p, Cell_handle c)
     {
       Conflict_tester_outside_convex_hull_2 tester(p, this);
       Vertex_handle v = insert_conflict(c, tester);
-      v->set_point(p);
+      set_point(v, p);
       return v;
     }
     default: // case 3:
     {
       Conflict_tester_outside_convex_hull_3 tester(p, this);
       Vertex_handle v = insert_conflict(c, tester);
-      v->set_point(p);
+      set_point(v, p);
       return v;
     }
   }
@@ -4588,9 +4611,9 @@ insert_outside_affine_hull(const Point& p)
     case 1:
     {
       Cell_handle c = infinite_cell();
-      Cell_handle n = c->neighbor(c->index(infinite_vertex()));
-      Orientation o = coplanar_orientation(n->vertex(0)->point(),
-                                           n->vertex(1)->point(), p);
+      Cell_handle n = neighbor(c, index(c, infinite_vertex()));
+      Orientation o = coplanar_orientation(point(vertex(n,0)),
+                                           point(vertex(n,1)), p);
       CGAL_precondition(o != COLLINEAR);
       reorient = o == NEGATIVE;
       break;
@@ -4598,10 +4621,10 @@ insert_outside_affine_hull(const Point& p)
     case 2:
     {
       Cell_handle c = infinite_cell();
-      Cell_handle n = c->neighbor(c->index(infinite_vertex()));
-      Orientation o = orientation(n->vertex(0)->point(),
-                                  n->vertex(1)->point(),
-                                  n->vertex(2)->point(), p);
+      Cell_handle n = neighbor(c, index(c, infinite_vertex()));
+      Orientation o = orientation(point(vertex(n,0)),
+                                  point(vertex(n,1)),
+                                  point(vertex(n,2)), p);
       CGAL_precondition(o != COPLANAR);
       reorient = o == NEGATIVE;
       break;
@@ -4611,7 +4634,7 @@ insert_outside_affine_hull(const Point& p)
   }
 
   Vertex_handle v = tds().insert_increase_dimension(infinite_vertex());
-  v->set_point(p);
+  set_point(v, p);
 
   if(reorient)
     tds().reorient();
@@ -4631,22 +4654,22 @@ Triangulation_3<GT,Tds,Lds>::insert_and_give_new_cells(const Point& p,
   if(dimension == 3) this->incident_cells(v, fit);
   else if(dimension == 2)
   {
-    Cell_handle c = v->cell(), end = c;
+    Cell_handle c = cell(v), end = c;
     do
     {
       *fit++ = c;
-      int i = c->index(v);
-      c = c->neighbor((i+1)%3);
+      int i = index(c,v);
+      c = neighbor(c,(i+1)%3);
     }
     while(c != end);
   }
   else if(dimension == 1)
   {
-    Cell_handle c = v->cell();
+    Cell_handle c = cell(v);
     *fit++ = c;
-    *fit++ = c->neighbor((~(c->index(v)))&1);
+    *fit++ = neighbor(c,(~(index(c,v)))&1);
   }
-  else *fit++ = v->cell(); // dimension = 0
+  else *fit++ = cell(v); // dimension = 0
   return v;
 }
 
@@ -4665,24 +4688,24 @@ Triangulation_3<GT,Tds,Lds>::insert_and_give_new_cells(const Point& p,
   }
   else if(dimension == 2)
   {
-    Cell_handle c = v->cell(), end = c;
+    Cell_handle c = cell(v), end = c;
     do
     {
       *fit++ = c;
-      int i = c->index(v);
-      c = c->neighbor((i+1)%3);
+      int i = index(c,cv);
+      c = neighbor(c,(i+1)%3);
     }
     while(c != end);
   }
   else if(dimension == 1)
   {
-    Cell_handle c = v->cell();
+    Cell_handle c = cell(v);
     *fit++ = c;
-    *fit++ = c->neighbor((~(c->index(v)))&1);
+    *fit++ = neighbor(c, (~(index(c,v)))&1);
   }
   else // dimension = 0
   {
-    *fit++ = v->cell();
+    *fit++ = cell(v);
   }
 
   return v;
@@ -4701,21 +4724,21 @@ Triangulation_3<GT,Tds,Lds>::insert_and_give_new_cells(const Point& p,
   if(dimension == 3) this->incident_cells(v, fit);
   else if(dimension == 2)
   {
-    Cell_handle c = v->cell(), end = c;
+    Cell_handle c = cell(v), end = c;
     do {
       *fit++ = c;
-      int i = c->index(v);
-      c = c->neighbor((i+1)%3);
+      int i = index(c,v);
+      c = neighbor(c,(i+1)%3);
     }
     while(c != end);
   }
   else if(dimension == 1)
   {
-    Cell_handle c = v->cell();
+    Cell_handle c = cell(v);
     *fit++ = c;
-    *fit++ = c->neighbor((~(c->index(v)))&1);
+    *fit++ = neighbor(c,(~(index(c,v)))&1);
   }
-  else *fit++ = v->cell(); // dimension = 0
+  else *fit++ = cell(v); // dimension = 0
   return v;
 }
 
@@ -4779,18 +4802,18 @@ test_dim_down(Vertex_handle v) const
     if(! cit->has_vertex(v,iv))
       return false;
 
-    const Point& p1=cit->vertex((iv+1)&3)->point();
-    const Point& p2=cit->vertex((iv+2)&3)->point();
-    const Point& p3=cit->vertex((iv+3)&3)->point();
+    const Point& p1= point(vertex(*cit, (iv+1)&3));
+    const Point& p2= point(vertex(*cit, (iv+2)&3));
+    const Point& p3= point(vertex(*cit, (iv+3)&3));
     ++cit;
 
     for(; cit != finite_cells_end(); ++cit)
     {
-      if(! cit->has_vertex(v,iv))
+      if(! has_vertex(*cit,v,iv))
         return false;
 
       for(int i=1; i<4; i++)
-        if(!coplanar(p1,p2,p3,cit->vertex((iv+i)&3)->point()))
+        if(!coplanar(p1,p2,p3,point(vertex(*cit,(iv+i)&3))))
           return false;
     }
   }
@@ -4799,20 +4822,20 @@ test_dim_down(Vertex_handle v) const
     Finite_facets_iterator cit = finite_facets_begin();
 
     int iv;
-    if(! cit->first->has_vertex(v,iv))
+    if(! cit->first->has_vertex(cit->first,v,iv))
       return false;
 
-    const Point& p1 = cit->first->vertex(cw(iv))->point();
-    const Point& p2 = cit->first->vertex(ccw(iv))->point();
+    const Point& p1 = point(vertex(cit->first, cw(iv)));
+    const Point& p2 = point(vertex(cit->first, ccw(iv)));
     ++cit;
 
     for(; cit != finite_facets_end(); ++cit)
     {
-      if(! cit->first->has_vertex(v,iv))
+      if(! has_vertex(cit->first, v,iv))
         return false;
 
-      if(!collinear(p1, p2, cit->first->vertex(cw(iv))->point()) ||
-         !collinear(p1, p2, cit->first->vertex(ccw(iv))->point()))
+      if(!collinear(p1, p2, point(vertex(cit->first, cw(iv)))) ||
+         !collinear(p1, p2, point(vertex(cit->first, ccw(iv)))))
         return false;
     }
   }
@@ -4859,13 +4882,13 @@ test_dim_down_using_incident_cells_3(Vertex_handle v,
   Finite_vertex_iterator vit_end(adj_vertices.end(),
                                  Infinite_tester(this));
 
-  const Point& p1 = (*vit++)->point();
-  const Point& p2 = (*vit++)->point();
-  const Point& p3 = (*vit++)->point();
+  const Point& p1 = point(*vit++);
+  const Point& p2 = point(*vit++);
+  const Point& p3 = point(*vit++);
 
   for(; vit != vit_end ; ++vit)
   {
-    if(!coplanar(p1, p2, p3, (*vit)->point()))
+    if(!coplanar(p1, p2, p3, point(*vit)))
       return false;
   }
 
@@ -4875,7 +4898,7 @@ test_dim_down_using_incident_cells_3(Vertex_handle v,
        ++it_inc_cell)
   {
     if(!is_infinite(*it_inc_cell))
-      return is_infinite(mirror_vertex(*it_inc_cell, (*it_inc_cell)->index(v)));
+      return is_infinite(mirror_vertex(*it_inc_cell, index(*it_inc_cell, v)));
   }
 
   return true;
@@ -4899,12 +4922,12 @@ make_hole_2D(Vertex_handle v, std::list<Edge_2D>& hole, VertexRemover& remover)
   do
   {
     Cell_handle f = fc;
-    int i = f->index(v);
-    Cell_handle fn = f->neighbor(i);
-    int in = fn->index(f);
+    int i = index(f,v);
+    Cell_handle fn = neighbor(f,i);
+    int in = index(fn, f);
 
-    f->vertex(cw(i))->set_cell(fn);
-    fn->set_neighbor(in, Cell_handle());
+    set_cell(vertex(f,cw(i)), fn);
+    set_neighbor(fn, in, Cell_handle());
 
     hole.push_back(Edge_2D(fn, in));
     remover.add_hidden_points(f);
@@ -4939,12 +4962,12 @@ make_hole_2D(Vertex_handle v, std::list<Edge_2D>& hole, VertexRemover& remover,
   do
   {
     Cell_handle f = fc;
-    int i = f->index(v);
-    Cell_handle fn = f->neighbor(i);
-    int in = fn->index(f);
+    int i = index(f,v);
+    Cell_handle fn = neighbor(f,i);
+    int in = index(fn, f);
 
-    f->vertex(cw(i))->set_cell(fn);
-    fn->set_neighbor(in, Cell_handle());
+    set_cell(vertex(f, cw(i)), fn);
+    set_neighbor(fn, in, Cell_handle());
 
     hole.push_back(Edge_2D(fn, in));
     remover.add_hidden_points(f);
@@ -5006,7 +5029,7 @@ fill_hole_2D(std::list<Edge_2D>& first_hole, VertexRemover& remover)
     {
       ff = (hole.front()).first;
       ii = (hole.front()).second;
-      if(is_infinite(ff->vertex(cw(ii))) || is_infinite(ff->vertex(ccw(ii))))
+      if(is_infinite(vertex(ff, cw(ii))) || is_infinite(vertex(ff, ccw(ii))))
       {
         hole.push_back(hole.front());
         hole.pop_front();
@@ -5022,11 +5045,11 @@ fill_hole_2D(std::list<Edge_2D>& first_hole, VertexRemover& remover)
     ii = (hole.front()).second;
     hole.pop_front();
 
-    Vertex_handle v0 = ff->vertex(cw(ii));
-    Vertex_handle v1 = ff->vertex(ccw(ii));
+    Vertex_handle v0 = vertex(ff,cw(ii));
+    Vertex_handle v1 = vertex(ff,ccw(ii));
     Vertex_handle v2 = infinite_vertex();
-    const Point& p0 = v0->point();
-    const Point& p1 = v1->point();
+    const Point& p0 = point(v0);
+    const Point& p1 = point(v1);
     const Point *p2 = nullptr; // Initialize to nullptr to avoid warning.
 
     typename Hole::iterator hdone = hole.end();
@@ -5040,7 +5063,7 @@ fill_hole_2D(std::list<Edge_2D>& first_hole, VertexRemover& remover)
     {
       fn = hit->first;
       in = hit->second;
-      Vertex_handle vv = fn->vertex(ccw(in));
+      Vertex_handle vv = vertex(fn,ccw(in));
       if(is_infinite(vv))
       {
         if(is_infinite(v2))
@@ -5048,7 +5071,7 @@ fill_hole_2D(std::list<Edge_2D>& first_hole, VertexRemover& remover)
       }
       else // vv is a finite vertex
       {
-        const Point& p = vv->point();
+        const Point& p = point(vv);
         if(coplanar_orientation(p0, p1, p) == COUNTERCLOCKWISE)
         {
           if(is_infinite(v2) ||
@@ -5070,7 +5093,7 @@ fill_hole_2D(std::list<Edge_2D>& first_hole, VertexRemover& remover)
     // the hole remains a single hole; otherwise it is split in two holes.
     fn = (hole.front()).first;
     in = (hole.front()).second;
-    if(fn->has_vertex(v2, i) && i == ccw(in))
+    if(has_vertex(fn, v2, i) && i == ccw(in))
     {
       newf = tds().create_face(ff, ii, fn, in);
       hole.pop_front();
@@ -5081,7 +5104,7 @@ fill_hole_2D(std::list<Edge_2D>& first_hole, VertexRemover& remover)
     {
       fn = (hole.back()).first;
       in = (hole.back()).second;
-      if(fn->has_vertex(v2, i) && i == cw(in))
+      if(has_vertex(fn, v2, i) && i == cw(in))
       {
         newf = tds().create_face(fn, in, ff, ii);
         hole.pop_back();
@@ -5156,7 +5179,7 @@ fill_hole_2D(std::list<Edge_2D>& first_hole, VertexRemover& remover, OutputItCel
     {
       ff = (hole.front()).first;
       ii = (hole.front()).second;
-      if(is_infinite(ff->vertex(cw(ii))) || is_infinite(ff->vertex(ccw(ii))))
+      if(is_infinite(vertex(ff,cw(ii))) || is_infinite(vertex(ff,ccw(ii))))
       {
         hole.push_back(hole.front());
         hole.pop_front();
@@ -5172,11 +5195,11 @@ fill_hole_2D(std::list<Edge_2D>& first_hole, VertexRemover& remover, OutputItCel
     ii = (hole.front()).second;
     hole.pop_front();
 
-    Vertex_handle v0 = ff->vertex(cw(ii));
-    Vertex_handle v1 = ff->vertex(ccw(ii));
+    Vertex_handle v0 = vertex(ff,cw(ii));
+    Vertex_handle v1 = vertex(ff,ccw(ii));
     Vertex_handle v2 = infinite_vertex();
-    const Point& p0 = v0->point();
-    const Point& p1 = v1->point();
+    const Point& p0 = point(v0);
+    const Point& p1 = point(v1);
     const Point *p2 = nullptr; // Initialize to nullptr to avoid warning.
 
     typename Hole::iterator hdone = hole.end();
@@ -5191,7 +5214,7 @@ fill_hole_2D(std::list<Edge_2D>& first_hole, VertexRemover& remover, OutputItCel
     {
       fn = hit->first;
       in = hit->second;
-      Vertex_handle vv = fn->vertex(ccw(in));
+      Vertex_handle vv = vertex(fn,ccw(in));
       if(is_infinite(vv))
       {
         if(is_infinite(v2))
@@ -5199,7 +5222,7 @@ fill_hole_2D(std::list<Edge_2D>& first_hole, VertexRemover& remover, OutputItCel
       }
       else // vv is a finite vertex
       {
-        const Point& p = vv->point();
+        const Point& p = point(vv);
         if(coplanar_orientation(p0, p1, p) == COUNTERCLOCKWISE)
         {
           if(is_infinite(v2) ||
@@ -5223,7 +5246,7 @@ fill_hole_2D(std::list<Edge_2D>& first_hole, VertexRemover& remover, OutputItCel
 
     fn = (hole.front()).first;
     in = (hole.front()).second;
-    if(fn->has_vertex(v2, i) && i == ccw(in))
+    if(has_vertex(fn, v2, i) && i == ccw(in))
     {
       newf = tds().create_face(ff, ii, fn, in);
       hole.pop_front();
@@ -5234,7 +5257,7 @@ fill_hole_2D(std::list<Edge_2D>& first_hole, VertexRemover& remover, OutputItCel
     {
       fn = (hole.back()).first;
       in = (hole.back()).second;
-      if(fn->has_vertex(v2, i) && i == cw(in))
+      if(has_vertex(fn, v2, i) && i == cw(in))
       {
         newf = tds().create_face(fn, in, ff, ii);
         hole.pop_back();
@@ -5276,16 +5299,16 @@ create_hole_outer_map(Vertex_handle v, const std::vector<Cell_handle>& incident_
   for(auto cit = incident_cells.begin(), end = incident_cells.end();
       cit != end; ++cit)
   {
-    int indv = (*cit)->index(v);
-    Cell_handle opp_cit = (*cit)->neighbor(indv);
-    Facet f(opp_cit, opp_cit->index(*cit));
+    int indv = index((*cit),v);
+    Cell_handle opp_cit = neighbor((*cit),indv);
+    Facet f(opp_cit, index(opp_cit, *cit));
     Vertex_triple vt = make_vertex_triple(f);
     make_canonical_oriented_triple(vt);
     outer_map[vt] = f;
     for(int i=0; i<4; i++)
     {
       if(i != indv)
-        (*cit)->vertex(i)->set_cell(opp_cit);
+        set_cell(vertex((*cit),i), opp_cit);
     }
   }
   return outer_map;
@@ -5344,10 +5367,10 @@ fill_auxiliary_triangulation_with_vertices_around_v(Triangulation& t,
       }
     }
 
-    Orientation o = orientation(adj_vertices[0]->point(),
-                                adj_vertices[1]->point(),
-                                adj_vertices[2]->point(),
-                                adj_vertices[3]->point());
+    Orientation o = orientation(point(adj_vertices[0]),
+                                point(adj_vertices[1]),
+                                point(adj_vertices[2]),
+                                point()adj_vertices[3]);
 
     if(o == NEGATIVE)
       std::swap(adj_vertices[0], adj_vertices[1]);
@@ -5355,11 +5378,11 @@ fill_auxiliary_triangulation_with_vertices_around_v(Triangulation& t,
     if(o != ZERO)
     {
       Vertex_handle vh1, vh2, vh3, vh4;
-      t.init_tds(adj_vertices[0]->point(), adj_vertices[1]->point(),
-                           adj_vertices[2]->point(), adj_vertices[3]->point(),
+      t.init_tds(point(adj_vertices[0]), point(adj_vertices[1]),
+                           point(adj_vertices[2]), point(adj_vertices[3]),
                            vh1, vh2, vh3, vh4);
 
-      ch = vh1->cell();
+      ch = cell(vh1);
       vmap[vh1] = adj_vertices[0];
       vmap[vh2] = adj_vertices[1];
       vmap[vh3] = adj_vertices[2];
@@ -5373,8 +5396,8 @@ fill_auxiliary_triangulation_with_vertices_around_v(Triangulation& t,
   {
     if(! is_infinite(adj_vertices[i]))
     {
-      Vertex_handle vh = t.insert(adj_vertices[i]->point(), ch);
-      ch = vh->cell();
+      Vertex_handle vh = t.insert(point(adj_vertices[i]), ch);
+      ch = cell(vh);
       vmap[vh] = adj_vertices[i];
     }
     else
@@ -5385,7 +5408,7 @@ fill_auxiliary_triangulation_with_vertices_around_v(Triangulation& t,
 
   if(t.dimension() == 2)
   {
-    Vertex_handle fake_inf = t.insert(v->point());
+    Vertex_handle fake_inf = t.insert(point(v));
     vmap[fake_inf] = infinite_vertex();
   }
   else
@@ -5433,14 +5456,14 @@ copy_triangulation_into_hole(const Vertex_handle_unique_hash_map& vmap,
 
     // Create a new cell and glue it to the outer surface
     Cell_handle new_ch = tds().create_cell();
-    new_ch->set_vertices(vmap[i_ch->vertex(0)], vmap[i_ch->vertex(1)],
-                         vmap[i_ch->vertex(2)], vmap[i_ch->vertex(3)]);
+    new_ch->set_vertices(vmap[vertex(i_ch,0)], vmap[vertex(i_ch,1)],
+                         vmap[vertex(i_ch,2)], vmap[vertex(i_ch,3)]);
 
     o_ch->set_neighbor(o_i,new_ch);
     new_ch->set_neighbor(i_i, o_ch);
 
     for(int j=0; j<4; j++)
-     new_ch->vertex(j)->set_cell(new_ch);
+     set_cell(vertex(new_ch,j), new_ch);
 
     *cit++ = new_ch;
 
@@ -5466,8 +5489,8 @@ copy_triangulation_into_hole(const Vertex_handle_unique_hash_map& vmap,
           const auto facet2 = oit2->second;
           const Cell_handle o_ch2 = facet2.first;
           const int o_i2 = facet2.second;
-          o_ch2->set_neighbor(o_i2, new_ch);
-          new_ch->set_neighbor(index, o_ch2);
+          set_neighbor(o_ch2, o_i2, new_ch);
+          set_neighbor(new_ch, index, o_ch2);
           outer_map.erase(oit2);
         }
       }
@@ -5496,9 +5519,9 @@ remove_dim_down(Vertex_handle v, VertexRemover& remover)
   if(dimension() == 2)
   {
     Facet f = *finite_facets_begin();
-    if(coplanar_orientation(f.first->vertex(0)->point(),
-                            f.first->vertex(1)->point(),
-                            f.first->vertex(2)->point()) == NEGATIVE)
+    if(coplanar_orientation(point(vertex(f.first, 0)),
+                            point(vertex(f.first, 1)),
+                            point(vertex(f.first, 2))) == NEGATIVE)
     {
       tds().reorient();
     }
@@ -5515,8 +5538,8 @@ remove_1D(Vertex_handle v, VertexRemover& remover)
 {
   CGAL_precondition (dimension() == 1);
 
-  Cell_handle c1 = v->cell();
-  Cell_handle c2 = c1->neighbor(c1->index(v) == 0 ? 1 : 0);
+  Cell_handle c1 = cell(v);
+  Cell_handle c2 = neighbor(c1, index(c1, v) == 0 ? 1 : 0);
   remover.add_hidden_points(c1);
   remover.add_hidden_points(c2);
 
@@ -5705,7 +5728,7 @@ VertexRemover&
 Triangulation_3<Gt, Tds, Lds>::
 remove_1D(Vertex_handle v, VertexRemover& remover, OutputItCells fit)
 {
-  Point p = v->point();
+  Point p = point(v);
   remove_1D(v, remover);
   *fit++ = locate(p);
   return remover;
@@ -5819,7 +5842,7 @@ move_if_no_collision(Vertex_handle v, const Point& p,
 {
   CGAL_assertion(remover.hidden_points_begin() == remover.hidden_points_end());
   CGAL_precondition(!is_infinite(v));
-  if(v->point() == p)
+  if(point(v) == p)
     return v;
   const int dim = dimension();
 
@@ -5836,14 +5859,14 @@ move_if_no_collision(Vertex_handle v, const Point& p,
 
   Locate_type lt;
   int li, lj;
-  Cell_handle loc = locate(p, lt, li, lj, v->cell());
+  Cell_handle loc = locate(p, lt, li, lj, cell(v));
 
   if(lt == VERTEX)
-    return loc->vertex(li);
+    return vertex(loc, li);
 
   if(dim == 0)
   {
-    v->set_point(p);
+    set_point(v,p);
     return v;
   }
 
@@ -5851,48 +5874,48 @@ move_if_no_collision(Vertex_handle v, const Point& p,
 
   if((lt == OUTSIDE_AFFINE_HULL) && (dim == 1) && (n_vertices == 3))
   {
-    v->set_point(p);
+    set_point(v,p);
     return v;
   }
 
   if((lt == OUTSIDE_AFFINE_HULL) && (dim == 2) && (n_vertices == 4))
   {
-    v->set_point(p);
+    set_point(v,p);
     return v;
   }
 
   if((lt != OUTSIDE_AFFINE_HULL) && (dim == 1))
   {
-    if(loc->has_vertex(v))
+    if(has_vertex(loc,v))
     {
-      v->set_point(p);
+      set_point(v,p);
     }
     else
     {
       Vertex_handle inserted = insert(p, lt, loc, li, lj);
-      Cell_handle f = v->cell();
-      int i = f->index(v);
+      Cell_handle f = cell(v);
+      int i = index(f,v);
       if(i == 0)
-        f = f->neighbor(1);
+        f = neighbor(f,1);
 
-      CGAL_assertion(f->index(v) == 1);
-      Cell_handle g= f->neighbor(0);
-      f->set_vertex(1, g->vertex(1));
-      f->set_neighbor(0,g->neighbor(0));
-      g->neighbor(0)->set_neighbor(1,f);
-      g->vertex(1)->set_cell(f);
+      CGAL_assertion(index(f,v) == 1);
+      Cell_handle g= neighbor(f,0);
+      set_vertex(f, 1, vertex(g,1));
+      set_neighbor(f,0,neighbor(g,0));
+      set_neighbor(neighbor(g,0), 1,f);
+      set_cell(vertex(g,1),f);
       tds().delete_cell(g);
-      Cell_handle f_ins = inserted->cell();
-      i = f_ins->index(inserted);
+      Cell_handle f_ins = cell(inserted);
+      i = index(f_ins, inserted);
       if(i == 0)
-        f_ins = f_ins->neighbor(1);
+        f_ins = neighbor(f_ins, 1);
 
-      CGAL_assertion(f_ins->index(inserted) == 1);
-      Cell_handle g_ins = f_ins->neighbor(0);
-      f_ins->set_vertex(1, v);
-      g_ins->set_vertex(0, v);
-      v->set_point(p);
-      v->set_cell(inserted->cell());
+      CGAL_assertion(index(f_ins, inserted) == 1);
+      Cell_handle g_ins = neighbor(f_ins,0);
+      set_vertex(f_ins, 1, v);
+      set_vertex(g_ins, 0, v);
+      set_point(v,p);
+      set_cell(v, cell(inserted));
       tds().delete_vertex(inserted);
     }
     return v;
@@ -5903,25 +5926,25 @@ move_if_no_collision(Vertex_handle v, const Point& p,
   {
     // verify if p and two static vertices are collinear in this case
     int iinf;
-    Cell_handle finf = infinite_vertex()->cell(), fdone;
+    Cell_handle finf = cell(infinite_vertex()), fdone;
     fdone = finf;
     do
     {
-      iinf = finf->index(infinite_vertex());
-      if(!finf->has_vertex(v))
+      iinf = index(finf, infinite_vertex());
+      if(!has_vertex(finf,v))
         break;
 
-      finf = finf->neighbor((iinf+1)%3);
+      finf = neighbor(finf,(iinf+1)%3);
     }
     while(finf != fdone);
 
     iinf = ~iinf;
-    if(this->collinear(finf->vertex(iinf&1)->point(),
-                       finf->vertex(iinf&2)->point(),
+    if(this->collinear(point(vertex(finf, iinf&1)),
+                       point(vertex(finf, iinf&2)),
                        p))
     {
-      v->set_point(p);
-      tds().decrease_dimension(loc, loc->index(v));
+      set_point(v,p);
+      tds().decrease_dimension(loc, index(loc,v));
       return v;
     }
   }
@@ -5938,13 +5961,13 @@ move_if_no_collision(Vertex_handle v, const Point& p,
     fill_hole_2D(hole, remover);
 
     // fixing pointer
-    Cell_handle fc = inserted->cell(), done(fc);
+    Cell_handle fc = cell(inserted), done(fc);
     std::vector<Cell_handle> faces_pt;
     faces_pt.reserve(16);
     do
     {
       faces_pt.push_back(fc);
-      fc = fc->neighbor((fc->index(inserted) + 1)%3);
+      fc = neighbor(fc, (index(fc, inserted) + 1)%3);
     }
     while(fc != done);
 
@@ -5952,11 +5975,11 @@ move_if_no_collision(Vertex_handle v, const Point& p,
     for(std::size_t k=0; k<ss; k++)
     {
       Cell_handle f = faces_pt[k];
-      int i = f->index(inserted);
-      f->set_vertex(i, v);
+      int i = index(f,inserted);
+      set_vertex(f, i, v);
     }
-    v->set_point(p);
-    v->set_cell(inserted->cell());
+    set_point(v,p);
+    set_cell(v, cell(inserted));
 
     tds().delete_vertex(inserted);
 
@@ -5973,22 +5996,22 @@ move_if_no_collision(Vertex_handle v, const Point& p,
     for(std::size_t i=0; i<size; i++)
     {
       finf = ics[i];
-      if(!finf->has_vertex(v))
+      if(!has_vertex(finf, v))
         break;
     }
 
-    int iinf = finf->index(infinite_vertex());
-    if(remover.tmp.coplanar(finf->vertex((iinf+1)&3)->point(),
-                            finf->vertex((iinf+2)&3)->point(),
-                            finf->vertex((iinf+3)&3)->point(),
+    int iinf = index(finf,infinite_vertex());
+    if(remover.tmp.coplanar(point(vertex(finf, (iinf+1)&3)),
+                            point(vertex(finf, (iinf+2)&3)),
+                            point(vertex(finf, (iinf+3)&3)),
                             p))
     {
-      v->set_point(p);
-      tds().decrease_dimension(loc, loc->index(v));
+      set_point(v,p);
+      tds().decrease_dimension(loc, index(loc,v));
       Facet f = *finite_facets_begin();
-      if(coplanar_orientation(f.first->vertex(0)->point(),
-                               f.first->vertex(1)->point(),
-                               f.first->vertex(2)->point()) == NEGATIVE)
+      if(coplanar_orientation(point(vertex(f.first, 0)),
+                              point(vertex(f.first, 1)),
+                              point(vertex(f.first, 2))) == NEGATIVE)
       {
         tds().reorient();
       }
@@ -6045,11 +6068,11 @@ move_if_no_collision(Vertex_handle v, const Point& p,
   for(std::size_t i=0, size = cells_pt.size(); i<size; i++)
   {
     Cell_handle c = cells_pt[i];
-    c->set_vertex(c->index(inserted), v);
+    set_vertex(c,index(c,inserted), v);
   }
 
-  v->set_point(p);
-  v->set_cell(inserted->cell());
+  set_point(v,p);
+  set_cell(v,cell(inserted));
   tds().delete_vertex(inserted);
   tds().delete_cells(hole.begin(), hole.end());
   return v;
@@ -6065,7 +6088,7 @@ move(Vertex_handle v, const Point& p,
   CGAL_assertion(remover.hidden_points_begin() == remover.hidden_points_end());
   CGAL_precondition(!is_infinite(v));
 
-  if(v->point() == p)
+  if(point(v) == p)
     return v;
 
   Vertex_handle w = move_if_no_collision(v,p,remover,inserter);
@@ -6091,7 +6114,7 @@ move_if_no_collision_and_give_new_cells(Vertex_handle v, const Point& p,
   CGAL_assertion(remover.hidden_points_begin() == remover.hidden_points_end());
   CGAL_precondition(!is_infinite(v));
 
-  if(v->point() == p)
+  if(point(v) == p)
     return v;
 
   const int dim = dimension();
@@ -6110,13 +6133,13 @@ move_if_no_collision_and_give_new_cells(Vertex_handle v, const Point& p,
 
   Locate_type lt;
   int li, lj;
-  Cell_handle loc = locate(p, lt, li, lj, v->cell());
+  Cell_handle loc = locate(p, lt, li, lj, cell(v));
 
-  if(lt == VERTEX) return loc->vertex(li);
+  if(lt == VERTEX) return vertex(loc,li);
 
   if(dim == 0)
   {
-    v->set_point(p);
+    set_point(v,p);
     return v;
   }
 
@@ -6124,7 +6147,7 @@ move_if_no_collision_and_give_new_cells(Vertex_handle v, const Point& p,
 
   if((lt == OUTSIDE_AFFINE_HULL) && (dim == 1) && (n_vertices == 3))
   {
-    v->set_point(p);
+    set_point(v,p);
     for(All_cells_iterator afi = tds().raw_cells_begin();
                            afi != tds().raw_cells_end(); afi++)
     {
@@ -6135,7 +6158,7 @@ move_if_no_collision_and_give_new_cells(Vertex_handle v, const Point& p,
 
   if((lt == OUTSIDE_AFFINE_HULL) && (dim == 2) && (n_vertices == 4))
   {
-    v->set_point(p);
+    set_point(v,p);
     for(All_cells_iterator afi = tds().raw_cells_begin();
                            afi != tds().raw_cells_end(); afi++)
     {
@@ -6146,46 +6169,46 @@ move_if_no_collision_and_give_new_cells(Vertex_handle v, const Point& p,
 
   if((lt != OUTSIDE_AFFINE_HULL) && (dim == 1))
   {
-    if(loc->has_vertex(v))
+    if(has_vertex(loc,v))
     {
-      v->set_point(p);
+      set_point(v,p);
     }
     else
     {
       Vertex_handle inserted = insert(p, lt, loc, li, lj);
-      Cell_handle f = v->cell();
-      int i = f->index(v);
+      Cell_handle f = cell(v);
+      int i = index(f,v);
       if(i==0)
-        f = f->neighbor(1);
+        f = neighbor(f,1);
 
-      CGAL_assertion(f->index(v) == 1);
-      Cell_handle g = f->neighbor(0);
-      f->set_vertex(1, g->vertex(1));
-      f->set_neighbor(0,g->neighbor(0));
-      g->neighbor(0)->set_neighbor(1,f);
-      g->vertex(1)->set_cell(f);
+      CGAL_assertion(index(f,v) == 1);
+      Cell_handle g = neighbor(f,0);
+      set_vertex(f, 1, vertex(g,1));
+      set_neighbor(f,0,neighbor(g,0));
+      set_neighbor(neighbor(g,0), 1,f);
+      set_cell(vertex(g,1), f);
       tds().delete_cell(g);
       *fit++ = f;
-      Cell_handle f_ins = inserted->cell();
-      i = f_ins->index(inserted);
+      Cell_handle f_ins = cell(inserted);
+      i = index(f_ins, inserted);
       if(i==0)
-        f_ins = f_ins->neighbor(1);
+        f_ins = neighbor(f_ins,1);
 
-      CGAL_assertion(f_ins->index(inserted) == 1);
-      Cell_handle g_ins = f_ins->neighbor(0);
-      f_ins->set_vertex(1, v);
-      g_ins->set_vertex(0, v);
-      v->set_point(p);
-      v->set_cell(inserted->cell());
+      CGAL_assertion(index(f_ins, inserted) == 1);
+      Cell_handle g_ins = neighbor(f_ins0);
+      set_vertex(f_ins, 1, v);
+      set_vertex(g_ins, 0, v);
+      set_point(v,p);
+      set_cell(v, cell(inserted));
       tds().delete_vertex(inserted);
     }
 
-    *fit++ = v->cell();
-    if(v->cell()->neighbor(0)->has_vertex(v))
-      *fit++ = v->cell()->neighbor(0);
+    *fit++ = cell(v);
+    if(has_vertex(neighbor(cell(v), 0), v))
+      *fit++ = neighbor(cell(v), 0);
 
-    if(v->cell()->neighbor(1)->has_vertex(v))
-      *fit++ = v->cell()->neighbor(1);
+    if(has_vertex(neighbor(cell(v), 1), v))
+      *fit++ = neighbor(cell(v), 1);
 
     return v;
   }
@@ -6196,23 +6219,23 @@ move_if_no_collision_and_give_new_cells(Vertex_handle v, const Point& p,
   {
     // Verify if p and two static vertices are collinear in this case
     int iinf;
-    Cell_handle finf = infinite_vertex()->cell(), fdone;
+    Cell_handle finf = cell(infinite_vertex()), fdone;
     fdone = finf;
     do
     {
-      iinf = finf->index(infinite_vertex());
-      if(!finf->has_vertex(v)) break;
-      finf = finf->neighbor((iinf+1)%3);
+      iinf = index(finf, infinite_vertex());
+      if(!has_vertex(finf, v)) break;
+      finf = neighbor(finf, (iinf+1)%3);
     }
     while(finf != fdone);
 
     iinf = ~iinf;
-    if(this->collinear(finf->vertex(iinf&1)->point(),
-                       finf->vertex(iinf&2)->point(),
+    if(this->collinear(point(vertex(finf, iinf&1)),
+                       point(vertex(finf, iinf&2)),
                        p))
     {
-      v->set_point(p);
-      tds().decrease_dimension(loc, loc->index(v));
+      set_point(v,p);
+      tds().decrease_dimension(loc, index(loc, v));
       for(All_cells_iterator afi = tds().raw_cells_begin();
                              afi != tds().raw_cells_end(); afi++)
       {
@@ -6229,12 +6252,12 @@ move_if_no_collision_and_give_new_cells(Vertex_handle v, const Point& p,
     // This is insert must be from Delaunay (or the particular triangle.)
     // not Triangulation_3 !
     Vertex_handle inserted = inserter.insert(p, lt, loc, li, lj);
-    Cell_handle c = inserted->cell(), end = c;
+    Cell_handle c = cell(inserted), end = c;
     do
     {
       cells_set.insert(c);
-      int i = c->index(inserted);
-      c = c->neighbor((i+1)%3);
+      int i = index(c, inserted);
+      c = neighbor(c, (i+1)%3);
     }
     while(c != end);
 
@@ -6243,13 +6266,13 @@ move_if_no_collision_and_give_new_cells(Vertex_handle v, const Point& p,
     fill_hole_2D(hole, remover, fit);
 
     // fixing pointer
-    Cell_handle fc = inserted->cell(), done(fc);
+    Cell_handle fc = cell(inserted), done(fc);
     std::vector<Cell_handle> faces_pt;
     faces_pt.reserve(16);
     do
     {
       faces_pt.push_back(fc);
-      fc = fc->neighbor((fc->index(inserted) + 1)%3);
+      fc = neighbor(fc, (index(fc, inserted) + 1)%3);
     }
     while(fc != done);
 
@@ -6257,11 +6280,11 @@ move_if_no_collision_and_give_new_cells(Vertex_handle v, const Point& p,
     for(int k=0; k<ss; k++)
     {
       Cell_handle f = faces_pt[k];
-      int i = f->index(inserted);
-      f->set_vertex(i, v);
+      int i = index(f,inserted);
+      set_vertex(f, i, v);
     }
-    v->set_point(p);
-    v->set_cell(inserted->cell());
+    set_point(v,p);
+    set_cell(v, cell(inserted));
 
     tds().delete_vertex(inserted);
 
@@ -6284,21 +6307,21 @@ move_if_no_collision_and_give_new_cells(Vertex_handle v, const Point& p,
     for(int i=0; i<size; i++)
     {
       finf = ics[i];
-      if(!finf->has_vertex(v)) break;
+      if(!has_vertex(finf, v)) break;
     }
 
-    int iinf = finf->index(infinite_vertex());
-    if(remover.tmp.coplanar(finf->vertex((iinf+1)&3)->point(),
-                            finf->vertex((iinf+2)&3)->point(),
-                            finf->vertex((iinf+3)&3)->point(),
+    int iinf = index(finf, infinite_vertex());
+    if(remover.tmp.coplanar(point(vertex(finf, (iinf+1)&3)),
+                            point(vertex(finf, (iinf+2)&3)),
+                            point(vertex(finf, (iinf+3)&3)),
                             p))
     {
-      v->set_point(p);
-      tds().decrease_dimension(loc, loc->index(v));
+      set_point(v,p);
+      tds().decrease_dimension(loc, index(loc, v));
       Facet f = *finite_facets_begin();
-      if(coplanar_orientation(f.first->vertex(0)->point(),
-                               f.first->vertex(1)->point(),
-                               f.first->vertex(2)->point()) == NEGATIVE)
+      if(coplanar_orientation(point(vertex(f.first,0)),
+                              point(vertex(f.first,1)),
+                              point(vertex(f.first,2))) == NEGATIVE)
       {
         tds().reorient();
       }
@@ -6375,11 +6398,11 @@ move_if_no_collision_and_give_new_cells(Vertex_handle v, const Point& p,
   for(std::size_t i=0, size = cells_pt.size(); i<size; i++)
   {
     Cell_handle c = cells_pt[i];
-    c->set_vertex(c->index(inserted), v);
+    set_vertex(c,index(c,inserted), v);
   }
 
-  v->set_point(p);
-  v->set_cell(inserted->cell());
+  set_point(v,p);
+  set_cell(v,cell(inserted));
   tds().delete_vertex(inserted);
   tds().delete_cells(hole.begin(), hole.end());
 
@@ -6401,8 +6424,8 @@ _make_big_hole_3D(Vertex_handle v,
                   std::vector<Vertex_handle>& vertices,
                   std::map<Vertex_handle, REMOVE_VERTEX_STATE>& vstates)
 {
-  Cell_handle start = v->cell();
-  start->tds_data().mark_processed();
+  Cell_handle start = cell(v);
+  tds().tds_data(start).mark_processed();
   hole.push_back(start);
   std::size_t i=0, n=1;
   while(i < n)
@@ -6410,7 +6433,7 @@ _make_big_hole_3D(Vertex_handle v,
     Cell_handle c = hole[i++];
     for(int k=0; k<4; k++)
     {
-      Vertex_handle v0 = c->vertex(k);
+      Vertex_handle v0 = vertex(c,k);
       const REMOVE_VERTEX_STATE vst = vstates[v0];
 
       if(vst == CLEAR)
@@ -6430,13 +6453,13 @@ _make_big_hole_3D(Vertex_handle v,
       int i2 = vertex_triple_index(k, 1);
       int i3 = vertex_triple_index(k, 2);
 
-      Vertex_handle v1 = c->vertex(i1);
-      Vertex_handle v2 = c->vertex(i2);
-      Vertex_handle v3 = c->vertex(i3);
+      Vertex_handle v1 = vertex(c,i1);
+      Vertex_handle v2 = vertex(c,i2);
+      Vertex_handle v3 = vertex(c,i3);
 
-      Cell_handle opp_cit = c->neighbor(k);
+      Cell_handle opp_cit = neighbor(c,k);
       int opp_i = tds().mirror_index(c, k);
-      Vertex_handle vm = opp_cit->vertex(opp_i);
+      Vertex_handle vm = vertex(opp_cit, opp_i);
 
       bool pb1 = false, pb2 = false, pb3 = false, pbm = false;
 
@@ -6465,10 +6488,10 @@ _make_big_hole_3D(Vertex_handle v,
       // when the vertex is not to be removed
       if(bad_opposite_cell)
       {
-        if(opp_cit->tds_data().is_clear())
+        if(tds().tds_data(opp_cit).is_clear())
         {
           hole.push_back(opp_cit);
-          opp_cit->tds_data().mark_processed();
+          tds().tds_data(opp_cit).mark_processed();
           n++;
         }
         continue;
@@ -6478,10 +6501,10 @@ _make_big_hole_3D(Vertex_handle v,
       Vertex_triple vt = make_vertex_triple(f);
       make_canonical_oriented_triple(vt);
       outer_map[vt] = f;
-      v1->set_cell(opp_cit);
-      v2->set_cell(opp_cit);
-      v3->set_cell(opp_cit);
-      vm->set_cell(opp_cit);
+      set_cell(v1, opp_cit);
+      set_cell(v2, opp_cit);
+      set_cell(v3, opp_cit);
+      set_cell(vm, opp_cit);
     }
   }
 
@@ -6520,7 +6543,7 @@ _remove_cluster_3D(InputIterator first, InputIterator beyond, VertexRemover& rem
     if(!outer_map.size())
     {
       std::size_t nh = hole.size();
-      for(std::size_t i=0; i<nh; i++) hole[i]->tds_data().clear();
+      for(std::size_t i=0; i<nh; i++) tds().tds_data(hole[i]).clear();
       return false;
     }
 
@@ -6541,8 +6564,8 @@ _remove_cluster_3D(InputIterator first, InputIterator beyond, VertexRemover& rem
         Vertex_handle vv = adj_vertices[i];
         if(! this->is_infinite(vv))
         {
-          vps.push_back(vv->point());
-          mp_vps[vv->point()] = vv;
+          vps.push_back(point(vv));
+          mp_vps[point(vv)] = vv;
         }
         else
         {
@@ -6566,14 +6589,14 @@ _remove_cluster_3D(InputIterator first, InputIterator beyond, VertexRemover& rem
       for(i=0; i < svps; i++)
       {
         Vertex_handle vv = mp_vps[vps[i]];
-        Vertex_handle vh = remover.tmp.insert(vv->point(), ch);
-        ch = vh->cell();
+        Vertex_handle vh = remover.tmp.insert(point(vv), ch);
+        ch = cell(vh);
         vmap[vh] = vv;
       }
 
       if(remover.tmp.dimension() == 2)
       {
-        Vertex_handle fake_inf = remover.tmp.insert(v->point());
+        Vertex_handle fake_inf = remover.tmp.insert(point(v));
         vmap[fake_inf] = this->infinite_vertex();
       }
       else
@@ -6587,8 +6610,8 @@ _remove_cluster_3D(InputIterator first, InputIterator beyond, VertexRemover& rem
       {
         if(!this->is_infinite(adj_vertices[i]))
         {
-          Vertex_handle vh = remover.tmp.insert(adj_vertices[i]->point(), ch);
-          ch = vh->cell();
+          Vertex_handle vh = remover.tmp.insert(point(adj_vertices[i]), ch);
+          ch = cell(vh);
           vmap[vh] = adj_vertices[i];
         }
         else
@@ -6599,7 +6622,7 @@ _remove_cluster_3D(InputIterator first, InputIterator beyond, VertexRemover& rem
 
       if(remover.tmp.dimension() == 2)
       {
-        Vertex_handle fake_inf = remover.tmp.insert(v->point());
+        Vertex_handle fake_inf = remover.tmp.insert(point(v));
         vmap[fake_inf] = this->infinite_vertex();
       }
       else
@@ -6713,7 +6736,7 @@ is_valid(bool verbose, int level) const
     {
       for(Finite_cells_iterator it = finite_cells_begin(),
                                 end = finite_cells_end(); it != end; ++it)
-        is_valid_finite(it, verbose, level);
+        is_valid_finite(*it, verbose, level);
       break;
     }
     case 2:
@@ -6748,7 +6771,7 @@ is_valid(Cell_handle c, bool verbose, int level) const
     {
       std::cerr << "combinatorially invalid cell";
       for(int i=0; i <= dimension(); i++)
-        std::cerr << c->vertex(i)->point() << ", ";
+        std::cerr << point(vertex(c,i)) << ", ";
 
       std::cerr << std::endl;
     }
@@ -6776,18 +6799,18 @@ is_valid_finite(Cell_handle c, bool verbose, int) const
   {
     case 3:
     {
-      if(orientation(c->vertex(0)->point(),
-                     c->vertex(1)->point(),
-                     c->vertex(2)->point(),
-                     c->vertex(3)->point()) != POSITIVE)
+      if(orientation(point(vertex(c,0)),
+                     point(vertex(c,1)),
+                     point(vertex(c,2)),
+                     point(vertex(c,3))) != POSITIVE)
       {
         if(verbose)
         {
           std::cerr << "badly oriented cell "
-                    << c->vertex(0)->point() << ", "
-                    << c->vertex(1)->point() << ", "
-                    << c->vertex(2)->point() << ", "
-                    << c->vertex(3)->point() << std::endl;
+                    << point(vertex(c,0)) << ", "
+                    << point(vertex(c,1)) << ", "
+                    << point(vertex(c,2)) << ", "
+                    << point(vertex(c,3)) << std::endl;
         }
         CGAL_assertion(false);
         return false;
@@ -6796,16 +6819,16 @@ is_valid_finite(Cell_handle c, bool verbose, int) const
     }
     case 2:
     {
-      if(coplanar_orientation(c->vertex(0)->point(),
-                              c->vertex(1)->point(),
-                              c->vertex(2)->point()) != POSITIVE)
+      if(coplanar_orientation(point(vertex(c,0)),
+                              point(vertex(c,1)),
+                              point(vertex(c,2))) != POSITIVE)
       {
         if(verbose)
         {
           std::cerr << "badly oriented face "
-                    << c->vertex(0)->point() << ", "
-                    << c->vertex(1)->point() << ", "
-                    << c->vertex(2)->point() << std::endl;
+                    << point(vertex(c,0)) << ", "
+                    << point(vertex(c,1)) << ", "
+                    << point(vertex(c,2)) << std::endl;
         }
         CGAL_assertion(false);
         return false;
@@ -6814,37 +6837,37 @@ is_valid_finite(Cell_handle c, bool verbose, int) const
     }
     case 1:
     {
-      const Point& p0 = c->vertex(0)->point();
-      const Point& p1 = c->vertex(1)->point();
+      const Point& p0 = point(vertex(c,0));
+      const Point& p1 = point(vertex(c,1));
 
-      Vertex_handle v = c->neighbor(0)->vertex(c->neighbor(0)->index(c));
+      Vertex_handle v = vertex(neighbor(c,0),index(neighbor(c,0), c));
       if(! is_infinite(v))
       {
-        if(collinear_position(p0, p1, v->point()) != MIDDLE)
+        if(collinear_position(p0, p1, point(v)) != MIDDLE)
         {
           if(verbose)
           {
             std::cerr << "badly oriented edge " << p0 << ", " << p1 << std::endl
                       << "with neighbor 0"
-                      << c->neighbor(0)->vertex(1-c->neighbor(0)->index(c))->point()
-                      << ", " << v->point() << std::endl;
+                      << point(vertex(neighbor(c,0), 1-index(neighbor(c,0),c)))
+                      << ", " << point(v) << std::endl;
           }
           CGAL_assertion(false);
           return false;
         }
       }
 
-      v = c->neighbor(1)->vertex(c->neighbor(1)->index(c));
+      v = vertex(neighbor(c,1), index(neighbor(c,1), c));
       if(! is_infinite(v))
       {
-        if(collinear_position(p1, p0, v->point()) != MIDDLE)
+        if(collinear_position(p1, p0, point(v)) != MIDDLE)
         {
           if(verbose)
           {
             std::cerr << "badly oriented edge " << p0 << ", " << p1 << std::endl
                       << "with neighbor 1"
-                      << c->neighbor(1)->vertex(1-c->neighbor(1)->index(c))->point()
-                      << ", " << v->point() << std::endl;
+                      << point(vertex(neighbor(c,1), 1-index(neighbor(c,1), c)))
+                      << ", " << point(v) << std::endl;
           }
           CGAL_assertion(false);
           return false;
@@ -6877,11 +6900,11 @@ test_next(const Triangulation_3<GT, Tds1, Lds>& t1,
   // Precondition: c1, c2 have been registered as well as their 4 vertices.
   CGAL_precondition(t1.dimension() >= 2);
   CGAL_precondition(Cmap[c1] == c2);
-  CGAL_precondition(Vmap.find(c1->vertex(0)) != Vmap.end());
-  CGAL_precondition(Vmap.find(c1->vertex(1)) != Vmap.end());
-  CGAL_precondition(Vmap.find(c1->vertex(2)) != Vmap.end());
+  CGAL_precondition(Vmap.find(vertex(c1,0)) != Vmap.end());
+  CGAL_precondition(Vmap.find(vertex(c1,1)) != Vmap.end());
+  CGAL_precondition(Vmap.find(vertex(c1,2)) != Vmap.end());
   CGAL_precondition(t1.dimension() == 2 ||
-                                  Vmap.find(c1->vertex(3)) != Vmap.end());
+                                  Vmap.find(vertex(c1,3)) != Vmap.end());
 
   typedef Triangulation_3<GT, Tds1, Lds>          Tr1;
   typedef Triangulation_3<GT, Tds2, Lds>          Tr2;
@@ -6910,11 +6933,11 @@ test_next(const Triangulation_3<GT, Tds1, Lds>& t1,
 
     for(int i=0; i <= t1.dimension(); ++i)
     {
-      Cell_handle1 n1 = c1->neighbor(i);
+      Cell_handle1 n1 = neighbor(c1, i);
       Cit cit = Cmap.find(n1);
-      Vertex_handle1 v1 = c1->vertex(i);
+      Vertex_handle1 v1 = vertex(c1, i);
       Vertex_handle2 v2 = Vmap[v1];
-      Cell_handle2 n2 = c2->neighbor(c2->index(v2));
+      Cell_handle2 n2 = neighbor(c2, index(c2,v2));
       if(cit != Cmap.end())
       {
         // n1 was already registered.
@@ -6927,8 +6950,8 @@ test_next(const Triangulation_3<GT, Tds1, Lds>& t1,
       // n1 has not yet been registered.
       // We check that the new vertices match geometrically.
       // And we register them.
-      Vertex_handle1 vn1 = n1->vertex(n1->index(c1));
-      Vertex_handle2 vn2 = n2->vertex(n2->index(c2));
+      Vertex_handle1 vn1 = vertex(n1, index(n1, c1));
+      Vertex_handle2 vn2 = vertex(n2, index(n2, c2));
       Vit vit = Vmap.find(vn1);
       if(vit != Vmap.end())
       {
@@ -6942,7 +6965,7 @@ test_next(const Triangulation_3<GT, Tds1, Lds>& t1,
           return false; // vn1 can't be infinite,
 
         // since it would have been registered.
-        if(cmp1(cp(vn1->point()), cp(vn2->point())) != 0)
+        if(cmp1(cp(point(vn1)), cp(point(vn2))) != 0)
           return false;
 
         // We register vn1/vn2.
@@ -7022,47 +7045,47 @@ operator==(const Triangulation_3<GT, Tds1, Lds>& t1,
 
   // We pick one infinite cell of t1, and try to match it against the
   // infinite cells of t2.
-  Cell_handle1 c = v1->cell();
-  Vertex_handle1 v2 = c->vertex((c->index(v1)+1)%(dim+1));
-  Vertex_handle1 v3 = c->vertex((c->index(v1)+2)%(dim+1));
-  Vertex_handle1 v4 = c->vertex((c->index(v1)+3)%(dim+1));
-  const Point& p2 = v2->point();
-  const Point& p3 = v3->point();
-  const Point& p4 = v4->point();
+  Cell_handle1 c = t1.cell(v1);
+  Vertex_handle1 v2 = t1.vertex(c, (t1.index(c,v1)+1)%(dim+1));
+  Vertex_handle1 v3 = t1.vertex(c, (t1.index(c,v1)+2)%(dim+1));
+  Vertex_handle1 v4 = t1.vertex(c, (t1.index(c,v1)+3)%(dim+1));
+  const Point& p2 = t1.point(v2);
+  const Point& p3 = t1.point(v3);
+  const Point& p4 = t1.point(v4);
 
   std::vector<Cell_handle2> ics;
   t2.incident_cells(iv2, std::back_inserter(ics));
   for(typename std::vector<Cell_handle2>::const_iterator cit = ics.begin();
                                                          cit != ics.end(); ++cit)
   {
-    int inf = (*cit)->index(iv2);
+    int inf = t2.index(*cit,iv2);
 
-    if(equal(cp(p2), cp((*cit)->vertex((inf+1)%(dim+1))->point())))
-      Vmap.insert(std::make_pair(v2, (*cit)->vertex((inf+1)%(dim+1))));
-    else if(equal(cp(p2), cp((*cit)->vertex((inf+2)%(dim+1))->point())))
-      Vmap.insert(std::make_pair(v2, (*cit)->vertex((inf+2)%(dim+1))));
-    else if(dim == 3 && equal(cp(p2), cp((*cit)->vertex((inf+3)%(dim+1))->point())))
-      Vmap.insert(std::make_pair(v2, (*cit)->vertex((inf+3)%(dim+1))));
+    if(equal(cp(p2), cp(t2.point(t2.vertex((*cit), (inf+1)%(dim+1))))))
+      Vmap.insert(std::make_pair(v2, t2.vertex((*cit), (inf+1)%(dim+1))));
+    else if(equal(cp(p2), cp(t2.point(t2.vertex((*cit), (inf+2)%(dim+1))))))
+      Vmap.insert(std::make_pair(v2, t2.vertex((*cit),(inf+2)%(dim+1))));
+    else if(dim == 3 && equal(cp(p2), cp(t2.point(t2.vertex((*cit),(inf+3)%(dim+1))))))
+      Vmap.insert(std::make_pair(v2, t2.vertex((*cit),(inf+3)%(dim+1))));
     else
       continue; // None matched v2.
 
-    if(equal(cp(p3), cp((*cit)->vertex((inf+1)%(dim+1))->point())))
-      Vmap.insert(std::make_pair(v3, (*cit)->vertex((inf+1)%(dim+1))));
-    else if(equal(cp(p3), cp((*cit)->vertex((inf+2)%(dim+1))->point())))
-      Vmap.insert(std::make_pair(v3, (*cit)->vertex((inf+2)%(dim+1))));
-    else if(dim == 3 && equal(cp(p3), cp((*cit)->vertex((inf+3)%(dim+1))->point())))
-      Vmap.insert(std::make_pair(v3, (*cit)->vertex((inf+3)%(dim+1))));
+    if(equal(cp(p3), cp(t2.point(t2.vertex((*cit),(inf+1)%(dim+1))))))
+      Vmap.insert(std::make_pair(v3, t2.vertex((*cit),(inf+1)%(dim+1))));
+    else if(equal(cp(p3), cp(t2.point(t2.vertex((*cit),(inf+2)%(dim+1))))))
+      Vmap.insert(std::make_pair(v3, t2.vertex((*cit),(inf+2)%(dim+1))));
+    else if(dim == 3 && equal(cp(p3), cp(t2.point(t2.vertex((*cit),(inf+3)%(dim+1))))))
+      Vmap.insert(std::make_pair(v3, t2.vertex((*cit),(inf+3)%(dim+1))));
     else
       continue; // None matched v3.
 
     if(dim == 3)
     {
-      if(equal(cp(p4), cp((*cit)->vertex((inf+1)%(dim+1))->point())))
-        Vmap.insert(std::make_pair(v4, (*cit)->vertex((inf+1)%(dim+1))));
-      else if(equal(cp(p4), cp((*cit)->vertex((inf+2)%(dim+1))->point())))
-        Vmap.insert(std::make_pair(v4, (*cit)->vertex((inf+2)%(dim+1))));
-      else if(equal(cp(p4), cp((*cit)->vertex((inf+3)%(dim+1))->point())))
-        Vmap.insert(std::make_pair(v4, (*cit)->vertex((inf+3)%(dim+1))));
+      if(equal(cp(p4), cp(t2.point(t2.vertex((*cit),(inf+1)%(dim+1))))))
+        Vmap.insert(std::make_pair(v4, t2.vertex((*cit),(inf+1)%(dim+1))));
+      else if(equal(cp(p4), cp(t2.point(t2.vertex((*cit),(inf+2)%(dim+1))))))
+        Vmap.insert(std::make_pair(v4, t2.vertex((*cit),(inf+2)%(dim+1))));
+      else if(equal(cp(p4), cp(t2.point(t2.vertex((*cit),(inf+3)%(dim+1))))))
+        Vmap.insert(std::make_pair(v4, t2.vertex((*cit),(inf+3)%(dim+1))));
       else
         continue; // None matched v4.
     }

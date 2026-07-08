@@ -145,20 +145,9 @@ namespace internal { namespace TDS_3{
       return tds()->cell_storage()[idx()];
     }
 
-    Vertex_handle vertex(int i) const
+    Vertex_index vertex(int i) const
     {
-      auto idx = storage().ivertices[i];
-      return Vertex_handle(tds(), idx);
-    }
-
-    int index(Vertex_handle v) const
-    {
-      for (int i = 0; i < 4; ++i) {
-        if (v.idx() == storage().ivertices[i]) {
-          return i;
-        }
-      }
-      return -1; // Not found
+      return storage().ivertices[i];
     }
 
     int index(const Vertex_index& vi) const
@@ -171,15 +160,6 @@ namespace internal { namespace TDS_3{
       return -1; // Not found
     }
 
-    bool has_vertex(Vertex_handle v) const
-    {
-      for (int i = 0; i < 4; ++i) {
-        if (v.idx() == storage().ivertices[i]) {
-          return true;
-        }
-      }
-      return false;
-    }
 
     bool has_vertex(Vertex_handle v, int & i) const
     {
@@ -674,205 +654,110 @@ namespace internal { namespace TDS_3{
     return i.id();
   }
 
-  template <typename T, typename Index_type_, typename Element_container>
-  class Index_handle {
-    using Element = T;
-    using size_type = typename Element_container::size_type;
-    using Proxy = boost::stl_interfaces::proxy_arrow_result<Element>;
-  public:
-    using Index_type = Index_type_;
-    using value_type = Element;
-    using reference = Element;
-    using pointer = Proxy;
-    using difference_type = std::ptrdiff_t;                     // AF: added so that make_mesh_3() compiles
-    using  iterator_category = std::random_access_iterator_tag; // AF: added so that make_mesh_3() compiles
-
-    Index_handle() = default;
-
-    Index_handle(Element_container* container, size_type idx)
-      : cont_(container), idx_(idx) {}
-
-    Index_handle(Element_container* container, Index_type idx)
-      : cont_(container), idx_(idx.id()) {}
-
-    Element operator*() const {
-      return Element(cont_, Index_type(idx_));
-    }
-
-    Proxy operator->() const {
-      return Proxy{this->operator*()};
-    }
-
-    Index_type idx() const {
-      return Index_type{idx_};
-    }
-
-    auto container() const {
-      return cont_;
-    }
-
-    bool operator==(const Index_handle& other) const {
-      CGAL_assertion(container() == nullptr || other.container() == nullptr ||
-                     container() == other.container());
-      return idx() == other.idx();
-    }
-
-    bool operator!=(const Index_handle& other) const {
-      return !(*this == other);
-    }
-
-    bool operator<(const Index_handle& other) const {
-      return (container() == other.container()) ? (idx() < other.idx()) : (container() < other.container());
-    }
-
-    bool operator>(const Index_handle& other) const {
-      return other < *this;
-    }
-
-    bool operator==( std::nullptr_t ) const {
-      return cont_ == nullptr && idx_ == Index_type::invalid_index;
-    }
-
-    bool operator!=( std::nullptr_t ) const {
-      return !(*this == nullptr);
-    }
-
-    friend std::ostream& operator<<(std::ostream& os, const Index_handle& h)
-    {
-      return os << "#" << h.idx();
-    }
-
-    friend std::size_t hash_value(const Index_handle& h) {
-      return static_cast<std::size_t>(h.idx().id());
-    }
-
-  private:
-    Element_container* cont_ = nullptr;
-    size_type idx_ = Index_type::invalid_index;
-  }; // end class Index_handle
 
 } // end namespace CGAL
 
-namespace std {
-  template <typename T, typename Index_type, typename Element_container>
-  struct hash<CGAL::Index_handle<T, Index_type, Element_container>> {
-    using Handle = CGAL::Index_handle<T, Index_type, Element_container>;
-    std::size_t operator()(const Handle& h) const {
-      return hash_value(h);
-    }
-  };
-}
+
 
 namespace CGAL {
 
-  template <typename Handle_, typename Element_container>
-  class Index_iterator // make it derive from Handle_
-      : public boost::stl_interfaces::v1::proxy_iterator_interface<Index_iterator<Handle_, Element_container>,
-                                                                  std::random_access_iterator_tag,
-                                                                  typename Handle_::value_type>
-  {
-    using Index = typename Handle_::Index_type;
-
-    using Facade = boost::stl_interfaces::v1::proxy_iterator_interface<Index_iterator<Handle_, Element_container>,
-                                                                      std::random_access_iterator_tag,
-                                                                      typename Handle_::value_type>;
-
-  public:
-    using value_type = typename Handle_::value_type;
-    using reference = value_type;
-    using Concurrency_tag = typename Element_container::Concurrency_tag;
-
-    Index_iterator()
-        : idx_()
-        , cont_(nullptr) {}
-
-    Index_iterator(const Index& h, const Element_container* m)
-        : idx_(h)
-        , cont_(const_cast<Element_container*>(m)) { // AF: todo make const_cast safe
-      if(cont_ && cont_->has_garbage()) {
-        while(cont_->has_valid_index(idx_) && cont_->is_removed(idx_))
-          ++idx_;
-      }
-    }
-
-    auto handle() const {
-      static_assert(std::is_base_of_v<Facade, Index_iterator<Handle_, Element_container>>);
-
-      CGAL_assertion(cont_ != nullptr);
-      CGAL_assertion(cont_->has_valid_index(idx_));
-      return Handle_(cont_, idx_.id());
-    }
-
-    operator Handle_() const { return handle(); }
-
-    reference operator*() const { return value_type{cont_, idx_}; }
-
-    typename Handle_::pointer operator->() const { return typename Handle_::pointer{value_type{cont_, idx_}}; }
-
-    using Facade::operator++;
-    Index_iterator& operator++() {
-      ++idx_;
-      CGAL_assertion(cont_ != nullptr);
-
-      if(cont_->has_garbage())
-        while(cont_->has_valid_index(idx_) && cont_->is_removed(idx_))
-          ++idx_;
-      return *this;
-    }
-
-    using Facade::operator--;
-    Index_iterator& operator--() {
-      --idx_;
-      CGAL_assertion(cont_ != nullptr);
-      if(cont_->has_garbage())
-        while(cont_->has_valid_index(idx_) && cont_->is_removed(idx_))
-          --idx_;
-      return *this;
-    }
-
-    Index_iterator& operator+=(std::ptrdiff_t n) {
-      CGAL_assertion(cont_ != nullptr);
-
-      if(cont_->has_garbage()) {
-        if(n > 0)
-          for(std::ptrdiff_t i = 0; i < n; ++i)
-            this->operator++();
-        else
-          for(std::ptrdiff_t i = 0; i < -n; ++i)
-            this->operator--();
-      } else
-        idx_ += n;
-      return *this;
-    }
-
-    std::ptrdiff_t operator-(const Index_iterator& other) const {
-      if(cont_->has_garbage()) {
-        bool forward = (other.idx_ > idx_);
-
-        std::ptrdiff_t out = 0;
-        Index_iterator it = *this;
-        while(!(it == other)) {
-          if(forward) {
-            ++it;
-            ++out;
-          } else {
-            --it;
-            --out;
+  template<typename Index_, typename Container_>
+    class Index_iterator
+      : public boost::iterator_facade< Index_iterator<Index_, Container_>,
+                                       Index_,
+                                       std::random_access_iterator_tag,
+                                       Index_
+                                       >
+    {
+        typedef boost::iterator_facade< Index_iterator<Index_, Container_>,
+                                        Index_,
+                                        std::random_access_iterator_tag,
+                                        Index_> Facade;
+    public:
+        Index_iterator() : hnd_(), container_(nullptr) {}
+        Index_iterator(const Index_& h, const Container_* m)
+          : hnd_(h), container_(m) {
+          if (container_ && container_->has_garbage()){
+              while (container_->has_valid_index(hnd_) && container_->is_removed(hnd_)) ++hnd_;
           }
         }
-        return out;
-      }
+    private:
+        friend class boost::iterator_core_access;
+        void increment()
+        {
+            ++hnd_;
+            CGAL_assertion(container_ != nullptr);
 
-      // else
-      return std::ptrdiff_t(other.idx_.id()) - std::ptrdiff_t(this->idx_.id());
-    }
+            if(container_->has_garbage())
+              while ( container_->has_valid_index(hnd_) && container_->is_removed(hnd_)) ++hnd_;
+        }
 
-    bool operator==(const Index_iterator& other) const { return this->idx_ == other.idx_; }
+        void decrement()
+        {
+            --hnd_;
+            CGAL_assertion(container_ != nullptr);
+            if(container_->has_garbage())
+               while ( container_->has_valid_index(hnd_) && container_->is_removed(hnd_)) --hnd_;
+        }
 
-  private:
-    Index idx_;
-    Element_container* cont_;
-  }; // end class Index_iterator
+        void advance(std::ptrdiff_t n)
+        {
+            CGAL_assertion(container_ != nullptr);
+
+            if (container_->has_garbage())
+            {
+              if (n > 0)
+                for (std::ptrdiff_t i = 0; i < n; ++ i)
+                  increment();
+              else
+                for (std::ptrdiff_t i = 0; i < -n; ++ i)
+                  decrement();
+            }
+            else
+              hnd_ += n;
+        }
+
+        std::ptrdiff_t distance_to(const Index_iterator& other) const
+        {
+            if (container_->has_garbage())
+            {
+              bool forward = (other.hnd_ > hnd_);
+
+              std::ptrdiff_t out = 0;
+              Index_iterator it = *this;
+              while (!it.equal(other))
+              {
+                if (forward)
+                {
+                  ++ it;
+                  ++ out;
+                }
+                else
+                {
+                  -- it;
+                  -- out;
+                }
+              }
+              return out;
+            }
+
+            // else
+            return std::ptrdiff_t(other.hnd_) - std::ptrdiff_t(this->hnd_);
+        }
+
+        bool equal(const Index_iterator& other) const
+        {
+            return this->hnd_ == other.hnd_;
+        }
+
+        Index_ dereference() const { return hnd_; }
+
+        Index_ hnd_;
+        const Container_* container_;
+
+    };
+
+
 
   template <class I, class T, class ConcurrencyTag = Sequential_tag>
   struct Indexed_storage_property_map
@@ -919,7 +804,7 @@ namespace CGAL {
                                    ConcurrencyTag,
                                    free_list_next_function_,
                                    prefix>;
-    using Handle = Index_handle<Element_type, Index_type, Container>;
+    // AF:     using Handle = Index_handle<Element_type, Index_type, Container>;
     using size_type = typename Container::size_type;
     using Concurrency_tag = ConcurrencyTag;
 
@@ -1200,8 +1085,8 @@ namespace CGAL {
     using Vertex_index = CGAL::Vertex_index;
     using Cell_index = CGAL::Cell_index;
 
-    using Cell_handle = Index_handle<Cell, Cell_index, Self>;
-    using Vertex_handle = Index_handle<Vertex, Vertex_index, Self>;
+    using Cell_handle = Cell_index;
+    using Vertex_handle = Vertex_index;
     using cell_descriptor = Cell_index;
     using vertex_descriptor = Vertex_index;
 
@@ -1210,41 +1095,10 @@ namespace CGAL {
       return {handle(f.first), f.second};
     }
 
-    Cell_handle handle(const cell_descriptor& index) const
-    {
-      return Cell_handle{const_cast<Self*>(this), index};
-    }
-
-    Vertex_handle handle(const vertex_descriptor& index) const
-    {
-      return Vertex_handle{const_cast<Self*>(this), index};
-    }
-
-    cell_descriptor descriptor(const cell_descriptor& c) const
-    {
-      return c;
-    }
-
-    vertex_descriptor descriptor(const vertex_descriptor& v) const
-    {
-      return v;
-    }
-
-    cell_descriptor descriptor(Cell_handle ch) const
-    {
-      CGAL_assertion(ch.container() == this);
-      return ch.idx();
-    }
-
-    vertex_descriptor descriptor(Vertex_handle vh) const
-    {
-      CGAL_assertion(vh.container() == this);
-      return vh.idx();
-    }
 
 
-    using Facet = std::pair<Cell_handle, int>;
-    using Edge = Triple<Cell_handle, int, int>;
+    using Facet = std::pair<Cell_index, int>;
+    using Edge = Triple<Cell_index, int, int>;
 
     class Cell_data {
       unsigned char conflict_state;
@@ -1333,26 +1187,74 @@ namespace CGAL {
       return cell_tds_data_pmap()[ci];
     }
 
-    Cell_data& tds_data(Cell_handle ch) const
-    {
-      return tds_data(ch.idx());
-    }
-
     Vertex_index vertex(const Cell_index& ci, int i) const
     {
       return cell_storage()[ci].ivertices[i];
     }
 
-    Vertex_handle vertex(const Cell_handle& ch, int i) const
+
+    const std::array<Vertex_index,4>& vertices(const Cell_index& ci) const
     {
-      return handle(vertex(descriptor(ch),i));
+      return cell_storage()[ci].ivertices;
     }
 
+
+    Cell_index cell(const Vertex_index& vi) const
+    {
+      return vertex_storage()[vi].icell;
+    }
+
+    int  index(const Cell_index& ci, const Cell_index& ni) const
+    {
+      for (int i = 0; i < 4; ++i) {
+        if (cell_storage()[ci].ineighbors[i] == ni) {
+          return i;
+        }
+      }
+      CGAL_error_msg("index() : neighbor not found");
+      return -1;
+    }
+
+    int  index(const Cell_index& ci, const Vertex_index& vi) const
+    {
+      for (int i = 0; i < 4; ++i) {
+        if (cell_storage()[ci].ivertices[i] == vi) {
+          return i;
+        }
+      }
+      CGAL_error_msg("index() : vertex not found");
+      return -1;
+    }
 
     void set_vertex(const Cell_index& ci, int i, Vertex_index vi)
     {
       cell_storage()[ci].ivertices[i] = vi;
     }
+
+    bool has_vertex(const Cell_index& ci, const Vertex_index& vi) const
+    {
+      const auto& cell = cell_storage()[ci];
+      for (int i = 0; i < 4; ++i) {
+        if (cell.ivertices[i] == vi) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+
+    bool has_vertex(const Cell_index& ci, const Vertex_index& vi, int& res) const
+    {
+      const auto& cell = cell_storage()[ci];
+      for (int i = 0; i < 4; ++i) {
+        if (cell.ivertices[i] == vi) {
+          res = i;
+          return true;
+        }
+      }
+      return false;
+    }
+
 
     Cell_index neighbor(const Cell_index& ci, int i) const
     {
@@ -1367,9 +1269,16 @@ namespace CGAL {
     std::pair<Cell_index, int>
     mirror_facet(const Cell_index& ci, int i) const
     {
-      auto nd = cell_storage()[ci].ineighbors[i];
-      int ni = -1;
+      const auto nd = cell_storage()[ci].ineighbors[i];
+      // int ni = -1;
       auto& storage = cell_storage()[nd];
+
+      if (storage.ineighbors[0] == ci)  return {nd, 0};
+      if (storage.ineighbors[1] == ci)  return {nd, 1};
+      if (storage.ineighbors[2] == ci)  return {nd, 2};
+      CGAL_assertion(storage.ineighbors[3] == ci);
+      return {nd, 3};
+      /*
       for (int j = 0; j < 4; ++j) {
         if (storage.ineighbors[j] == ci) {
           ni = j;
@@ -1377,29 +1286,25 @@ namespace CGAL {
         }
       }
       return {nd, ni};
+      */
     }
 
-    std::pair<Cell_handle, int>
-    mirror_facet(Cell_handle ch, int i) const
-    {
-      std::pair<Cell_index, int> f = mirror_facet(ch.idx(), i);
-      return {handle(f.first), f.second};
-    }
+
 
     std::pair<Cell_index, int>
-    mirror_facet(std::pair<Cell_index, int> f) const
+    mirror_facet(const std::pair<Cell_index, int>& f) const
     {
       return mirror_facet(f.first, f.second);
     }
 
     Facet facet(const Cell_index& ci, int i) const
     {
-      return {handle(ci), i};
+      return {ci, i};
     }
 
     Vertex_handle create_vertex()
     {
-      return Vertex_handle{this, vertex_container().create(this)};
+      return vertex_container().create(this);
     }
 
     Vertex_index create_vertex_descriptor()
@@ -1414,7 +1319,7 @@ namespace CGAL {
 
     Cell_handle create_cell()
     {
-      return Cell_handle{this, cell_container().create(this)};
+      return cell_container().create(this);
     }
 
     Cell_index create_cell(const Cell_index&)
@@ -1460,21 +1365,7 @@ namespace CGAL {
       return ci;
     }
 
-    Cell_handle create_cell(Vertex_handle v0, Vertex_handle v1,
-                            Vertex_handle v2, Vertex_handle v3)
-    {
-      Cell_handle c = create_cell();
-      auto& storage = cell_storage()[c.idx()];
-      storage.ivertices[0] = v0.idx();
-      storage.ivertices[1] = v1.idx();
-      storage.ivertices[2] = v2.idx();
-      storage.ivertices[3] = v3.idx();
-      storage.ineighbors[0] = Cell_index::invalid();
-      storage.ineighbors[1] = Cell_index::invalid();
-      storage.ineighbors[2] = Cell_index::invalid();
-      storage.ineighbors[3] = Cell_index::invalid();
-      return c;
-    }
+
 
     Cell_handle create_cell(Vertex_handle v0, Vertex_handle v1,
                             Vertex_handle v2, Vertex_handle v3,
@@ -1507,15 +1398,9 @@ namespace CGAL {
       return create_cell(v0, v1, v2, Vertex_handle());
     }
 
-    void delete_vertex(Vertex_handle vh)
-    {
-      vertex_container().remove(vh.idx(), this);
-    }
 
-    void delete_cell(Cell_handle ch)
-    {
-      cell_container().remove(ch.idx(), this);
-    }
+
+
 
     void delete_vertex(Vertex_index vi)
     {
@@ -1582,12 +1467,12 @@ namespace CGAL {
 
     bool is_vertex(Vertex_handle v) const
     {
-      return this == v->tds() && is_valid_vertex_index(v->idx());
+      return is_valid_vertex_index(v);
     }
 
     bool is_valid_cell_handle(Cell_handle c) const
     {
-      return this == c->tds()  && is_valid_cell_index(c->idx());
+      return is_valid_cell_index(c.idx());
     }
 
     bool is_cell( Cell_handle c ) const
@@ -1692,15 +1577,6 @@ namespace CGAL {
 #endif
     }
 
-    void set_adjacency(Cell_handle c0, int i0,
-                       Cell_handle c1, int i1)
-    {
-      CGAL_assertion(i0 >= 0 && i0 <= dimension());
-      CGAL_assertion(i1 >= 0 && i1 <= dimension());
-      CGAL_assertion(c0 != c1);
-      cell_container().storage_[c0.idx()].ineighbors[i0] = c1.idx();
-      cell_container().storage_[c1.idx()].ineighbors[i1] = c0.idx();
-    }
 
     void set_adjacency(Cell_index ci0, int i0,
                        Cell_index ci1, int i1)
@@ -1712,15 +1588,11 @@ namespace CGAL {
       cell_container().storage_[ci1].ineighbors[i1] = ci0;
     }
 
-    void set_vertex_cell(Vertex_index vi, Cell_index ci)
+    void set_cell(Vertex_index vi, Cell_index ci)
     {
       vertex_storage()[vi].icell = ci;
     }
 
-    void set_vertex_cell(Vertex_handle v, Cell_handle c)
-    {
-      vertex_storage()[v.idx()].icell = c.idx();
-    }
 
     bool has_garbage() const { return vertex_container().has_garbage() || cell_container().has_garbage(); }
 
@@ -1747,7 +1619,7 @@ namespace CGAL {
       return cell_container().removed_[c];
     }
     //------------------------------------------------------ iterator types
-    using Vertex_iterator = Index_iterator<Vertex_handle, Self>;
+    using Vertex_iterator = Index_iterator<Vertex_index, Self>;
     using Vertex_range = Iterator_range<Vertex_iterator>;
 
     Vertex_iterator vertices_begin() const
@@ -1766,7 +1638,7 @@ namespace CGAL {
     }
 
 
-    using Cell_iterator = Index_iterator<Cell_handle, Self>;
+    using Cell_iterator = Index_iterator<Cell_index, Self>;
     using Cell_range = Iterator_range<Cell_iterator>;
 
     Cell_iterator cells_begin() const
@@ -1858,7 +1730,7 @@ namespace CGAL {
       // Vertex_handle vh = tds().copy_tds(src, vert, setv, setc);
       vertex_point_pmap_ = this->property_map<Vertex_index, Point>("v:point").value();
       cell_data_ = this->property_map<Cell_index, Cell_data>("c:data").value();
-      return  Vertex_handle{this, 0};
+      return  Vertex_index(size_type(0));
     }
 
   protected:
@@ -1889,22 +1761,13 @@ namespace CGAL {
 
 
   public:
-    const Point& point(Vertex_handle vh) const
-    {
-      return vertex_point_pmap_[vh.idx()];
-    }
 
-    const Point& point(Vertex_index vi) const
+    const Point& point(const Vertex_index& vi) const
     {
       return vertex_point_pmap_[vi];
     }
 
-    Point& point(Vertex_handle vh)
-    {
-      return vertex_point_pmap_[vh.idx()];
-    }
-
-    Point& point(Vertex_index vi)
+    Point& point(const Vertex_index& vi)
     {
       return vertex_point_pmap_[vi];
     }
@@ -2153,6 +2016,29 @@ namespace CGAL {
 
   };
 } // namespace CGAL
+
+namespace std {
+template <>
+  struct hash<CGAL::Vertex_index >
+    : public CGAL::cpp98::unary_function<CGAL::Vertex_index, std::size_t> {
+
+    std::size_t operator()(const CGAL::Vertex_index& i) const
+    {
+      return i.idx();
+    }
+  };
+
+  template <>
+  struct hash<CGAL::Cell_index >
+    : public CGAL::cpp98::unary_function<CGAL::Cell_index, std::size_t> {
+
+    std::size_t operator()(const CGAL::Cell_index& i) const
+    {
+      return i.idx();
+    }
+  };
+
+}
 
 #include <CGAL/disable_warnings.h>
 
