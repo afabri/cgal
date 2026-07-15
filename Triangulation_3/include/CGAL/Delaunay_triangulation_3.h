@@ -893,14 +893,7 @@ protected:
     Conflict_tester_3(const Point& pt, const Self *tr)
       : p(pt), t(tr) {}
 
-    bool operator()(const Cell_handle c) const
-    {
-      return t->side_of_sphere(c, p, true) == ON_BOUNDED_SIDE;
-    }
-
-    template <typename CellDescriptor,
-              std::enable_if_t<false == std::is_same_v<Cell_handle, CellDescriptor>, bool> = true>
-    bool operator()(const CellDescriptor& c) const
+    bool operator()(const Cell_handle& c) const
     {
       return t->side_of_sphere(c, p, true) == ON_BOUNDED_SIDE;
     }
@@ -910,7 +903,7 @@ protected:
       return ZERO;
     }
 
-    bool test_initial_cell(Cell_handle) const
+    bool test_initial_cell(const Cell_handle&) const
     {
       return true;
     }
@@ -925,25 +918,18 @@ protected:
     Conflict_tester_2(const Point& pt, const Self *tr)
       : p(pt), t(tr) {}
 
-    bool operator()(const Cell_handle c) const
+    bool operator()(const Cell_handle& c) const
     {
       return t->side_of_circle(c, 3, p, true) == ON_BOUNDED_SIDE;
     }
 
-
-    template <typename CellDescriptor,
-              std::enable_if_t<false == std::is_same_v<Cell_handle, CellDescriptor>, bool> = true>
-    bool operator()(const CellDescriptor& c) const
-    {
-      return t->side_of_circle(c, 3, p, true) == ON_BOUNDED_SIDE;
-    }
 
     Oriented_side compare_weight(const Point& , const Point& ) const
     {
       return ZERO;
     }
 
-    bool test_initial_cell(Cell_handle) const
+    bool test_initial_cell(const Cell_handle&) const
     {
       return true;
     }

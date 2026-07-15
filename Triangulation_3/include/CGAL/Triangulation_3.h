@@ -1519,12 +1519,12 @@ protected:
       // For each neighbor cell
       for(int i=0; i < dim_plus_one; ++i)
       {
-        cell_descriptor test = tds().neighbor(cd, i);
-
+        const cell_descriptor& test = tds().neighbor(cd, i);
+        typename Tds::TDS_data& test_data = tds().tds_data(test);
         // "test" is either in the conflict zone,
         // either facet-adjacent to the CZ
 
-        if(tds().tds_data(test).is_in_conflict())
+        if(test_data.is_in_conflict())
         {
           // Is it the facet where're looking for?
           if(this_facet_must_be_in_the_cz && the_facet_is_in_its_cz){
@@ -1536,7 +1536,7 @@ protected:
           }
           continue; // test was already in conflict.
         }
-        if(tds().tds_data(test).is_clear())
+        if(test_data.is_clear())
         {
 #if CGAL_DEBUG_INDEXED_CONTAINER
           if(this->is_parallel()) {
@@ -1572,7 +1572,7 @@ protected:
             }
 
             cell_stack.push(test);
-            tds().tds_data(test).mark_in_conflict();
+            test_data.mark_in_conflict();
             *it.second++ = test;
             continue;
           }
@@ -1668,7 +1668,7 @@ protected:
       // For each neighbor cell
       for(int i=0, dim = dimension()+1; i < dim; ++i)
       {
-        cell_descriptor test = tds().neighbor(cd, i);
+        const cell_descriptor& test = tds().neighbor(cd, i);
 
         // "test" is either in the conflict zone,
         // either facet-adjacent to the CZ
@@ -3560,7 +3560,7 @@ try_next_cell:
   // (non-stochastic) visibility walk
   for(int i=0; i != 4; ++i)
   {
-    Cell_handle next = neighbor(c,i);
+    const Cell_handle& next = neighbor(c,i);
     if(previous == next) continue;
 
     // We temporarily put p at i's place in pts.

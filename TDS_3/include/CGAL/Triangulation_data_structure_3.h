@@ -607,8 +607,8 @@ public:
     std::array <cell_descriptor, maximal_nb_of_facets_of_small_hole> new_cells;
     for (unsigned char local_facet_index = 0, end = static_cast<unsigned char>(facets.size());
          local_facet_index < end; ++local_facet_index) {
-      auto [c, i] = facets[local_facet_index];
-      auto f = mirror_facet(c, i);
+      const std::pair<cell_descriptor,int>&  ci = facets[local_facet_index];
+      auto f = mirror_facet(ci.first,ci.second);
       tds_data(f.first).clear(); // was on boundary
       const auto u = vertex(f.first, vertex_triple_index(f.second, 0));
       const auto v = vertex(f.first, vertex_triple_index(f.second, 1));
@@ -630,11 +630,11 @@ public:
     for(auto it = vertex_pair_facet_map.begin(); it != vertex_pair_facet_map.end(); ++it){
       const auto& [vertex_pair, local_facet] = *it;
       if(vertex_pair.first < vertex_pair.second){
-        const auto nc = new_cells[local_facet.first];
+        const auto& nc = new_cells[local_facet.first];
         const auto indexc = local_facet.second;
         vertex_pair_facet_map.clear(it);
         const auto p = vertex_pair_facet_map.get_and_erase(std::make_pair(vertex_pair.second, vertex_pair.first));
-        const auto other_c = new_cells[p.first];
+        const auto& other_c = new_cells[p.first];
         const auto other_index = p.second;
         set_adjacency(nc, indexc, other_c, other_index);
       }
@@ -764,7 +764,7 @@ template <class Cells, class Facets>
   Vertex_handle insert_in_facet(const Facet & f)
     { return insert_in_facet(f.first, f.second); }
 
-  Vertex_handle insert_in_facet(Cell_handle c, int i);
+  Vertex_handle insert_in_facet(const Cell_handle& c, int i);
 
   Vertex_handle insert_in_edge(const Edge & e)
     { return insert_in_edge(e.first, e.second, e.third); }
@@ -2922,7 +2922,7 @@ insert_in_cell(Cell_handle c)
 template <class Vb, class Cb, class Ct, class St>
 typename Triangulation_data_structure_3<Vb,Cb,Ct,St>::Vertex_handle
 Triangulation_data_structure_3<Vb,Cb,Ct,St>::
-insert_in_facet(Cell_handle c, int i)
+insert_in_facet(const Cell_handle& c, int i)
 { // inserts v in the facet opposite to vertex i of cell c
 
   CGAL_precondition( c != Cell_handle() );

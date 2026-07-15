@@ -1004,7 +1004,7 @@ namespace CGAL {
       return idx;
     }
 
-    void remove(Index_type idx, Container* container)
+    void remove(const Index_type& idx, Container* container)
     {
       size_type& freelist_ = free_list();
       if constexpr(! internal::TDS_3::use_experimental_properties && ! is_parallel){
@@ -1143,8 +1143,8 @@ namespace CGAL {
     Vertex_storage_property_map& vertex_storage() { return vertex_container().storage_; }
     const Vertex_storage_property_map& vertex_storage() const { return vertex_container().storage_; }
 
-    auto cell_tds_data_pmap() { return cell_data_; }
-    auto cell_tds_data_pmap() const { return cell_data_; }
+    auto& cell_tds_data_pmap() { return cell_data_; }
+    const auto& cell_tds_data_pmap() const { return cell_data_; }
 
     size_type num_vertices() const { return static_cast<size_type>(vertex_container().size()); }
     size_type num_cells() const { return static_cast<size_type>(cell_container().size()); }
@@ -1269,7 +1269,7 @@ namespace CGAL {
     std::pair<Cell_index, int>
     mirror_facet(const Cell_index& ci, int i) const
     {
-      const auto nd = cell_storage()[ci].ineighbors[i];
+      const auto& nd = cell_storage()[ci].ineighbors[i];
       // int ni = -1;
       auto& storage = cell_storage()[nd];
 
@@ -1402,12 +1402,12 @@ namespace CGAL {
 
 
 
-    void delete_vertex(Vertex_index vi)
+    void delete_vertex(const Vertex_index& vi)
     {
       vertex_container().remove(vi, this);
     }
 
-    void delete_cell(Cell_index ci)
+    void delete_cell(const Cell_index& ci)
     {
       cell_container().remove(ci, this);
     }
@@ -1457,25 +1457,25 @@ namespace CGAL {
       return num_cells() - number_of_removed_cells();
     }
 
-    bool is_valid_vertex_index(Vertex_index idx) const {
+    bool is_valid_vertex_index(const Vertex_index& idx) const {
       return vertex_container().is_valid_index(idx);
     }
 
-    bool is_valid_cell_index(Cell_index idx) const {
+    bool is_valid_cell_index(const Cell_index& idx) const {
       return cell_container().is_valid_index(idx);
     }
 
-    bool is_vertex(Vertex_handle v) const
+    bool is_vertex(const Vertex_handle& v) const
     {
       return is_valid_vertex_index(v);
     }
 
-    bool is_valid_cell_handle(Cell_handle c) const
+    bool is_valid_cell_handle(const Cell_handle& c) const
     {
       return is_valid_cell_index(c.idx());
     }
 
-    bool is_cell( Cell_handle c ) const
+    bool is_cell( const Cell_handle& c ) const
       // returns false when dimension <3
     {
       if (dimension() < 3)
@@ -1578,8 +1578,8 @@ namespace CGAL {
     }
 
 
-    void set_adjacency(Cell_index ci0, int i0,
-                       Cell_index ci1, int i1)
+    void set_adjacency(const Cell_index& ci0, int i0,
+                       const Cell_index& ci1, int i1)
     {
       CGAL_assertion(i0 >= 0 && i0 <= dimension());
       CGAL_assertion(i1 >= 0 && i1 <= dimension());
@@ -1588,7 +1588,7 @@ namespace CGAL {
       cell_container().storage_[ci1].ineighbors[i1] = ci0;
     }
 
-    void set_cell(Vertex_index vi, Cell_index ci)
+    void set_cell(const Vertex_index& vi, const Cell_index& ci)
     {
       vertex_storage()[vi].icell = ci;
     }
@@ -1597,24 +1597,24 @@ namespace CGAL {
     bool has_garbage() const { return vertex_container().has_garbage() || cell_container().has_garbage(); }
 
     /// returns whether the index of vertex `v` is valid, that is within the current array bounds.
-    bool has_valid_index(Vertex_index v) const
+    bool has_valid_index(const Vertex_index& v) const
     {
       return (v.id() < num_vertices());
     }
 
-    bool has_valid_index(Cell_index c) const
+    bool has_valid_index(const Cell_index& c) const
     {
       return (c.id() < num_cells());
     }
 
     /// returns whether vertex `v` is marked removed.
     /// \sa `collect_garbage()`
-    bool is_removed(Vertex_index v) const
+    bool is_removed(const Vertex_index& v) const
     {
       return vertex_container().removed_[v];
     }
 
-    bool is_removed(Cell_index c) const
+    bool is_removed(const Cell_index& c) const
     {
       return cell_container().removed_[c];
     }
