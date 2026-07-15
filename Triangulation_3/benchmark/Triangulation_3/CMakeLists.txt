@@ -21,8 +21,11 @@ create_single_source_cgal_program("segment_traverser_benchmark.cpp" )
 find_package(benchmark QUIET)
 if(NOT TARGET benchmark::benchmark)
   message(STATUS "NOTICE: Some benchmarks require the Google benchmark library, and will not be compiled.")
-  return()
+else()
+  create_single_source_cgal_program("DT3_benchmark.cpp")
+  target_link_libraries(DT3_benchmark PRIVATE CGAL::CGAL benchmark::benchmark)
 endif()
+
 
 find_package(TBB REQUIRED)
 include(CGAL_TBB_support)
