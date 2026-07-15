@@ -293,6 +293,16 @@ public:
   typedef std::pair<vertex_descriptor,vertex_descriptor> Vertex_pair;
   typedef std::pair<unsigned char, unsigned char> Local_facet;
 
+  const Tds& tds() const
+  {
+    return *this;
+  }
+
+  Tds& tds()
+  {
+    return *this;
+  }
+
   struct Small_pair_hash {
 
     std::size_t operator()(const Vertex_pair& k) const

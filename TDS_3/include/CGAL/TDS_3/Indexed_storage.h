@@ -1090,10 +1090,6 @@ namespace CGAL {
     using cell_descriptor = Cell_index;
     using vertex_descriptor = Vertex_index;
 
-    std::pair<Cell_handle,int> facet_with_handle(std::pair<cell_descriptor, int> f) const
-    {
-      return {handle(f.first), f.second};
-    }
 
 
 
@@ -1332,6 +1328,7 @@ namespace CGAL {
       return cell_container().create(this);
     }
 
+    #if 0
     Vertex_handle create_vertex(const Vertex& v)
     {
       Vertex_handle new_v = create_vertex();
@@ -1345,7 +1342,7 @@ namespace CGAL {
       new_c->storage() = c.storage();
       return new_c;
     }
-
+#endif
     // AF:  What about the equivalent to
     // https://doc.cgal.org/latest/TDS_3/classTriangulationDataStructure__3.html#a1432860206073c24ca43dbbdfb13b26e
 
