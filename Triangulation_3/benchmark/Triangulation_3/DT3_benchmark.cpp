@@ -1,8 +1,10 @@
-// #define CGAL_SMALL_UNORDERED_MAP_STATS
 //#define CGAL_PROFILE
 //#define CGAL_USE_SSE2_FABS
 //#define CGAL_USE_SSE2_MAX
 //#define CGAL_MSVC_USE_STD_FABS  // use this one with precise
+
+#define INDEX_STORAGE 1
+
 #define CGAL_NDEBUG 1
 #define NDEBUG 1
 
@@ -16,8 +18,6 @@
 
 #include <CGAL/Delaunay_triangulation_3.h>
 
-#include <CGAL/Memory_sizer.h>
-#include <CGAL/Timer.h>
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -31,21 +31,17 @@ using Concurrent_tag = CGAL::Parallel_tag;
 using Concurrent_tag = CGAL::Sequential_tag;
 #endif
 typedef CGAL::Exact_predicates_inexact_constructions_kernel  K;
-#if INDEX_STORAGE
+#ifdef  INDEX_STORAGE
 typedef CGAL::VertexWithPoint<K> Vb;
 typedef CGAL::Cell4Delaunay<K> Cb;
 typedef CGAL::Index_tag Tds_type_tag;
 #else
 typedef CGAL::Triangulation_vertex_base_3<K> Vb;
 typedef CGAL::Delaunay_triangulation_cell_base_3<K> Cb;
-typedef CGAL::Handle_tag Tds_type_tag;
 #endif
 typedef CGAL::Triangulation_data_structure_3<Vb, Cb, Concurrent_tag, Tds_type_tag> Tds;
 typedef CGAL::Delaunay_triangulation_3<K,Tds>                DT;
 typedef DT::Point                                            Point_3;
-typedef CGAL::Timer                                          Timer;
-typedef CGAL::Memory_sizer                                   Memory_sizer;
-
 
 // global variables used by bench_dt3
 int argc;
