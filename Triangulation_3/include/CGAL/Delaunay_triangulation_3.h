@@ -2013,9 +2013,9 @@ dual_support(Cell_handle c, int i) const
                                       point(vertex(c,2)));
   }
 
-  return construct_equidistant_line(point(vertex(c, (i+1)&3)->),
-                                    point(vertex(c, (i+2)&3)->),
-                                    point(vertex(c, (i+3)&3)->));
+  return construct_equidistant_line(point(vertex(c, (i+1)&3)),
+                                    point(vertex(c, (i+2)&3)),
+                                    point(vertex(c, (i+3)&3)));
 }
 
 template < class Gt, class Tds, class Lds >

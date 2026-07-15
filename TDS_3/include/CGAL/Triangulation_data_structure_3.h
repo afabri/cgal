@@ -369,6 +369,7 @@ public:
 
   Tds& operator=(Tds&& tds) = default; // move assignment
 
+  using Tds_storage::cell;
   using Tds_storage::cells;
   using Tds_storage::clear;
   using Tds_storage::clear_without_removing_property_maps;
@@ -3473,11 +3474,11 @@ remove_degree_4(Vertex_handle v)
     c0 = cell(v);
     i0 = index(c0, v);
     c1 = neighbor(c0, i0^1);
-    i1 = index(c1  v);
+    i1 = index(c1,  v);
     c2 = neighbor(c0, i0^2);
     i2 = index(c2, v);
     c3 = neighbor(c0, i0^3);
-    i3 = index(c3 v);
+    i3 = index(c3, v);
 
     // New cell : we copy the content of c0, so we keep the orientation.
     Cell_handle newc = create_cell(vertex(c0,0),
@@ -4219,7 +4220,7 @@ copy_tds(const TDS_src& tds,
   // Link the vertices to a cell.
   for (typename TDS_src::Vertex_iterator vit2 = tds.vertices_begin();
        vit2 != tds.vertices_end(); ++vit2)
-    V[*vit2]->set_cell( F[cell(*vit)] );
+    V[*vit2]->set_cell( F[cell(*vit2)] );
 
   // Hook neighbor pointers of the cells.
   for (typename TDS_src::Cell_iterator cit2 = tds.cells().begin();

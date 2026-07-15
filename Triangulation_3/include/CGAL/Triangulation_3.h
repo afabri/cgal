@@ -4692,7 +4692,7 @@ Triangulation_3<GT,Tds,Lds>::insert_and_give_new_cells(const Point& p,
     do
     {
       *fit++ = c;
-      int i = index(c,cv);
+      int i = index(c,v);
       c = neighbor(c,(i+1)%3);
     }
     while(c != end);
@@ -5370,7 +5370,7 @@ fill_auxiliary_triangulation_with_vertices_around_v(Triangulation& t,
     Orientation o = orientation(point(adj_vertices[0]),
                                 point(adj_vertices[1]),
                                 point(adj_vertices[2]),
-                                point()adj_vertices[3]);
+                                point(adj_vertices[3]));
 
     if(o == NEGATIVE)
       std::swap(adj_vertices[0], adj_vertices[1]);
@@ -6195,7 +6195,7 @@ move_if_no_collision_and_give_new_cells(Vertex_handle v, const Point& p,
         f_ins = neighbor(f_ins,1);
 
       CGAL_assertion(index(f_ins, inserted) == 1);
-      Cell_handle g_ins = neighbor(f_ins0);
+      Cell_handle g_ins = neighbor(f_ins,0);
       set_vertex(f_ins, 1, v);
       set_vertex(g_ins, 0, v);
       set_point(v,p);
