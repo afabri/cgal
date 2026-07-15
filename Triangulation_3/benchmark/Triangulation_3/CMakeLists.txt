@@ -24,7 +24,7 @@ if(NOT TARGET benchmark::benchmark)
   message(STATUS "NOTICE: Some benchmarks require the Google benchmark library, and will not be compiled.")
 else()
   create_single_source_cgal_program("DT3_benchmark.cpp" )
-  target_link_libraries(DT3_benchmark PRIVATE CGAL::CGAL benchmark::benchmark)
+  target_link_libraries(DT3_benchmark PRIVATE CGAL::CGAL )
 endif()
 
 
