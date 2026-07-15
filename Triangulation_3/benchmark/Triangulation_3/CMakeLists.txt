@@ -34,6 +34,8 @@ if(NOT TARGET benchmark::benchmark)
   return()
 endif()
 
+target_link_libraries(simple_bench_DT3_with_index PRIVATE CGAL::CGAL benchmark::benchmark)
+
 find_package(TBB REQUIRED)
 include(CGAL_TBB_support)
 if(TARGET CGAL::TBB_support)

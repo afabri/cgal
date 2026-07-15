@@ -23,6 +23,8 @@
 #include <fstream>
 #include <locale>
 
+#include <benchmark/benchmark.h>
+
 #if PARALLEL
 using Concurrent_tag = CGAL::Parallel_tag;
 #else
@@ -44,18 +46,19 @@ typedef DT::Point                                            Point_3;
 typedef CGAL::Timer                                          Timer;
 typedef CGAL::Memory_sizer                                   Memory_sizer;
 
-int main(int argc, char* argv[])
-{
+
+// global variables used by bench_dt3
+int argc;
+char** argv;
+
+
+
+void bench_dt3(benchmark::State& state) {
   std::locale loc = std::locale()
       .combine<std::numpunct<char>>(std::locale("en_US.UTF8"));
   std::cout.imbue(loc);
 
   int M = 100; // Number of times to compute the triangulation
-
-  Memory_sizer memory_sizer;
-  auto res_mem_at_start = memory_sizer.resident_size();
-  std::cout << "Memory usage right at start:\n" << memory_sizer.virtual_size() << " bytes (virtual), "
-            << res_mem_at_start << " bytes (resident)" << std::endl;
 
   const std::string filename = (argc > 1) ? argv[1] : CGAL::data_file_path("points_3/ocean_r.xyz");
   if(argc > 2) {
@@ -74,35 +77,22 @@ int main(int argc, char* argv[])
     points.push_back(p);
   }
 
-  std::cout << points.size() << " points read\n";
-
-  Timer timer;
-  timer.start();
+  for(auto _ : state) {
   std::cout << "Compute triangulation "<< M << " times" << std::endl;
   for(int i = 0; i < M; i++){
-#if PARALLEL
-    DT::Lock_data_structure lock_data_structure{CGAL::bbox_3(points.begin(), points.end()), 50};
-    DT dt(&lock_data_structure);
-#else
+
     DT dt;
-#endif
     dt.insert(points.begin(), points.end());
-    std::cout << "Number of cells: " << dt.number_of_cells() << std::endl;
-    auto res_mem = memory_sizer.resident_size();
-    std::cout << "Memory usage after construction of the triangulation:\n" << memory_sizer.virtual_size() << " bytes (virtual), "
-            << res_mem << " bytes (resident)" << std::endl;
-    std::cout << "Diff in resident memory: "
-              << res_mem - res_mem_at_start << " bytes" << std::endl;
   }
+  }
+}
 
-  timer.stop();
-  std::cout << "Time elapsed: " << timer.time() << " sec" << std::endl;
+BENCHMARK(bench_dt3)->Unit(benchmark::kMillisecond);
 
-  auto res_mem = memory_sizer.resident_size();
-  std::cout << "Memory usage after deallocation of the triangulation:\n" << memory_sizer.virtual_size() << " bytes (virtual), "
-            << res_mem << " bytes (resident)" << std::endl;
-  std::cout << "Diff in resident memory: "
-            << res_mem - res_mem_at_start << " bytes" << std::endl;
-
-  return 0;
+int main(int argc, char* argv[])
+{
+  benchmark::Initialize(&argc, argv);
+  ::argc = argc;
+  ::argv = argv;
+  benchmark::RunSpecifiedBenchmarks();
 }
