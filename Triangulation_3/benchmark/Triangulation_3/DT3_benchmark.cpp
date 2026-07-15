@@ -76,6 +76,7 @@ void bench_dt3(benchmark::State& state) {
 
     DT dt;
     dt.insert(points.begin(), points.end());
+    std::cout << dt.number_of_cells() << std::endl;
   }
   }
 }
