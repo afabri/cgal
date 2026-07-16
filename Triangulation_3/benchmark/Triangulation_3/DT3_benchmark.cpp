@@ -23,7 +23,7 @@
 #include <fstream>
 #include <locale>
 
-// #include <benchmark/benchmark.h>
+#include <benchmark/benchmark.h>
 
 #if PARALLEL
 using Concurrent_tag = CGAL::Parallel_tag;
@@ -43,7 +43,7 @@ typedef CGAL::Triangulation_data_structure_3<Vb, Cb, Concurrent_tag, Tds_type_ta
 typedef CGAL::Delaunay_triangulation_3<K,Tds>                DT;
 typedef DT::Point                                            Point_3;
 
-#if 0
+#if 1
 // global variables used by bench_dt3
 int argc;
 char** argv;
@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
   ::argv = argv;
   benchmark::RunSpecifiedBenchmarks();
 }
-#endif
+#else
 
 
 int main(int argc, char* argv[]){
@@ -130,3 +130,5 @@ int main(int argc, char* argv[]){
   }
   return 0;
 }
+
+#endif
