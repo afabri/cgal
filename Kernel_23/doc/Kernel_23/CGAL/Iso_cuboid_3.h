@@ -239,7 +239,8 @@ Bbox_3 bbox() const;
 /*!
 returns the iso-oriented cuboid obtained by applying `t` on
 the smallest and the largest of `c`.
-\pre The angle at a rotation must be a multiple of \f$ \pi/2\f$, otherwise the resulting cuboid does not have the same size. Note that rotating about an arbitrary angle can even result in a degenerate iso-oriented cuboid.
+\note If the angle at a rotation is not a multiple of \f$ \pi/2\f$, the resulting cuboid does not have the same size.
+      Rotating about an arbitrary angle can even result in a degenerate iso-oriented cuboid.
 */
 Iso_cuboid_3<Kernel> transform(const Aff_transformation_3<Kernel> &t) const;
 

@@ -214,7 +214,8 @@ Bbox_2 bbox() const;
 /*!
 returns the iso-oriented rectangle obtained by applying `t` on
 the lower left and the upper right corner of `r`.
-\pre The angle at a rotation must be a multiple of \f$ \pi/2\f$, otherwise the resulting rectangle does not have the same side length. Note that rotating about an arbitrary angle can even result in a degenerate iso-oriented rectangle.
+\note If the angle at a rotation is not a multiple of \f$ \pi/2\f$, the resulting rectangle does not have the same side length.
+      Rotating about an arbitrary angle can even result in a degenerate iso-oriented rectangle.
 */
 Iso_rectangle_2<Kernel> transform(const Aff_transformation_2<Kernel> &t) const;
 
