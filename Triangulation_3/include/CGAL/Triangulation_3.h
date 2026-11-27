@@ -2415,68 +2415,75 @@ public:
     }
   };
 
-  void swap_vertex_contents(Vertex_handle a, Vertex_handle b)
-  {
-    std::swap(a->point(), b->point());
-    Cell_handle ca = a->cell();
-    a->set_cell(b->cell());
-    b->set_cell(ca);
-    // std::swap(a->info(), b->info());   // if you use Vertex_base_with_info_3
-  }
-
   void reorder_vertices()
   {
-    std::vector<Vertex_index_pair> sorted;
-    sorted.reserve(number_of_vertices());
-    int index = 0;
-    for (auto v = finite_vertices_begin(); v != finite_vertices_end(); ++v){
-      sorted.push_back(std::make_pair(v, index++));
-    }
-    typedef Spatial_sort_traits_adapter_3<Geom_traits, Vertex_pair_point_map> Hilbert_traits;
-    CGAL::hilbert_sort(sorted.begin(), sorted.end(),
-                       Hilbert_traits(Vertex_pair_point_map()));
-
     // Slots in current container order
     std::vector<Vertex_handle> slots;
     slots.reserve(number_of_vertices());
     for (Vertex_handle vh : finite_vertex_handles())
       slots.push_back(vh);
     const std::size_t n = slots.size();
+    if (n < 2) return;
+
+    std::vector<Vertex_index_pair> sorted;
+    sorted.reserve(n);
+    for (std::size_t i = 0; i < n; ++i)
+      sorted.emplace_back(slots[i], static_cast<int>(i));
+
+    typedef Spatial_sort_traits_adapter_3<Geom_traits, Vertex_pair_point_map> Hilbert_traits;
+    CGAL::hilbert_sort(sorted.begin(), sorted.end(),
+                       Hilbert_traits(Vertex_pair_point_map(), geom_traits()));
 
     // p[k] = slot whose current content must end up in slot k
-    std::vector<int> p(n);
+    std::vector<std::size_t> p(n);
     for (std::size_t k = 0; k < n; ++k)
-      p[k] = sorted[k].second;
+      p[k] = static_cast<std::size_t>(sorted[k].second);
 
-    // Old address -> new slot, computed before anything moves
-    std::unordered_map<const Vertex*, Vertex_handle> new_handle;
-    new_handle.reserve(n);
+    // inv[old slot] = new slot
+    std::vector<std::size_t> inv(n);
     for (std::size_t k = 0; k < n; ++k)
-      new_handle[&*slots[p[k]]] = slots[k];
+      inv[p[k]] = k;
+
+    // Vertex address -> old slot index (sorted vector + binary search)
+    std::vector<std::pair<const Vertex*, std::size_t>> addr(n);
+    for (std::size_t i = 0; i < n; ++i)
+      addr[i] = std::make_pair(static_cast<const Vertex*>(&*slots[i]), i);
+    std::sort(addr.begin(), addr.end());
+    auto old_slot_of = [&](Vertex_handle v) -> std::size_t {
+      const Vertex* vp = &*v;
+      auto it = std::lower_bound(addr.begin(), addr.end(),
+                                 std::make_pair(vp, std::size_t(0)));
+      return (it != addr.end() && it->first == vp) ? it->second : n; // n: infinite vertex
+    };
 
     // 1. Redirect the cells (all of them, including infinite cells;
-    //    the infinite vertex is not in the map and stays where it is)
+    //    the infinite vertex is not in the table and stays where it is)
     const int dim = dimension();
     for (Cell_handle c : all_cell_handles())
       for (int i = 0; i <= dim; ++i) {
-        auto it = new_handle.find(&*c->vertex(i));
-        if (it != new_handle.end())
-          c->set_vertex(i, it->second);
+        const std::size_t s = old_slot_of(c->vertex(i));
+        if (s != n)
+          c->set_vertex(i, slots[inv[s]]);
       }
 
-    // 2. Apply the permutation new[k] = old[p[k]] with swaps (cycle by cycle)
+    // 2. Apply the permutation new[k] = old[p[k]], cycle by cycle, moving
+    //    the *whole* vertex object (point, cell, info, any vertex-base data).
     std::vector<char> done(n, 0);
     for (std::size_t k = 0; k < n; ++k) {
       if (done[k]) continue;
+      if (p[k] == k) { done[k] = 1; continue; }
+      Vertex tmp = *slots[k];
       std::size_t j = k;
-      while (true) {
+      while (p[j] != k) {
+        *slots[j] = *slots[p[j]];
         done[j] = 1;
-        std::size_t nxt = p[j];
-        if (nxt == k) break;
-        swap_vertex_contents(slots[j], slots[nxt]);
-        j = nxt;
+        j = p[j];
       }
+      *slots[j] = tmp;
+      done[j] = 1;
     }
+
+    CGAL_expensive_postcondition(is_valid());
   }
 
 };
