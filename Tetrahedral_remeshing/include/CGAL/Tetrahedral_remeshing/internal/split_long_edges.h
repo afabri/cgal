@@ -461,6 +461,10 @@ void split_long_edges(C3T3& c3t3,
   std::cout << " done (" << nb_splits << " splits, in "
             << timer.time() << " sec)." << std::endl;
 #endif
+
+  c3t3.triangulation().reorder_vertices();
+
+
 }
 
 } // internal
