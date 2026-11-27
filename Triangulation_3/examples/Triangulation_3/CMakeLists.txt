@@ -3,6 +3,7 @@ project(Triangulation_3_Examples)
 
 find_package(CGAL REQUIRED OPTIONAL_COMPONENTS Qt6)
 
+create_single_source_cgal_program("hilbert_sort_triangulation_3.cpp")
 create_single_source_cgal_program("for_loop.cpp")
 create_single_source_cgal_program("adding_handles_3.cpp")
 create_single_source_cgal_program("color.cpp")

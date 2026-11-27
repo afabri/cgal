@@ -2397,6 +2397,88 @@ public:
     CGAL_assertion( is_valid(false) );
     return is;
   }
+
+
+  typedef std::pair<Vertex_handle, int> Vertex_index_pair;
+
+  // Readable property map: pair<Vertex_handle,int>  ->  vertex point
+  struct Vertex_pair_point_map
+  {
+    typedef Vertex_index_pair                  key_type;
+    typedef Point                              value_type;
+    typedef const Point&                       reference;
+    typedef boost::readable_property_map_tag   category;
+
+    friend reference get(const Vertex_pair_point_map&, const key_type& p)
+    {
+      return p.first->point();
+    }
+  };
+
+  void swap_vertex_contents(Vertex_handle a, Vertex_handle b)
+  {
+    std::swap(a->point(), b->point());
+    Cell_handle ca = a->cell();
+    a->set_cell(b->cell());
+    b->set_cell(ca);
+    // std::swap(a->info(), b->info());   // if you use Vertex_base_with_info_3
+  }
+
+  void reorder_vertices()
+  {
+    std::vector<Vertex_index_pair> sorted;
+    sorted.reserve(number_of_vertices());
+    int index = 0;
+    for (auto v = finite_vertices_begin(); v != finite_vertices_end(); ++v){
+      sorted.push_back(std::make_pair(v, index++));
+    }
+    typedef Spatial_sort_traits_adapter_3<Geom_traits, Vertex_pair_point_map> Hilbert_traits;
+    CGAL::hilbert_sort(sorted.begin(), sorted.end(),
+                       Hilbert_traits(Vertex_pair_point_map()));
+
+    // Slots in current container order
+    std::vector<Vertex_handle> slots;
+    slots.reserve(number_of_vertices());
+    for (Vertex_handle vh : finite_vertex_handles())
+      slots.push_back(vh);
+    const std::size_t n = slots.size();
+
+    // p[k] = slot whose current content must end up in slot k
+    std::vector<int> p(n);
+    for (std::size_t k = 0; k < n; ++k)
+      p[k] = sorted[k].second;
+
+    // Old address -> new slot, computed before anything moves
+    std::unordered_map<const Vertex*, Vertex_handle> new_handle;
+    new_handle.reserve(n);
+    for (std::size_t k = 0; k < n; ++k)
+      new_handle[&*slots[p[k]]] = slots[k];
+
+    // 1. Redirect the cells (all of them, including infinite cells;
+    //    the infinite vertex is not in the map and stays where it is)
+    const int dim = dimension();
+    for (Cell_handle c : all_cell_handles())
+      for (int i = 0; i <= dim; ++i) {
+        auto it = new_handle.find(&*c->vertex(i));
+        if (it != new_handle.end())
+          c->set_vertex(i, it->second);
+      }
+
+    // 2. Apply the permutation new[k] = old[p[k]] with swaps (cycle by cycle)
+    std::vector<char> done(n, 0);
+    for (std::size_t k = 0; k < n; ++k) {
+      if (done[k]) continue;
+      std::size_t j = k;
+      while (true) {
+        done[j] = 1;
+        std::size_t nxt = p[j];
+        if (nxt == k) break;
+        swap_vertex_contents(slots[j], slots[nxt]);
+        j = nxt;
+      }
+    }
+  }
+
 };
 
 

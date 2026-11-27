@@ -199,18 +199,21 @@ The following examples illustrate the usage of these traits class adapters.
 
 In this example program, the sorted sequence of points is retrieved
 using a vector of pairs of points and integers.
+
 \cgalExample{Spatial_sorting/sp_sort_using_property_map_2.cpp}
 
 \subsection Spatial_sortingSortingUsingIndicesofPoints Sorting Using Indices of Points
 
 In this example program, the sorted sequence of points is retrieved
 using the indices of the points in a vector of points.
+
 \cgalExample{Spatial_sorting/sp_sort_using_property_map_3.cpp}
 
 \subsection Spatial_sortingSortingUsingIndicesofPairs Sorting Using Indices of Pairs of Points and Integers
 
 In this example program, the sorted sequence of points is retrieved
 using the indices of the points in a vector of pairs of points and integers.
+
 \cgalExample{Spatial_sorting/sp_sort_using_property_map_d.cpp}
 
 \section Spatial_sortingParallel Parallel Spatial Sorting
